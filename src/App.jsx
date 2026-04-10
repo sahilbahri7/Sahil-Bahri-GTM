@@ -7,6 +7,29 @@ async function callAI(prompt, sys = "You are an expert GTM/RevOps consultant. Im
 }
 let _id = 100; const uid = () => `id_${++_id}_${Date.now().toString(36)}`; const num = (n) => String(n).padStart(2, "0");
 
+// Send magic link email via Vercel serverless function.
+// Token is generated server-side — never passed from the client.
+const sendMagicEmail = async ({ to, name, type = "login" }) => {
+  const res = await fetch("/api/send-invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to, name, type }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to send email");
+  }
+  return res.json();
+};
+
+// Verify a magic link token against the server (HMAC-signed, stateless).
+const verifyMagicToken = async (token) => {
+  const res = await fetch(`/api/verify-token?token=${encodeURIComponent(token)}`);
+  if (!res.ok) return null;
+  const d = await res.json().catch(() => null);
+  return d?.email || null;
+};
+
 // ============================================================
 // CASE STUDIES (anonymized, no company names, no timelines)
 // ============================================================
@@ -59,9 +82,9 @@ const CASE_STUDIES = [
 // ============================================================
 const SEED = {
   users: [
-    { id: "u1", name: "Sahil Bahri", email: "sahil@bahri.com", password: "admin123", role: "admin", avatar: "SB", createdAt: "2025-01-15" },
-    { id: "u2", name: "Priya Sharma", email: "priya@team.com", password: "team123", role: "internal", avatar: "PS", createdAt: "2025-02-01" },
-    { id: "u3", name: "Alex Chen", email: "alex@client.com", password: "client123", role: "client", avatar: "AC", clientId: "c1", createdAt: "2025-03-01" },
+    { id: "u1", name: "Sahil Bahri", email: "sahil@bahri.com", role: "admin", avatar: "SB", createdAt: "2025-01-15" },
+    { id: "u2", name: "Priya Sharma", email: "priya@team.com", role: "internal", avatar: "PS", createdAt: "2025-02-01" },
+    { id: "u3", name: "Alex Chen", email: "alex@client.com", role: "client", avatar: "AC", clientId: "c1", createdAt: "2025-03-01" },
   ],
   clients: [
     { id: "c1", name: "Meridian Health", company: "Meridian Health Corp", email: "ops@meridian.com", phone: "+1-555-0100", industry: "Healthcare", notes: "Enterprise HubSpot migration", createdAt: "2025-01-20", createdBy: "u1", status: "active" },
@@ -126,6 +149,9 @@ function reducer(state, action) {
     case "ADD_DELIVERABLE": { const e = { ...action.payload, id: uid(), createdAt: new Date().toISOString() }; return { ...state, deliverables: [...state.deliverables, e], activityLog: [...state.activityLog, log("deliverable_uploaded", action.userId, e.taskId, `Uploaded '${e.name}'`)] }; }
     case "DELETE_DELIVERABLE": return { ...state, deliverables: state.deliverables.filter(d => d.id !== action.payload) };
     case "ADD_USER": return { ...state, users: [...state.users, { ...action.payload, id: uid(), createdAt: new Date().toISOString() }] };
+    case "UPDATE_USER": return { ...state, users: state.users.map(u => u.id === action.payload.id ? { ...u, ...action.payload } : u) };
+    case "REMOVE_USER": return { ...state, users: state.users.filter(u => u.id !== action.payload) };
+    // Token lifecycle now handled server-side via HMAC — no state storage needed.
     case "UPDATE_PORTFOLIO": return { ...state, portfolioSettings: { ...state.portfolioSettings, ...action.payload } };
     case "ACKNOWLEDGE_DELIVERY": return { ...state, activityLog: [...state.activityLog, log("delivery_acknowledged", action.userId, action.payload, "Delivery acknowledged")] };
     default: return state;
@@ -143,6 +169,14 @@ const CSS = `
 @keyframes flowPulse{0%,100%{opacity:.3}50%{opacity:1}}
 @keyframes nodeGlow{0%,100%{box-shadow:0 0 8px rgba(196,162,101,0.05)}50%{box-shadow:0 0 24px rgba(196,162,101,0.2)}}
 @keyframes dataFlow{0%{left:0;opacity:0}5%{opacity:1}95%{opacity:1}100%{left:100%;opacity:0}}
+@keyframes particleFlow{0%{transform:translateY(0);opacity:0}8%{opacity:.9}85%{opacity:.7}100%{transform:translateY(var(--funnel-h));opacity:0}}
+@keyframes connectorPulse{0%,100%{opacity:.2}50%{opacity:.7}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 rgba(196,162,101,0)}50%{box-shadow:0 0 32px rgba(196,162,101,0.18)}}
+@keyframes slideInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
+@keyframes barGrow{from{width:0}to{width:var(--bar-w)}}
+@keyframes numberGlow{0%,100%{text-shadow:none}50%{text-shadow:0 0 20px currentColor}}
+@keyframes borderPulse{0%,100%{border-color:rgba(196,162,101,0.15)}50%{border-color:rgba(196,162,101,0.4)}}
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--ink:#0B0B0B;--ink-2:#111111;--ink-3:#1A1A1A;--ink-4:#222;--ink-5:#2a2a2a;--cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#7A756D;--amber:#C4A265;--sky:#5B8FA8;--violet:#7C6FA0;--success:#6B9E6F;--danger:#A85B5B;--sage:#7B8F7E;--rose:#A8726F;--border:rgba(232,224,212,0.08);--border-h:rgba(232,224,212,0.15);--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
 body{background:var(--ink);color:var(--cream);font-family:var(--sans);-webkit-font-smoothing:antialiased}
@@ -226,6 +260,48 @@ const LeadFunnel = () => {
 };
 
 // ============================================================
+// HERO FUNNEL
+// ============================================================
+const HeroFunnel = () => {
+  const stages = [
+    { label: "Raw Signals", sub: "Intent · Visits · Form Fills", color: "#6bb5d6", w: 100 },
+    { label: "Qualified Leads", sub: "ICP Match · Behavioral Score", color: "#9b7fd4", w: 78 },
+    { label: "MQLs", sub: "Nurtured · Sales-Ready Content", color: "#c4a265", w: 56 },
+    { label: "SQLs", sub: "Discovery Called · Opportunity", color: "#d4777f", w: 38 },
+    { label: "Pipeline", sub: "Actionable Revenue", color: "#6b9e6f", w: 22 },
+  ];
+  const particles = [...Array(10)].map((_, i) => ({ id: i, x: 8 + (i * 8.4) % 84, delay: i * 0.55, dur: 3.2 + (i % 4) * 0.4 }));
+  const funnelHeight = 460;
+  return (
+    <div style={{ position: "relative", height: funnelHeight, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      {/* Particle overlay */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {particles.map(p => (
+          <div key={p.id} style={{ position: "absolute", width: 5, height: 5, borderRadius: "50%", background: `rgba(196,162,101,0.7)`, left: `${p.x}%`, top: 0, "--funnel-h": `${funnelHeight}px`, animation: `particleFlow ${p.dur}s ease-in ${p.delay}s infinite` }} />
+        ))}
+      </div>
+      {stages.map((s, i) => (
+        <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, justifyContent: "flex-start" }}>
+          <div style={{ width: `${s.w}%`, padding: "8px 14px", background: `${s.color}12`, border: `1px solid ${s.color}35`, borderRadius: 7, display: "flex", justifyContent: "space-between", alignItems: "center", backdropFilter: "blur(4px)" }}>
+            <div>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: s.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>{s.label}</div>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", marginTop: 2 }}>{s.sub}</div>
+            </div>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, opacity: 0.8, animation: `flowPulse ${1.4 + i * 0.25}s ease-in-out ${i * 0.2}s infinite` }} />
+          </div>
+          {i < stages.length - 1 && (
+            <div style={{ width: 1, flex: 1, background: `linear-gradient(180deg, ${s.color}50, ${stages[i + 1].color}40)`, animation: `connectorPulse 2s ease-in-out ${i * 0.3}s infinite`, minHeight: 12 }} />
+          )}
+        </div>
+      ))}
+      <div style={{ position: "absolute", bottom: -24, left: 0, right: 0, textAlign: "center" }}>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Raw Signals → Pipeline</span>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
 // DIAGNOSTIC TOOL 1: Revenue Leak Detector
 // ============================================================
 const RevenueLeak = () => {
@@ -248,32 +324,48 @@ const RevenueLeak = () => {
     {!ran && <button onClick={() => setRan(true)} disabled={!canRun} style={{ padding: "12px 28px", background: canRun ? "var(--cream)" : "var(--ink-3)", color: canRun ? "var(--ink)" : "var(--cream-mute)", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: canRun ? "pointer" : "not-allowed", fontFamily: "var(--sans)", opacity: canRun ? 1 : 0.3 }}>Detect Leaks</button>}
     {ran && canRun && (<div style={{ animation: "fadeUp .4s ease-out" }}>
       {/* Visual funnel */}
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, marginBottom: 24, height: 160 }}>
-        {stages.map((s, i) => { const maxH = 150; const h = l > 0 ? Math.max(12, (s.val / l) * maxH) : 12; return (
-          <div key={s.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-            <span style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: s.c }}>{s.val.toLocaleString()}</span>
-            <div style={{ width: "100%", height: h, background: `${s.c}25`, borderRadius: 6, border: `1px solid ${s.c}40`, position: "relative", transition: "height .6s ease-out" }}>
+      <div style={{ marginBottom: 24 }}>
+        {/* Numbers row — all at same height */}
+        <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
+          {stages.map(s => (
+            <div key={s.label} style={{ flex: 1, textAlign: "center" }}>
+              <span style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: s.c }}>{s.val.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+        {/* Bars row — grow upward from shared baseline */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 100 }}>
+          {stages.map((s, i) => { const maxH = 90; const h = l > 0 ? Math.max(12, (s.val / l) * maxH) : 12; return (
+            <div key={s.label} style={{ flex: 1, height: h, background: `${s.c}25`, borderRadius: 6, border: `1px solid ${s.c}40`, position: "relative", transition: "height .6s ease-out" }}>
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "100%", background: `linear-gradient(180deg, ${s.c}40, ${s.c}15)`, borderRadius: 6 }} />
             </div>
-            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", textTransform: "uppercase" }}>{s.label}</span>
-            {i < stages.length - 1 && leaks[i] && (<span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--danger)", marginTop: 2 }}>-{leaks[i].pct}%</span>)}
-          </div>
-        ); })}
+          ); })}
+        </div>
+        {/* Labels + drop % row — all at same baseline */}
+        <div style={{ display: "flex", gap: 2, marginTop: 8 }}>
+          {stages.map((s, i) => (
+            <div key={s.label} style={{ flex: 1, textAlign: "center" }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", textTransform: "uppercase" }}>{s.label}</span>
+              {i < stages.length - 1 && leaks[i] && <span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--danger)", marginTop: 2 }}>-{leaks[i].pct}%</span>}
+            </div>
+          ))}
+        </div>
       </div>
       {/* Leak breakdown */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
-        {leaks.map((lk, i) => (<div key={i} style={{ padding: "16px", background: lk === biggestLeak ? "rgba(168,91,91,0.08)" : "var(--ink)", borderRadius: 10, border: `1px solid ${lk === biggestLeak ? "rgba(168,91,91,0.25)" : "var(--border)"}` }}>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>{lk.stage}</div>
-          <div style={{ fontFamily: "var(--serif)", fontSize: 24, fontStyle: "italic", color: "var(--danger)" }}>${Math.round(lk.dollarLost).toLocaleString()}</div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", marginTop: 4 }}>{lk.lost.toLocaleString()} lost / {lk.pct}% drop</div>
-          {lk === biggestLeak && <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--danger)", marginTop: 6, padding: "3px 8px", background: "rgba(168,91,91,0.1)", borderRadius: 4, display: "inline-block" }}>BIGGEST LEAK</div>}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+        {leaks.map((lk, i) => (<div key={i} style={{ padding: "20px 18px", background: lk === biggestLeak ? "rgba(168,91,91,0.1)" : "var(--ink-2)", borderRadius: 14, border: `1px solid ${lk === biggestLeak ? "rgba(168,91,91,0.35)" : "var(--border)"}`, animation: `slideInUp .4s ease-out ${i * 0.1}s both`, boxShadow: lk === biggestLeak ? "0 8px 32px rgba(168,91,91,0.12)" : "none", position: "relative", overflow: "hidden" }}>
+          {lk === biggestLeak && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--danger), transparent)" }} />}
+          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>{lk.stage}</div>
+          <div style={{ fontFamily: "var(--serif)", fontSize: 32, fontStyle: "italic", color: "var(--danger)", lineHeight: 1, marginBottom: 6, textShadow: lk === biggestLeak ? "0 0 24px rgba(168,91,91,0.4)" : "none" }}>${Math.round(lk.dollarLost).toLocaleString()}</div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", marginTop: 4 }}>{lk.lost.toLocaleString()} leads lost · {lk.pct}% drop</div>
+          {lk === biggestLeak && <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--danger)", marginTop: 10, padding: "4px 10px", background: "rgba(168,91,91,0.12)", borderRadius: 4, display: "inline-block", letterSpacing: "0.1em", fontWeight: 700 }}>▲ BIGGEST LEAK</div>}
         </div>))}
       </div>
       {/* Bottom line */}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 20px", background: "rgba(107,158,111,0.06)", borderRadius: 10, border: "1px solid rgba(107,158,111,0.15)" }}>
-        <div><span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)" }}>Current Monthly Revenue</span><div style={{ fontFamily: "var(--serif)", fontSize: 26, fontStyle: "italic", color: "var(--cream)" }}>${rev.toLocaleString()}</div></div>
-        <div style={{ textAlign: "center" }}><span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)" }}>If Biggest Leak Fixed by 50%</span><div style={{ fontFamily: "var(--serif)", fontSize: 26, fontStyle: "italic", color: "var(--success)" }}>${Math.round(rev + biggestLeak.dollarLost * 0.5).toLocaleString()}</div></div>
-        <div style={{ textAlign: "right" }}><span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)" }}>Annual Upside</span><div style={{ fontFamily: "var(--serif)", fontSize: 26, fontStyle: "italic", color: "var(--amber)" }}>${Math.round(biggestLeak.dollarLost * 0.5 * 12).toLocaleString()}</div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 14, overflow: "hidden", animation: "slideInUp .4s ease-out .35s both" }}>
+        <div style={{ padding: "22px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", display: "block", marginBottom: 8, letterSpacing: "0.1em", textTransform: "uppercase" }}>Monthly Revenue</span><div style={{ fontFamily: "var(--serif)", fontSize: 36, fontStyle: "italic", color: "var(--cream)", lineHeight: 1 }}>${rev.toLocaleString()}</div></div>
+        <div style={{ padding: "22px 24px", background: "rgba(107,158,111,0.06)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--success)", display: "block", marginBottom: 8, letterSpacing: "0.1em", textTransform: "uppercase" }}>+50% Leak Fixed</span><div style={{ fontFamily: "var(--serif)", fontSize: 36, fontStyle: "italic", color: "var(--success)", lineHeight: 1, textShadow: "0 0 20px rgba(107,158,111,0.35)" }}>${Math.round(rev + biggestLeak.dollarLost * 0.5).toLocaleString()}</div></div>
+        <div style={{ padding: "22px 24px", background: "rgba(196,162,101,0.06)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--amber)", display: "block", marginBottom: 8, letterSpacing: "0.1em", textTransform: "uppercase" }}>Annual Upside</span><div style={{ fontFamily: "var(--serif)", fontSize: 36, fontStyle: "italic", color: "var(--amber)", lineHeight: 1, textShadow: "0 0 20px rgba(196,162,101,0.35)" }}>${Math.round(biggestLeak.dollarLost * 0.5 * 12).toLocaleString()}</div></div>
       </div>
     </div>)}
   </div>);
@@ -292,33 +384,37 @@ const GTMReadiness = () => {
     { key: "ai", label: "AI in GTM", q: "Are you using AI agents for prospecting, research, or CRM tasks?" },
   ];
   const [scores, setScores] = useState({});
-  const toggle = (key) => setScores(p => ({ ...p, [key]: p[key] === undefined ? 2 : p[key] === 2 ? 1 : p[key] === 1 ? 0 : 2 }));
-  const labels = { 2: { t: "Yes", c: "var(--success)" }, 1: { t: "Partial", c: "var(--amber)" }, 0: { t: "No", c: "var(--danger)" } };
+  const setScore = (key, val) => setScores(p => ({ ...p, [key]: p[key] === val ? undefined : val }));
+  const opts = [{ v: 2, t: "Yes", c: "var(--success)" }, { v: 1, t: "Partial", c: "var(--amber)" }, { v: 0, t: "No", c: "var(--danger)" }];
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
   const max = dims.length * 2;
   const pct = max > 0 && Object.keys(scores).length === dims.length ? Math.round((total / max) * 100) : null;
   const grade = pct === null ? null : pct >= 80 ? { g: "A", c: "var(--success)", t: "Operationally mature. Focus on AI augmentation and optimization." } : pct >= 60 ? { g: "B", c: "var(--amber)", t: "Foundation is there. Critical gaps in automation and data flow need attention." } : pct >= 35 ? { g: "C", c: "var(--rose)", t: "Significant operational debt. Prioritize infrastructure before scaling." } : { g: "D", c: "var(--danger)", t: "Operating on manual processes. Immediate intervention needed to support growth." };
   return (<div>
-    <div style={{ display: "grid", gap: 6, marginBottom: 20 }}>
-      {dims.map(d => { const v = scores[d.key]; const lab = v !== undefined ? labels[v] : null; return (
-        <div key={d.key} onClick={() => toggle(d.key)} style={{ padding: "14px 18px", background: lab ? `${lab.c}08` : "var(--ink)", borderRadius: 10, border: `1px solid ${lab ? lab.c + "25" : "var(--border)"}`, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all .2s" }}>
-          <div><div style={{ fontSize: 14, color: "var(--cream-dim)", fontWeight: 500, marginBottom: 2 }}>{d.label}</div><div style={{ fontSize: 12, color: "var(--cream-mute)" }}>{d.q}</div></div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 12, fontWeight: 600, color: lab ? lab.c : "var(--cream-mute)", minWidth: 60, textAlign: "right" }}>{lab ? lab.t : "Click"}</div>
+    <div style={{ display: "grid", gap: 8, marginBottom: 20 }}>
+      {dims.map(d => { const v = scores[d.key]; return (
+        <div key={d.key} style={{ padding: "16px 20px", background: v !== undefined ? `${opts.find(o=>o.v===v)?.c}08` : "var(--ink-2)", borderRadius: 12, border: `1px solid ${v !== undefined ? opts.find(o=>o.v===v)?.c + "25" : "var(--border)"}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, transition: "all .25s" }}>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 14, color: "var(--cream)", fontWeight: 600, marginBottom: 3 }}>{d.label}</div><div style={{ fontSize: 12, color: "var(--cream-mute)", lineHeight: 1.5 }}>{d.q}</div></div>
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            {opts.map(opt => (
+              <button key={opt.v} onClick={() => setScore(d.key, opt.v)} style={{ padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${v === opt.v ? opt.c : "var(--border)"}`, background: v === opt.v ? `${opt.c}18` : "transparent", color: v === opt.v ? opt.c : "var(--cream-mute)", fontFamily: "var(--mono)", fontSize: 11, fontWeight: v === opt.v ? 700 : 400, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", transition: "all .15s", transform: v === opt.v ? "scale(1.05)" : "scale(1)" }}>{opt.t}</button>
+            ))}
+          </div>
         </div>
       ); })}
     </div>
-    <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginBottom: 16 }}>Click each row to cycle: Yes → Partial → No</p>
     {grade && (<div style={{ animation: "fadeUp .4s ease-out" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 20, padding: "24px", background: "var(--ink)", borderRadius: 14, border: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontFamily: "var(--serif)", fontSize: 64, fontStyle: "italic", color: grade.c, lineHeight: 1 }}>{grade.g}</div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", marginTop: 4 }}>{pct}%</div>
+      <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 28, padding: "28px 32px", background: "var(--ink)", borderRadius: 16, border: `1px solid ${grade.c}30`, boxShadow: `0 0 48px ${grade.c}10` }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <div style={{ fontFamily: "var(--serif)", fontSize: 80, fontStyle: "italic", color: grade.c, lineHeight: 1, animation: "scaleIn .5s ease-out", textShadow: `0 0 40px ${grade.c}50` }}>{grade.g}</div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 18, color: grade.c, fontWeight: 700 }}>{pct}%</div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.12em" }}>GTM SCORE</div>
         </div>
         <div>
-          <div style={{ fontFamily: "var(--serif)", fontSize: 18, fontStyle: "italic", color: "var(--cream)", marginBottom: 8 }}>GTM Readiness Grade</div>
-          <p style={{ fontSize: 14, color: "var(--cream-mute)", lineHeight: 1.7, marginBottom: 14 }}>{grade.t}</p>
-          <div style={{ display: "flex", gap: 4 }}>{dims.map(d => { const v = scores[d.key]; const c = v === 2 ? "var(--success)" : v === 1 ? "var(--amber)" : "var(--danger)"; return (<div key={d.key} style={{ flex: 1, height: 6, borderRadius: 3, background: c, opacity: 0.7 }} title={d.label} />); })}</div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>{dims.map(d => <span key={d.key} style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--cream-mute)", flex: 1, textAlign: "center" }}>{d.label.split(" ")[0]}</span>)}</div>
+          <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--cream)", marginBottom: 10 }}>GTM Readiness Grade</div>
+          <p style={{ fontSize: 14, color: "var(--cream-dim)", lineHeight: 1.8, marginBottom: 20 }}>{grade.t}</p>
+          <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>{dims.map((d, di) => { const v = scores[d.key]; const c = v === 2 ? "var(--success)" : v === 1 ? "var(--amber)" : "var(--danger)"; return (<div key={d.key} style={{ flex: 1, height: 8, borderRadius: 4, background: c, opacity: 0.8, animation: `slideInUp .4s ease-out ${di * 0.07}s both`, boxShadow: `0 2px 8px ${c}40` }} title={d.label} />); })}</div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>{dims.map(d => { const v = scores[d.key]; const c = v === 2 ? "var(--success)" : v === 1 ? "var(--amber)" : "var(--danger)"; return <span key={d.key} style={{ fontFamily: "var(--mono)", fontSize: 8, color: c, flex: 1, textAlign: "center", letterSpacing: "0.06em" }}>{d.label.split(" ")[0]}</span>; })}</div>
         </div>
       </div>
     </div>)}
@@ -351,10 +447,11 @@ const AutomationROI = () => {
           { label: "Projected Revenue Gain", val: `$${revGain.toLocaleString()}`, sub: "At 25% close rate on new pipeline", c: "var(--success)" },
           { label: "Estimated Payback", val: `${paybackWeeks} weeks`, sub: "Time to recoup implementation cost", c: "var(--amber)" },
         ].map((m, i) => (
-          <div key={i} style={{ padding: "20px 16px", background: "var(--ink)", borderRadius: 12, border: "1px solid var(--border)", textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>{m.label}</div>
-            <div style={{ fontFamily: "var(--serif)", fontSize: 28, fontStyle: "italic", color: m.c }}>{m.val}</div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginTop: 6 }}>{m.sub}</div>
+          <div key={i} style={{ padding: "22px 16px", background: `${m.c}08`, borderRadius: 14, border: `1px solid ${m.c}22`, textAlign: "center", animation: `slideInUp .4s ease-out ${i * 0.1}s both`, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${m.c}, transparent)` }} />
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>{m.label}</div>
+            <div style={{ fontFamily: "var(--serif)", fontSize: 34, fontStyle: "italic", color: m.c, textShadow: `0 0 24px ${m.c}40`, lineHeight: 1 }}>{m.val}</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginTop: 10, lineHeight: 1.5 }}>{m.sub}</div>
           </div>
         ))}
       </div>
@@ -379,6 +476,14 @@ const StackMap = () => {
     { id: "crm", label: "CRM", ex: "HubSpot, Salesforce" }, { id: "enrich", label: "Enrichment", ex: "ZoomInfo, Apollo, Clearbit" },
     { id: "marketing", label: "Marketing Automation", ex: "Braze, Marketo, Mailchimp" }, { id: "analytics", label: "Product Analytics", ex: "Amplitude, Mixpanel, Heap" },
     { id: "middleware", label: "Middleware", ex: "Make, Zapier, n8n" }, { id: "ai", label: "AI Tools", ex: "Claude, GPT, MindStudio" },
+  ];
+  const suggestedAdditions = [
+    { id: "revenue-intel", label: "Revenue Intelligence", ex: "Gong, Chorus, Clari", obj: "Record and analyze every sales call with AI — extracting deal risks, rep coaching moments, and competitive intel automatically.", fit: "Syncs call summaries and deal health scores directly into CRM. Triggers risk alerts and auto-updates forecast fields.", color: "var(--sky)" },
+    { id: "intent", label: "Intent Data Platform", ex: "Bombora, 6sense, G2", obj: "Surface accounts actively researching your category before they ever fill a form. The highest-value signal in modern GTM.", fit: "Feeds into lead scoring as a top-weighted signal. Auto-prioritizes outreach queues so reps call warm accounts first.", color: "var(--violet)" },
+    { id: "scheduling", label: "Scheduling Automation", ex: "Chili Piper, Calendly", obj: "Eliminate meeting back-and-forth. Instant round-robin booking with automated reminders and no-show workflows.", fit: "Embedded directly in email sequences and web forms to convert intent into booked meetings with zero friction.", color: "var(--amber)" },
+    { id: "warehouse", label: "Data Warehouse / BI", ex: "Snowflake, BigQuery, Looker", obj: "Centralize all revenue data from CRM, marketing, and product into a single source of truth for cross-channel reporting.", fit: "Powers executive dashboards with full-funnel attribution — from first touch to closed revenue — across all channels.", color: "var(--success)" },
+    { id: "cs-platform", label: "Customer Success Platform", ex: "Gainsight, ChurnZero, Totango", obj: "Track customer health scores post-sale and automate retention playbooks triggered by product usage signals.", fit: "Connects to product analytics and CRM to auto-trigger CS intervention when health score drops below threshold.", color: "var(--sage)" },
+    { id: "abm", label: "Account-Based Marketing", ex: "Demandbase, Terminus, RollWorks", obj: "Run coordinated multi-channel campaigns targeting your exact ICP accounts with personalized messaging at scale.", fit: "Syncs with CRM account records to ensure sales and marketing are targeting the same account list simultaneously.", color: "var(--rose)" },
   ];
   const [selected, setSelected] = useState(new Set());
   const toggle = (id) => setSelected(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -405,33 +510,71 @@ const StackMap = () => {
   });
 
   return (<div>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
-      {tools.map(t => (<button key={t.id} onClick={() => toggle(t.id)} style={{ padding: "14px 16px", background: selected.has(t.id) ? "rgba(196,162,101,0.08)" : "var(--ink)", border: `1px solid ${selected.has(t.id) ? "rgba(196,162,101,0.3)" : "var(--border)"}`, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all .2s" }}>
-        <div style={{ fontSize: 14, color: selected.has(t.id) ? "var(--cream)" : "var(--cream-dim)", fontWeight: 500, marginBottom: 2 }}>{t.label}</div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)" }}>{t.ex}</div>
+    <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginBottom: 12, letterSpacing: "0.08em" }}>SELECT TOOLS IN YOUR CURRENT STACK</p>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 24 }}>
+      {tools.map(t => (<button key={t.id} onClick={() => toggle(t.id)} style={{ padding: "16px 18px", background: selected.has(t.id) ? "rgba(196,162,101,0.1)" : "var(--ink)", border: `1.5px solid ${selected.has(t.id) ? "rgba(196,162,101,0.4)" : "var(--border)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "all .2s", transform: selected.has(t.id) ? "translateY(-1px)" : "none", boxShadow: selected.has(t.id) ? "0 4px 16px rgba(196,162,101,0.12)" : "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+          <div style={{ fontSize: 14, color: selected.has(t.id) ? "var(--cream)" : "var(--cream-dim)", fontWeight: 600 }}>{t.label}</div>
+          {selected.has(t.id) && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 1.5s ease-in-out infinite", flexShrink: 0, marginTop: 3 }} />}
+        </div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: selected.has(t.id) ? "var(--amber)" : "var(--cream-mute)" }}>{t.ex}</div>
       </button>))}
     </div>
-    <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginBottom: 16 }}>Select the tools in your current stack</p>
     {selected.size >= 2 && (<div style={{ animation: "fadeUp .3s ease-out" }}>
-      {active.length > 0 && (<div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--success)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Automations You Should Have ({active.length})</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{active.map(a => (
-          <div key={a.key} style={{ padding: "12px 16px", background: "rgba(107,158,111,0.05)", borderRadius: 8, border: "1px solid rgba(107,158,111,0.12)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 13, color: "var(--cream-dim)" }}>{a.label}</span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: a.impact === "high" ? "var(--success)" : "var(--amber)", padding: "2px 8px", borderRadius: 4, background: a.impact === "high" ? "rgba(107,158,111,0.1)" : "rgba(196,162,101,0.1)" }}>{a.impact.toUpperCase()}</span>
+      {active.length > 0 && (<div style={{ marginBottom: 20 }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--success)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--success)" }} />
+          Automations You Should Have ({active.length})
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{active.map((a, ai) => (
+          <div key={a.key} style={{ padding: "14px 16px", background: "rgba(107,158,111,0.06)", borderRadius: 10, border: "1px solid rgba(107,158,111,0.18)", display: "flex", justifyContent: "space-between", alignItems: "center", animation: `slideInUp .35s ease-out ${ai * 0.06}s both` }}>
+            <span style={{ fontSize: 13, color: "var(--cream-dim)", fontWeight: 500 }}>{a.label}</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: a.impact === "high" ? "var(--success)" : "var(--amber)", padding: "3px 8px", borderRadius: 4, background: a.impact === "high" ? "rgba(107,158,111,0.12)" : "rgba(196,162,101,0.12)", fontWeight: 700 }}>{a.impact.toUpperCase()}</span>
           </div>
         ))}</div>
       </div>)}
-      {missing.length > 0 && (<div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Unlocked by Adding ({missing.length})</div>
+      {missing.length > 0 && (<div style={{ marginBottom: 20 }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--amber)" }} />
+          Unlocked by Adding ({missing.length})
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{missing.map(m => (
-          <div key={m.key} style={{ padding: "12px 16px", background: "rgba(196,162,101,0.04)", borderRadius: 8, border: "1px solid rgba(196,162,101,0.12)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div key={m.key} style={{ padding: "14px 16px", background: "rgba(196,162,101,0.05)", borderRadius: 10, border: "1px solid rgba(196,162,101,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 13, color: "var(--cream-mute)" }}>{m.label}</span>
-            <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--amber)", padding: "2px 8px", borderRadius: 4, background: "rgba(196,162,101,0.1)" }}>+ {m.needs}</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--amber)", padding: "3px 8px", borderRadius: 4, background: "rgba(196,162,101,0.1)", fontWeight: 600 }}>+ {m.needs}</span>
           </div>
         ))}</div>
       </div>)}
     </div>)}
+    {/* Suggested additions — always visible */}
+    <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid var(--border)" }}>
+      <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--violet)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--violet)", animation: "flowPulse 2s ease-in-out infinite" }} />
+        Recommended Stack Additions
+      </div>
+      <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginBottom: 16, lineHeight: 1.6 }}>Tools that would meaningfully upgrade your GTM architecture based on high-impact gaps I commonly find.</p>
+      <div style={{ display: "grid", gap: 10 }}>
+        {suggestedAdditions.map((s, si) => (
+          <div key={s.id} style={{ padding: "20px 22px", background: `${s.color}06`, borderRadius: 12, border: `1px solid ${s.color}20`, animation: `slideInUp .4s ease-out ${si * 0.08}s both` }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, alignItems: "start" }}>
+              <div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: s.color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Category</div>
+                <div style={{ fontSize: 15, color: "var(--cream)", fontWeight: 700, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)" }}>{s.ex}</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: s.color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>What it does</div>
+                <div style={{ fontSize: 12, color: "var(--cream-dim)", lineHeight: 1.6 }}>{s.obj}</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: s.color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>How it fits your stack</div>
+                <div style={{ fontSize: 12, color: "var(--cream-mute)", lineHeight: 1.6 }}>{s.fit}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   </div>);
 };
 
@@ -443,6 +586,7 @@ const PortfolioPage = ({ data, onLogin }) => {
   const [expandedCase, setExpandedCase] = useState(null);
   const [hov, setHov] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
+  const [activeTool, setActiveTool] = useState(0);
   const categories = ["all", ...new Set(CASE_STUDIES.map(c => c.category))];
   const filteredCases = filterCat === "all" ? CASE_STUDIES : CASE_STUDIES.filter(c => c.category === filterCat);
 
@@ -459,18 +603,31 @@ const PortfolioPage = ({ data, onLogin }) => {
       </nav>
       {/* Hero */}
       <section style={{ padding: "200px 64px 100px", maxWidth: 1560, margin: "0 auto", position: "relative" }}>
-        <div style={{ position: "absolute", top: 140, right: -80, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(196,162,101,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ animation: "fadeUp .8s ease-out" }}>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40 }}>Revenue Operations / GTM Strategy / AI Automation</div>
-          <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 900, marginBottom: 32 }}>{ps.headline}</h1>
-          <p style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 560, lineHeight: 1.8, fontWeight: 300 }}>{ps.subheadline}</p>
-        </div>
-        <div style={{ marginTop: 48, display: "flex", gap: 16, animation: "fadeUp .8s ease-out .2s both" }}>
-          <button onClick={() => document.getElementById("work")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "var(--sans)" }}>View Work</button>
-          <button onClick={() => document.getElementById("workflows")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "transparent", color: "var(--cream-dim)", border: "1px solid var(--border-h)", borderRadius: 8, fontSize: 15, cursor: "pointer", fontFamily: "var(--sans)" }}>Run a Diagnostic</button>
-        </div>
-        <div style={{ display: "flex", gap: 48, marginTop: 72, animation: "fadeUp .8s ease-out .4s both" }}>
-          {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (<div key={l}><span style={{ fontFamily: "var(--serif)", fontSize: 38, fontStyle: "italic", color: "var(--amber)" }}>{v}</span><span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4 }}>{l}</span></div>))}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 80, alignItems: "center" }}>
+          {/* Left: copy */}
+          <div>
+            <div style={{ animation: "fadeUp .8s ease-out" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40 }}>Revenue Operations / GTM Strategy / AI Automation</div>
+              <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 760, marginBottom: 32 }}>{ps.headline}</h1>
+              <p style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 520, lineHeight: 1.8, fontWeight: 300 }}>{ps.subheadline}</p>
+            </div>
+            <div style={{ marginTop: 48, display: "flex", gap: 16, animation: "fadeUp .8s ease-out .2s both" }}>
+              <button onClick={() => document.getElementById("work")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "var(--sans)" }}>View Work</button>
+              <button onClick={() => document.getElementById("workflows")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "transparent", color: "var(--cream-dim)", border: "1px solid var(--border-h)", borderRadius: 8, fontSize: 15, cursor: "pointer", fontFamily: "var(--sans)" }}>Run a Diagnostic</button>
+            </div>
+            <div style={{ display: "flex", gap: 48, marginTop: 72, animation: "fadeUp .8s ease-out .4s both" }}>
+              {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (<div key={l}><span style={{ fontFamily: "var(--serif)", fontSize: 38, fontStyle: "italic", color: "var(--amber)" }}>{v}</span><span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4 }}>{l}</span></div>))}
+            </div>
+          </div>
+          {/* Right: animated funnel */}
+          <div style={{ width: 420, animation: "fadeIn 1.2s ease-out .4s both", flexShrink: 0 }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 1.8s ease-in-out infinite" }} />
+              GTM Signal Flow
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 1.8s ease-in-out .6s infinite" }} />
+            </div>
+            <HeroFunnel />
+          </div>
         </div>
       </section>
       {/* Marquee */}
@@ -508,39 +665,64 @@ const PortfolioPage = ({ data, onLogin }) => {
           <LeadFunnel />
         </div>
       </section>
-      {/* AI Workflow Blueprints */}
+      {/* Interactive Diagnostics */}
       <section id="workflows" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
           <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive Diagnostics</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>See the Thinking in Action</h2></div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 320, textAlign: "right", lineHeight: 1.6 }}>YOUR NUMBERS / INSTANT INSIGHTS</span>
         </div>
         <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 800, fontWeight: 300 }}>Plug in your real numbers. Get instant visual diagnostics. No sign-up, no AI fluff. Just the math and frameworks I use with every client.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {/* Horizontal tool selector */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
           {[
-            { title: "Revenue Leak Detector", sub: "Where is your pipeline bleeding money?", desc: "Enter your funnel numbers. See exactly which stage is costing you the most revenue and what fixing it would mean annually.", color: "var(--danger)", comp: <RevenueLeak /> },
-            { title: "GTM Readiness Score", sub: "How mature is your revenue operation?", desc: "Answer 6 questions about your current ops. Get an instant grade with a visual breakdown of where you're strong and where you're exposed.", color: "var(--amber)", comp: <GTMReadiness /> },
-            { title: "Automation ROI Calculator", sub: "What would AI automation actually save?", desc: "Enter your team size and manual workload. See projected hours reclaimed, pipeline gain, and payback period.", color: "var(--success)", comp: <AutomationROI /> },
-            { title: "Stack Integration Map", sub: "What automations are you missing?", desc: "Select the tools you use today. See which integrations you should have and what adding one more tool would unlock.", color: "var(--violet)", comp: <StackMap /> },
-          ].map((tool, i) => (
-            <div key={i} style={{ background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
-              <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--border)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: tool.color }} />
-                  <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: tool.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{tool.sub}</span>
-                </div>
-                <h4 style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--cream)", margin: "0 0 6px" }}>{tool.title}</h4>
-                <p style={{ fontSize: 13, color: "var(--cream-mute)", margin: 0, lineHeight: 1.6 }}>{tool.desc}</p>
-              </div>
-              <div style={{ padding: "20px 28px" }}>{tool.comp}</div>
+            { title: "Revenue Leak Detector", sub: "Pipeline bleeding money?", color: "var(--danger)", icon: "01" },
+            { title: "GTM Readiness Score", sub: "How mature is your ops?", color: "var(--amber)", icon: "02" },
+            { title: "Automation ROI Calculator", sub: "What automation saves?", color: "var(--success)", icon: "03" },
+            { title: "Stack Integration Map", sub: "Automations you're missing?", color: "var(--violet)", icon: "04" },
+          ].map((tab, i) => (
+            <div key={i} onClick={() => setActiveTool(i)}
+              onMouseEnter={e => { if (activeTool !== i) { e.currentTarget.style.borderColor = tab.color + "35"; e.currentTarget.style.background = `${tab.color}06`; }}}
+              onMouseLeave={e => { if (activeTool !== i) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--ink)"; }}}
+              style={{ padding: "26px 24px", borderRadius: 16, cursor: "pointer", transition: "all .25s", background: activeTool === i ? `linear-gradient(145deg, ${tab.color}14, ${tab.color}06)` : "var(--ink)", border: `1.5px solid ${activeTool === i ? tab.color + "55" : "var(--border)"}`, transform: activeTool === i ? "translateY(-3px)" : "none", boxShadow: activeTool === i ? `0 12px 40px ${tab.color}18` : "none" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 28, fontWeight: 300, color: activeTool === i ? tab.color : "var(--ink-5)", lineHeight: 1, marginBottom: 20, letterSpacing: "-0.02em" }}>{tab.icon}</div>
+              <h4 style={{ fontFamily: "var(--serif)", fontSize: 20, fontStyle: "italic", color: activeTool === i ? "var(--cream)" : "var(--cream-dim)", margin: "0 0 8px", lineHeight: 1.2, fontWeight: 400 }}>{tab.title}</h4>
+              <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: activeTool === i ? tab.color : "var(--cream-mute)", margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>{tab.sub}</p>
+              {activeTool === i && <div style={{ marginTop: 16, height: 2, background: `linear-gradient(90deg, ${tab.color}, transparent)`, borderRadius: 1, animation: "slideInUp .3s ease-out" }} />}
             </div>
           ))}
         </div>
+        {/* Tool content panels — kept in DOM to preserve state, shown/hidden */}
+        {[
+          { title: "Revenue Leak Detector", desc: "Enter your funnel numbers. See exactly which stage is costing you the most revenue and what fixing it would mean annually.", color: "var(--danger)" },
+          { title: "GTM Readiness Score", desc: "Answer 6 questions about your current ops. Get an instant grade with a visual breakdown of where you're strong and where you're exposed.", color: "var(--amber)" },
+          { title: "Automation ROI Calculator", desc: "Enter your team size and manual workload. See projected hours reclaimed, pipeline gain, and payback period.", color: "var(--success)" },
+          { title: "Stack Integration Map", desc: "Select the tools you use today. See which integrations you should have and what adding one more tool would unlock.", color: "var(--violet)" },
+        ].map((tool, i) => (
+          <div key={i} style={{ display: activeTool === i ? "block" : "none" }}>
+            <div style={{ background: "var(--ink-2)", border: `1px solid ${tool.color}22`, borderRadius: 20, overflow: "hidden", boxShadow: `0 0 80px ${tool.color}08`, animation: "fadeUp .35s ease-out" }}>
+              <div style={{ padding: "28px 36px", borderBottom: `1px solid ${tool.color}18`, background: `linear-gradient(135deg, ${tool.color}07, transparent 60%)`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontFamily: "var(--serif)", fontSize: 28, fontStyle: "italic", color: "var(--cream)", margin: "0 0 6px", fontWeight: 400 }}>{tool.title}</h3>
+                  <p style={{ fontSize: 14, color: "var(--cream-mute)", margin: 0, lineHeight: 1.6, maxWidth: 600 }}>{tool.desc}</p>
+                </div>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: `${tool.color}15`, border: `1px solid ${tool.color}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: tool.color, animation: "flowPulse 2s ease-in-out infinite", boxShadow: `0 0 12px ${tool.color}60` }} />
+                </div>
+              </div>
+              <div style={{ padding: "32px 36px" }}>
+                {i === 0 && <RevenueLeak />}
+                {i === 1 && <GTMReadiness />}
+                {i === 2 && <AutomationROI />}
+                {i === 3 && <StackMap />}
+              </div>
+            </div>
+          </div>
+        ))}
       </section>
       {/* Case Studies */}
       <section id="work" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
           <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After I Stepped In</h2></div>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.15em" }}>{num(filteredCases.length)} PROJECTS</span>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 32, flexWrap: "wrap" }}>{categories.map(c => (<button key={c} onClick={() => setFilterCat(c)} style={{ padding: "8px 20px", borderRadius: 8, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s", background: filterCat === c ? "rgba(196,162,101,0.1)" : "transparent", border: filterCat === c ? "1px solid rgba(196,162,101,0.25)" : "1px solid var(--border)", color: filterCat === c ? "var(--amber)" : "var(--cream-mute)" }}>{c}</button>))}</div>
         <div style={{ display: "grid", gap: 2 }}>{filteredCases.map((cs, i) => {
@@ -631,17 +813,288 @@ return(<div><button onClick={()=>detail?setDetail(null):onNav("projects")} style
 
 const ActivityPage=({data})=>{const sorted=[...data.activityLog].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));return(<div><h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:40}}>Activity Log</h1><div style={{position:"relative",paddingLeft:28}}><div style={{position:"absolute",left:5,top:0,bottom:0,width:1,background:"var(--border)"}}/>{sorted.map(a=>{const au=data.users.find(u=>u.id===a.userId);return(<div key={a.id} style={{padding:"16px 0",position:"relative"}}><div style={{position:"absolute",left:-24,top:20,width:8,height:8,borderRadius:"50%",background:"var(--amber)"}}/><div style={{display:"flex",justifyContent:"space-between"}}><div><p style={{margin:0,fontSize:14,color:"var(--cream-dim)"}}>{a.details}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{au?.name}</span></div><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{new Date(a.timestamp).toLocaleString()}</span></div></div>);})}</div></div>);};
 
-const SettingsPage=({data,dispatch,user})=>{const[tab,setTab]=useState("users");const[uModal,setUModal]=useState(false);const[uForm,setUForm]=useState({name:"",email:"",password:"",role:"internal",clientId:""});const[pForm,setPForm]=useState({...data.portfolioSettings});return(<div><h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:40}}>Settings</h1><Tabs tabs={[{key:"users",label:"Users"},{key:"portfolio",label:"Portfolio"}]} active={tab} onChange={setTab}/>{tab==="users"&&<div><Btn icon="plus" onClick={()=>setUModal(true)} style={{marginBottom:20}}>Add User</Btn><div style={{display:"grid",gap:1,background:"var(--border)",borderRadius:12,overflow:"hidden"}}>{data.users.map(u=>(<div key={u.id} style={{padding:"16px 20px",background:"var(--ink-2)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:36,height:36,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--amber)"}}>{u.avatar}</div><div><p style={{margin:0,fontSize:14,color:"var(--cream)"}}>{u.name}</p><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)"}}>{u.email}</span></div></div><Badge status={u.role==="admin"?"active":"in_progress"}/></div>))}</div><Modal open={uModal} onClose={()=>setUModal(false)} title="Add User"><Field label="Name" value={uForm.name} onChange={v=>setUForm({...uForm,name:v})}/><Field label="Email" value={uForm.email} onChange={v=>setUForm({...uForm,email:v})}/><Field label="Password" value={uForm.password} onChange={v=>setUForm({...uForm,password:v})} type="password"/><Field label="Role" value={uForm.role} onChange={v=>setUForm({...uForm,role:v})} type="select" options={[{value:"admin",label:"Admin"},{value:"internal",label:"Internal"},{value:"client",label:"Client"}]}/><div style={{display:"flex",gap:10,justifyContent:"flex-end"}}><Btn v="secondary" onClick={()=>setUModal(false)}>Cancel</Btn><Btn onClick={()=>{dispatch({type:"ADD_USER",payload:{...uForm,avatar:uForm.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()}});setUModal(false);}} disabled={!uForm.name}>Create</Btn></div></Modal></div>}{tab==="portfolio"&&<div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><Field label="Headline" value={pForm.headline} onChange={v=>setPForm({...pForm,headline:v})}/><Field label="Subheadline" value={pForm.subheadline} onChange={v=>setPForm({...pForm,subheadline:v})} type="textarea" rows={2}/><AIButton label="Enhance" content={pForm.headline} onConfirm={v=>setPForm({...pForm,headline:v})}/><div style={{marginTop:16}}><Btn onClick={()=>dispatch({type:"UPDATE_PORTFOLIO",payload:pForm})}>Save</Btn></div></div>}</div>);};
+const SettingsPage=({data,dispatch,user})=>{
+  const[tab,setTab]=useState("users");
+  const[uModal,setUModal]=useState(false);
+  const[uForm,setUForm]=useState({name:"",email:"",role:"client",clientId:"",permissions:{canViewTasks:true,canViewDeliverables:true,canApproveScopes:false,canComment:true}});
+  const[generatedLink,setGeneratedLink]=useState(null);
+  const[editUser,setEditUser]=useState(null);
+  const[emailStatus,setEmailStatus]=useState(null); // null | "sending" | "sent" | "error"
+  const[emailErr,setEmailErr]=useState("");
+  const[pForm,setPForm]=useState({...data.portfolioSettings});
+
+  const createUser=async()=>{
+    const avatar=uForm.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+    const emailTo=uForm.email; const nameTo=uForm.name;
+    dispatch({type:"ADD_USER",payload:{...uForm,avatar}});
+    setUForm({name:"",email:"",role:"client",clientId:"",permissions:{canViewTasks:true,canViewDeliverables:true,canApproveScopes:false,canComment:true}});
+    setUModal(false);
+    setEmailStatus("sending"); setEmailErr("");
+    setGeneratedLink({name:nameTo});
+    try {
+      await sendMagicEmail({to:emailTo,name:nameTo,type:"invite"});
+      setEmailStatus("sent");
+      setTimeout(()=>{setEmailStatus(null);setGeneratedLink(null);},6000);
+    } catch(e) {
+      setEmailStatus("error"); setEmailErr(e.message);
+    }
+  };
+
+  const resendLink=async(u)=>{
+    setEmailStatus("sending"); setEmailErr("");
+    setGeneratedLink({name:u.name});
+    try {
+      await sendMagicEmail({to:u.email,name:u.name,type:"login"});
+      setEmailStatus("sent");
+      setTimeout(()=>{setEmailStatus(null);setGeneratedLink(null);},6000);
+    } catch(e) {
+      setEmailStatus("error"); setEmailErr(e.message);
+    }
+  };
+
+  const PERMS=[
+    {key:"canViewTasks",label:"View Tasks"},
+    {key:"canViewDeliverables",label:"View Deliverables"},
+    {key:"canApproveScopes",label:"Approve Scopes"},
+    {key:"canComment",label:"Post Comments"},
+  ];
+
+  const roleColor={admin:"var(--amber)",internal:"var(--sky)",client:"var(--success)"};
+
+  return(<div>
+    <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:40}}>Settings</h1>
+    <Tabs tabs={[{key:"users",label:"Users & Permissions"},{key:"portfolio",label:"Portfolio"}]} active={tab} onChange={setTab}/>
+
+    {tab==="users"&&<div>
+      {/* Email delivery status banner */}
+      {generatedLink&&<div style={{marginBottom:24,padding:"18px 22px",background:emailStatus==="error"?"rgba(168,91,91,0.06)":"rgba(107,158,111,0.06)",borderRadius:12,border:`1px solid ${emailStatus==="error"?"rgba(168,91,91,0.25)":"rgba(107,158,111,0.2)"}`,animation:"fadeUp .3s ease-out",display:"flex",alignItems:"center",gap:12}}>
+        {emailStatus==="sending"&&<div style={{width:14,height:14,border:"1.5px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",flexShrink:0}}/>}
+        {emailStatus==="sent"&&<span style={{color:"var(--success)",fontSize:16,flexShrink:0}}>✓</span>}
+        {emailStatus==="error"&&<span style={{color:"var(--danger)",fontSize:16,flexShrink:0}}>✕</span>}
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:11,color:emailStatus==="error"?"var(--danger)":"var(--success)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>
+            {emailStatus==="sending"&&`Sending magic link to ${generatedLink.name}…`}
+            {emailStatus==="sent"&&`Magic link delivered to ${generatedLink.name}`}
+            {emailStatus==="error"&&`Delivery failed`}
+          </div>
+          <div style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.5}}>
+            {emailStatus==="sent"&&"Signed 24-hour link sent via Resend from portal@revosys.pro"}
+            {emailStatus==="error"&&`${emailErr} — check RESEND_API_KEY and MAGIC_SECRET in Vercel env vars`}
+          </div>
+        </div>
+        <button onClick={()=>{setGeneratedLink(null);setEmailStatus(null);}} style={{background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0}}>×</button>
+      </div>}
+
+      <Btn icon="plus" onClick={()=>setUModal(true)} style={{marginBottom:24}}>Invite User</Btn>
+
+      {/* User list */}
+      <div style={{display:"grid",gap:1,background:"var(--border)",borderRadius:12,overflow:"hidden",marginBottom:8}}>
+        {data.users.map(u=>(
+          <div key={u.id} style={{padding:"18px 20px",background:"var(--ink-2)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:38,height:38,borderRadius:10,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{u.avatar}</div>
+                <div>
+                  <div style={{fontSize:14,color:"var(--cream)",fontWeight:500}}>{u.name}</div>
+                  <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",marginTop:2}}>{u.email}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                {/* Role selector */}
+                {u.role==="admin"
+                  ? <span style={{fontFamily:"var(--mono)",fontSize:11,color:roleColor.admin,padding:"4px 10px",border:"1px solid rgba(196,162,101,0.2)",borderRadius:6}}>Admin</span>
+                  : <select value={u.role} onChange={e=>dispatch({type:"UPDATE_USER",payload:{id:u.id,role:e.target.value}})} style={{background:"var(--ink)",border:"1px solid var(--border)",borderRadius:6,color:roleColor[u.role]||"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",padding:"4px 10px",cursor:"pointer"}}>
+                      <option value="client">Client</option>
+                      <option value="internal">Internal</option>
+                    </select>
+                }
+                {u.role!=="admin"&&<>
+                  <button onClick={()=>setEditUser(editUser?.id===u.id?null:u)} style={{background:"none",border:"1px solid var(--border)",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",padding:"4px 10px",transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--amber)";e.currentTarget.style.color="var(--amber)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--cream-mute)";}}>Permissions</button>
+                  <button onClick={()=>resendLink(u)} style={{background:"none",border:"1px solid var(--border)",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",padding:"4px 10px",transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sky)";e.currentTarget.style.color="var(--sky)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--cream-mute)";}}>Resend Link</button>
+                  <button onClick={()=>dispatch({type:"REMOVE_USER",payload:u.id})} style={{background:"none",border:"1px solid var(--border)",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",padding:"4px 10px",transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--danger)";e.currentTarget.style.color="var(--danger)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--cream-mute)";}}>Remove</button>
+                </>}
+              </div>
+            </div>
+            {/* Permissions panel */}
+            {editUser?.id===u.id&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid var(--border)",display:"flex",gap:8,flexWrap:"wrap",animation:"fadeUp .2s ease-out"}}>
+              <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",alignSelf:"center",marginRight:4}}>Permissions:</span>
+              {PERMS.map(p=>{
+                const on=(u.permissions||{})[p.key]!==false;
+                return(<button key={p.key} onClick={()=>dispatch({type:"UPDATE_USER",payload:{id:u.id,permissions:{...(u.permissions||{}), [p.key]:!on}}})} style={{padding:"5px 12px",borderRadius:6,border:`1px solid ${on?"rgba(107,158,111,0.35)":"var(--border)"}`,background:on?"rgba(107,158,111,0.08)":"transparent",color:on?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",transition:"all .2s"}}>{on?"✓ ":""}{p.label}</button>);
+              })}
+            </div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Invite modal */}
+      <Modal open={uModal} onClose={()=>setUModal(false)} title="Invite User">
+        <p style={{fontSize:13,color:"var(--cream-mute)",marginBottom:20,lineHeight:1.7}}>The user will receive a magic link to access their workspace. No password required.</p>
+        <Field label="Full Name" value={uForm.name} onChange={v=>setUForm({...uForm,name:v})} placeholder="Jane Smith"/>
+        <Field label="Email" value={uForm.email} onChange={v=>setUForm({...uForm,email:v})} placeholder="jane@company.com"/>
+        <Field label="Role" value={uForm.role} onChange={v=>setUForm({...uForm,role:v})} type="select" options={[{value:"client",label:"Client (external)"},{value:"internal",label:"Internal (team)"}]}/>
+        {uForm.role==="client"&&<Field label="Client Account ID" value={uForm.clientId} onChange={v=>setUForm({...uForm,clientId:v})} placeholder={data.clients[0]?.id||"c1"}>
+          <div style={{marginTop:6,display:"flex",gap:6,flexWrap:"wrap"}}>
+            {data.clients.map(c=><button key={c.id} onClick={()=>setUForm({...uForm,clientId:c.id})} style={{fontSize:10,fontFamily:"var(--mono)",padding:"3px 8px",borderRadius:4,border:`1px solid ${uForm.clientId===c.id?"var(--amber)":"var(--border)"}`,background:uForm.clientId===c.id?"rgba(196,162,101,0.08)":"transparent",color:uForm.clientId===c.id?"var(--amber)":"var(--cream-mute)",cursor:"pointer"}}>{c.name}</button>)}
+          </div>
+        </Field>}
+        <div style={{marginBottom:18}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Permissions</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {PERMS.map(p=>{const on=(uForm.permissions||{})[p.key]!==false;return(<button key={p.key} onClick={()=>setUForm({...uForm,permissions:{...uForm.permissions,[p.key]:!on}})} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${on?"rgba(107,158,111,0.35)":"var(--border)"}`,background:on?"rgba(107,158,111,0.08)":"transparent",color:on?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>{on?"✓ ":""}{p.label}</button>);})}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+          <Btn v="secondary" onClick={()=>setUModal(false)}>Cancel</Btn>
+          <Btn onClick={createUser} disabled={!uForm.name||!uForm.email}>Generate Magic Link</Btn>
+        </div>
+      </Modal>
+    </div>}
+
+    {tab==="portfolio"&&<div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}>
+      <Field label="Headline" value={pForm.headline} onChange={v=>setPForm({...pForm,headline:v})}/>
+      <Field label="Subheadline" value={pForm.subheadline} onChange={v=>setPForm({...pForm,subheadline:v})} type="textarea" rows={2}/>
+      <AIButton label="Enhance" content={pForm.headline} onConfirm={v=>setPForm({...pForm,headline:v})}/>
+      <div style={{marginTop:16}}><Btn onClick={()=>dispatch({type:"UPDATE_PORTFOLIO",payload:pForm})}>Save</Btn></div>
+    </div>}
+  </div>);
+};
 
 // ============================================================
 // MAIN APP
 // ============================================================
 export default function App(){
-  const[data,dispatch]=useReducer(reducer,SEED);const[user,setUser]=useState(null);const[page,setPage]=useState("portfolio");const[detailId,setDetailId]=useState(null);const[sidebar,setSidebar]=useState(true);const[loginForm,setLoginForm]=useState({email:"",password:""});const[loginErr,setLoginErr]=useState("");
-  const nav=(p,id=null)=>{setPage(p);setDetailId(id);};const login=()=>{const u=data.users.find(u=>u.email===loginForm.email&&u.password===loginForm.password);if(u){setUser(u);setLoginErr("");nav("dashboard");}else setLoginErr("Invalid credentials");};const logout=()=>{setUser(null);nav("portfolio");setLoginForm({email:"",password:""});};
-  const getVis=()=>{if(!user||user.role!=="client")return data;return{...data,clients:data.clients.filter(c=>c.id===user.clientId),projects:data.projects.filter(p=>p.clientId===user.clientId),tasks:data.tasks.filter(t=>{const p=data.projects.find(p=>p.id===t.projectId);return p?.clientId===user.clientId&&t.visibility==="client";})};};const vd=getVis();
-  const navItems=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"clients",label:"Clients",icon:"users",roles:["admin","internal"]},{key:"projects",label:"Projects",icon:"folder"},{key:"activity",label:"Activity",icon:"activity",roles:["admin","internal"]},{key:"settings",label:"Settings",icon:"settings",roles:["admin"]}];
-  useEffect(()=>{if(!document.querySelector('link[href*="Instrument"]')){const l=document.createElement("link");l.rel="stylesheet";l.href=FONTS;document.head.appendChild(l);}},[]);
-  if(!user){if(page==="login")return(<div style={{minHeight:"100vh",background:"var(--ink)",display:"flex",fontFamily:"var(--sans)"}}><style>{CSS}</style><div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 80px",maxWidth:520}}><div style={{animation:"fadeUp .5s ease-out"}}><span style={{fontFamily:"var(--serif)",fontSize:28,fontStyle:"italic",color:"var(--cream)",display:"block",marginBottom:48}}>S.Bahri</span><h1 style={{fontFamily:"var(--serif)",fontSize:40,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:8}}>Welcome back</h1><p style={{color:"var(--cream-mute)",fontSize:15,marginBottom:40,fontWeight:300}}>Sign in to your workspace</p>{loginErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(168,91,91,0.1)",color:"var(--danger)",fontSize:13,marginBottom:20}}>{loginErr}</div>}<Field label="Email" value={loginForm.email} onChange={v=>setLoginForm({...loginForm,email:v})} placeholder="you@company.com"/><Field label="Password" value={loginForm.password} onChange={v=>setLoginForm({...loginForm,password:v})} type="password"/><Btn onClick={login} style={{width:"100%",justifyContent:"center",marginTop:4}} size="lg">Sign In</Btn><button onClick={()=>nav("portfolio")} style={{display:"block",margin:"20px auto 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:12,fontFamily:"var(--mono)"}}>Back to Portfolio</button></div></div><div style={{flex:1,background:"var(--ink-2)",display:"flex",alignItems:"center",justifyContent:"center",borderLeft:"1px solid var(--border)"}}><div style={{textAlign:"center",animation:"fadeIn .8s ease-out .3s both"}}><div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:24}}>Demo Credentials</div><div style={{display:"grid",gap:12}}>{[["Admin","sahil@bahri.com","admin123"],["Team","priya@team.com","team123"],["Client","alex@client.com","client123"]].map(([r,e,p])=>(<button key={r} onClick={()=>setLoginForm({email:e,password:p})} style={{padding:"14px 24px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,cursor:"pointer",textAlign:"left",transition:"border-color .2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(196,162,101,0.3)"} onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{r}</span><div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--cream-dim)",marginTop:4}}>{e}</div></button>))}</div></div></div></div>);return(<div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><PortfolioPage data={data} onLogin={()=>nav("login")}/></div>);}
-  return(<div style={{display:"flex",minHeight:"100vh",background:"var(--ink)",fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><aside style={{width:sidebar?220:56,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .25s ease",overflow:"hidden",flexShrink:0}}><div style={{padding:sidebar?"20px 16px":"20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid var(--border)"}}><button onClick={()=>setSidebar(!sidebar)} className="ghost-btn"><Icon name="menu" size={18}/></button>{sidebar&&<span style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)",whiteSpace:"nowrap"}}>S.Bahri</span>}</div><nav style={{flex:1,padding:"12px 8px"}}><button onClick={()=>nav("portfolio_preview")} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:page==="portfolio_preview"?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:page==="portfolio_preview"?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="star" size={16}/>{sidebar&&<span>Portfolio</span>}</button>{navItems.filter(n=>!n.roles||n.roles.includes(user.role)).map(n=>(<button key={n.key} onClick={()=>nav(n.key)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name={n.icon} size={16}/>{sidebar&&<span>{n.label}</span>}</button>))}</nav><div style={{padding:"12px 8px",borderTop:"1px solid var(--border)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:6}}><div style={{width:32,height:32,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{user.avatar}</div>{sidebar&&<div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{user.name}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"capitalize"}}>{user.role}</span></div>}</div><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",background:"none",border:"none",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="logout" size={16}/>{sidebar&&<span>Sign Out</span>}</button></div></aside><main style={{flex:1,overflow:"auto",padding:"36px 48px"}}>{page==="dashboard"&&<DashboardPage data={vd} user={user}/>}{page==="clients"&&<ClientsPage data={vd} dispatch={dispatch} user={user}/>}{page==="projects"&&<ProjectsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="project_detail"&&<ProjectDetail data={vd} dispatch={dispatch} user={user} projectId={detailId} onNav={nav}/>}{page==="activity"&&<ActivityPage data={vd}/>}{page==="settings"&&<SettingsPage data={data} dispatch={dispatch} user={user}/>}{page==="portfolio_preview"&&<PortfolioPage data={data} onLogin={()=>{}}/>}</main></div>);
+  const[data,dispatch]=useReducer(reducer,SEED);
+  const[user,setUser]=useState(null);
+  const[page,setPage]=useState("portfolio");
+  const[detailId,setDetailId]=useState(null);
+  const[sidebar,setSidebar]=useState(true);
+
+  // Login state machine: "email" | "sent"
+  const[loginStep,setLoginStep]=useState("email");
+  const[loginEmail,setLoginEmail]=useState("");
+  const[loginErr,setLoginErr]=useState("");
+  const[loginSending,setLoginSending]=useState(false);
+
+  const nav=(p,id=null)=>{setPage(p);setDetailId(id);};
+  const resetLogin=()=>{setLoginStep("email");setLoginEmail("");setLoginErr("");setLoginSending(false);};
+  const logout=()=>{setUser(null);nav("portfolio");resetLogin();};
+
+  // Submit email — same flow for everyone, no reveal of whether account exists
+  const submitEmail=async()=>{
+    const email=loginEmail.trim().toLowerCase();
+    if(!email){setLoginErr("Please enter your email address.");return;}
+    setLoginErr("");
+    setLoginSending(true);
+    setLoginStep("sent");
+    // Always show "check inbox" regardless of whether user exists (prevent enumeration).
+    // Server generates and signs the token — nothing is stored in React state.
+    const match=data.users.find(u=>u.email.toLowerCase()===email);
+    if(match){
+      try {
+        await sendMagicEmail({to:match.email,name:match.name,type:"login"});
+      } catch(_) {
+        // Silent — user still sees "check your inbox"
+      }
+    }
+    setLoginSending(false);
+  };
+
+  // Token from URL (magic link click) — verified server-side, matched by email
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const t=params.get("token");
+    if(t){
+      window.history.replaceState({},"",window.location.pathname);
+      verifyMagicToken(t).then(email=>{
+        if(email){
+          const u=data.users.find(u=>u.email.toLowerCase()===email.toLowerCase());
+          if(u){setUser(u);nav("dashboard");}
+          else{setLoginErr("No account found for this link. Contact Sahil to be added.");nav("login");}
+        } else {
+          setLoginErr("This link has expired or is invalid. Request a new one below.");
+          nav("login");
+        }
+      });
+    }
+    if(!document.querySelector('link[href*="Instrument"]')){const l=document.createElement("link");l.rel="stylesheet";l.href=FONTS;document.head.appendChild(l);}
+  },[]);
+
+  // Visibility filter — clients see only their data, filtered by permissions
+  const getVis=()=>{
+    if(!user||user.role==="admin"||user.role==="internal") return data;
+    const perms=user.permissions||{canViewTasks:true,canViewDeliverables:true,canApproveScopes:false,canComment:true};
+    return {
+      ...data,
+      clients: data.clients.filter(c=>c.id===user.clientId),
+      projects: data.projects.filter(p=>p.clientId===user.clientId),
+      proposals: data.proposals.filter(p=>{const proj=data.projects.find(pr=>pr.id===p.projectId);return proj?.clientId===user.clientId;}),
+      scopes: data.scopes.filter(s=>{const proj=data.projects.find(p=>p.id===s.projectId);return proj?.clientId===user.clientId;}),
+      tasks: perms.canViewTasks ? data.tasks.filter(t=>{const p=data.projects.find(p=>p.id===t.projectId);return p?.clientId===user.clientId&&t.visibility==="client";}) : [],
+      deliverables: perms.canViewDeliverables ? data.deliverables.filter(d=>{const t=data.tasks.find(t=>t.id===d.taskId);const p=data.projects.find(p=>p.id===t?.projectId);return p?.clientId===user.clientId;}) : [],
+      activityLog: data.activityLog.filter(a=>{const proj=data.projects.find(p=>p.id===a.entityId);return proj?.clientId===user.clientId;}),
+    };
+  };
+  const vd=getVis();
+
+  // Nav items — admin/internal get full suite, clients get their slice
+  const adminNav=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"clients",label:"Clients",icon:"users",roles:["admin","internal"]},{key:"projects",label:"Projects",icon:"folder"},{key:"activity",label:"Activity",icon:"activity",roles:["admin","internal"]},{key:"settings",label:"Settings",icon:"settings",roles:["admin"]}];
+  const clientNav=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"projects",label:"My Projects",icon:"folder"}];
+  const navItems=user?.role==="client" ? clientNav : adminNav;
+
+  if(!user){
+    if(page==="login") return (
+      <div style={{minHeight:"100vh",background:"var(--ink)",display:"flex",fontFamily:"var(--sans)"}}>
+        <style>{CSS}</style>
+        {/* Left: login form */}
+        <div style={{flex:"0 0 480px",display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 64px"}}>
+          <div style={{animation:"fadeUp .5s ease-out"}}>
+            <span style={{fontFamily:"var(--serif)",fontSize:26,fontStyle:"italic",color:"var(--cream)",display:"block",marginBottom:52}}>S.Bahri</span>
+
+            {loginStep==="email"&&<>
+              <h1 style={{fontFamily:"var(--serif)",fontSize:38,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:8}}>Sign in</h1>
+              <p style={{color:"var(--cream-mute)",fontSize:14,marginBottom:36,fontWeight:300,lineHeight:1.6}}>Enter your email to receive a secure login link.</p>
+              {loginErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(168,91,91,0.1)",color:"var(--danger)",fontSize:13,marginBottom:20}}>{loginErr}</div>}
+              <Field label="Email Address" value={loginEmail} onChange={v=>setLoginEmail(v)} placeholder="you@company.com"/>
+              <Btn onClick={submitEmail} style={{width:"100%",justifyContent:"center",marginTop:4}} size="lg">Send Login Link</Btn>
+            </>}
+
+            {loginStep==="sent"&&<>
+              <div style={{width:48,height:48,borderRadius:14,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28}}>
+                {loginSending
+                  ? <div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                  : <Icon name="send" size={20}/>}
+              </div>
+              <h1 style={{fontFamily:"var(--serif)",fontSize:32,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:12}}>Check your inbox</h1>
+              <p style={{color:"var(--cream-mute)",fontSize:14,lineHeight:1.8,fontWeight:300}}>If you have an account, you will receive a login link shortly.<br/><br/>Click the link in the email to access your workspace — no password required.</p>
+              <button onClick={()=>{setLoginStep("email");setLoginErr("");}} style={{display:"block",margin:"32px 0 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em",padding:0}}>← TRY A DIFFERENT EMAIL</button>
+            </>}
+
+            <button onClick={()=>nav("portfolio")} style={{display:"block",margin:"28px auto 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em"}}>← BACK TO PORTFOLIO</button>
+          </div>
+        </div>
+
+        {/* Right: branded panel */}
+        <div style={{flex:1,background:"var(--ink-2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderLeft:"1px solid var(--border)",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:-120,right:-120,width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(196,162,101,0.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
+          <div style={{animation:"fadeIn .8s ease-out .3s both",maxWidth:340,textAlign:"center"}}>
+            <div style={{width:56,height:56,borderRadius:16,background:"rgba(196,162,101,0.06)",border:"1px solid rgba(196,162,101,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 32px",fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--amber)"}}>S</div>
+            <h2 style={{fontFamily:"var(--serif)",fontSize:28,fontWeight:400,fontStyle:"italic",color:"var(--cream)",lineHeight:1.3,marginBottom:16}}>Your project workspace, in one place.</h2>
+            <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",lineHeight:1.9,letterSpacing:"0.03em"}}>Track progress, review proposals, approve scopes, and access deliverables — all within your private workspace.</p>
+            <div style={{marginTop:40,display:"grid",gap:10}}>
+              {[["Projects & Tasks","Live status on every deliverable"],["Proposals & Scopes","Review, approve, and sign off"],["Deliverables","Download files and assets"]].map(([t,s])=>(
+                <div key={t} style={{padding:"14px 18px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",textAlign:"left"}}>
+                  <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.06em",marginBottom:3}}>{t}</div>
+                  <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{s}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+    return(<div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><PortfolioPage data={data} onLogin={()=>nav("login")}/></div>);
+  }
+
+  return(<div style={{display:"flex",minHeight:"100vh",background:"var(--ink)",fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><aside style={{width:sidebar?220:56,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .25s ease",overflow:"hidden",flexShrink:0}}><div style={{padding:sidebar?"20px 16px":"20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid var(--border)"}}><button onClick={()=>setSidebar(!sidebar)} className="ghost-btn"><Icon name="menu" size={18}/></button>{sidebar&&<span style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)",whiteSpace:"nowrap"}}>S.Bahri</span>}</div><nav style={{flex:1,padding:"12px 8px"}}>{user.role==="admin"&&<button onClick={()=>nav("portfolio_preview")} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:page==="portfolio_preview"?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:page==="portfolio_preview"?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="star" size={16}/>{sidebar&&<span>Portfolio</span>}</button>}{navItems.filter(n=>!n.roles||n.roles.includes(user.role)).map(n=>(<button key={n.key} onClick={()=>nav(n.key)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name={n.icon} size={16}/>{sidebar&&<span>{n.label}</span>}</button>))}</nav><div style={{padding:"12px 8px",borderTop:"1px solid var(--border)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:6}}><div style={{width:32,height:32,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{user.avatar}</div>{sidebar&&<div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{user.name}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"capitalize"}}>{user.role}</span></div>}</div><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",background:"none",border:"none",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="logout" size={16}/>{sidebar&&<span>Sign Out</span>}</button></div></aside><main style={{flex:1,overflow:"auto",padding:"36px 48px"}}>{page==="dashboard"&&<DashboardPage data={vd} user={user}/>}{page==="clients"&&<ClientsPage data={vd} dispatch={dispatch} user={user}/>}{page==="projects"&&<ProjectsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="project_detail"&&<ProjectDetail data={vd} dispatch={dispatch} user={user} projectId={detailId} onNav={nav}/>}{page==="activity"&&<ActivityPage data={vd}/>}{page==="settings"&&<SettingsPage data={data} dispatch={dispatch} user={user}/>}{page==="portfolio_preview"&&<PortfolioPage data={data} onLogin={()=>{}}/>}</main></div>);
 }
