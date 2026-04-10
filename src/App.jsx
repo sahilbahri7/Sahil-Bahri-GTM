@@ -993,8 +993,10 @@ export default function App(){
     if(match){
       try {
         await sendMagicEmail({to:match.email,name:match.name,type:"login"});
-      } catch(_) {
-        // Silent — user still sees "check your inbox"
+      } catch(err) {
+        console.error("Magic link send failed:",err);
+        setLoginStep("email");
+        setLoginErr("Email failed to send: "+err.message+" — check Vercel function logs.");
       }
     }
     setLoginSending(false);
