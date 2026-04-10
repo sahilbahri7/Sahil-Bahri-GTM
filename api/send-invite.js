@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const SECRET = process.env.MAGIC_SECRET || "dev-fallback-change-in-prod";
 
 const APP_URL = process.env.APP_URL || "https://sahilbahri.vercel.app";
-const FROM = "S.Bahri Portal <portal@revosys.pro>";
+const FROM = "Sahil Bahri <sahil@revosys.pro>";
 
 // Generate a tamper-proof signed token containing the email + expiry.
 // No database needed — verified purely by HMAC signature.
@@ -91,7 +91,7 @@ export default async function handler(req, res) {
               <p style="margin:0;font-family:monospace;font-size:10px;color:#4a4a3a;letter-spacing:0.08em;line-height:1.8;">
                 THIS LINK EXPIRES IN 24 HOURS AND IS SINGLE-USE.<br/>
                 IF YOU DID NOT REQUEST THIS, YOU CAN SAFELY IGNORE THIS EMAIL.<br/><br/>
-                S.BAHRI GTM CONSULTING · REVOSYS.PRO
+                S.BAHRI GTM CONSULTING · REVOSYS.PRO · SAHIL@REVOSYS.PRO
               </p>
             </td>
           </tr>

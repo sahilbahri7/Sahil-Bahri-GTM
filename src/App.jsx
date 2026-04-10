@@ -82,7 +82,7 @@ const CASE_STUDIES = [
 // ============================================================
 const SEED = {
   users: [
-    { id: "u1", name: "Sahil Bahri", email: "sahil@bahri.com", role: "admin", avatar: "SB", createdAt: "2025-01-15" },
+    { id: "u1", name: "Sahil Bahri", email: "sahilbahri7@gmail.com", role: "admin", avatar: "SB", createdAt: "2025-01-15" },
     { id: "u2", name: "Priya Sharma", email: "priya@team.com", role: "internal", avatar: "PS", createdAt: "2025-02-01" },
     { id: "u3", name: "Alex Chen", email: "alex@client.com", role: "client", avatar: "AC", clientId: "c1", createdAt: "2025-03-01" },
   ],
