@@ -112,13 +112,13 @@ export default async function handler(req, res) {
     });
 
     if (error) {
-      console.error("Resend error:", error);
-      return res.status(500).json({ error: error.message });
+      console.error("Resend error:", JSON.stringify(error));
+      return res.status(500).json({ error: `Resend: ${error.message || JSON.stringify(error)}` });
     }
 
     return res.status(200).json({ success: true, id: data?.id });
   } catch (err) {
-    console.error("Send error:", err);
-    return res.status(500).json({ error: "Failed to send email" });
+    console.error("Send error:", err?.message, err?.stack);
+    return res.status(500).json({ error: err?.message || "Unknown error in send-invite" });
   }
 }

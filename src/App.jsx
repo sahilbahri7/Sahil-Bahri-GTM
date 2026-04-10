@@ -10,21 +10,23 @@ let _id = 100; const uid = () => `id_${++_id}_${Date.now().toString(36)}`; const
 // Send magic link email via Vercel serverless function.
 // Token is generated server-side — never passed from the client.
 const sendMagicEmail = async ({ to, name, type = "login" }) => {
-  const res = await fetch("/api/send-invite", {
+  const base = window.location.hostname === "localhost" ? "https://revosys.pro" : "";
+  const res = await fetch(`${base}/api/send-invite`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ to, name, type }),
   });
+  const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to send email");
+    throw new Error(body.error || body.message || `HTTP ${res.status}`);
   }
-  return res.json();
+  return body;
 };
 
 // Verify a magic link token against the server (HMAC-signed, stateless).
 const verifyMagicToken = async (token) => {
-  const res = await fetch(`/api/verify-token?token=${encodeURIComponent(token)}`);
+  const base = window.location.hostname === "localhost" ? "https://revosys.pro" : "";
+  const res = await fetch(`${base}/api/verify-token?token=${encodeURIComponent(token)}`);
   if (!res.ok) return null;
   const d = await res.json().catch(() => null);
   return d?.email || null;
