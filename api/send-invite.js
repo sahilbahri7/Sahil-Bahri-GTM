@@ -3,7 +3,7 @@ import crypto from "crypto";
 
 const SECRET = process.env.MAGIC_SECRET || "dev-fallback-change-in-prod";
 const APP_URL = process.env.APP_URL || "https://revosys.pro";
-const FROM = "Sahil Bahri <sahil@revosys.pro>";
+const FROM = "Revo-Sys <sahil@revosys.pro>";
 
 function generateToken(email) {
   const payload = Buffer.from(
@@ -43,8 +43,8 @@ export default async function handler(req, res) {
     const isInvite = type === "invite";
 
     const subject = isInvite
-      ? "You've been invited to the S.Bahri Client Portal"
-      : "Your login link for S.Bahri Portal";
+      ? "You've been invited to your Revo-Sys Client Portal"
+      : "Your login link for Revo-Sys Portal";
 
     const html = `<!DOCTYPE html>
 <html>
@@ -54,8 +54,8 @@ export default async function handler(req, res) {
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="background:#161614;border:1px solid #2a2a26;border-radius:16px;overflow:hidden;max-width:560px;width:100%;">
         <tr><td style="padding:36px 40px 28px;border-bottom:1px solid #2a2a26;">
-          <span style="font-family:Georgia,serif;font-size:22px;font-style:italic;color:#e8e0d4;">S.Bahri</span>
-          <span style="font-family:monospace;font-size:10px;color:#6b6b5a;letter-spacing:0.15em;text-transform:uppercase;margin-left:12px;">GTM Consulting</span>
+          <span style="font-family:Georgia,serif;font-size:22px;font-style:italic;color:#e8e0d4;">Revo</span><span style="font-family:monospace;font-size:12px;color:#c4a265;letter-spacing:0.15em;text-transform:uppercase;margin-left:2px;">-Sys</span>
+          <span style="font-family:monospace;font-size:10px;color:#6b6b5a;letter-spacing:0.15em;text-transform:uppercase;margin-left:12px;">GTM Platform</span>
         </td></tr>
         <tr><td style="padding:36px 40px;">
           ${name ? `<p style="margin:0 0 8px;font-family:monospace;font-size:11px;color:#6b6b5a;letter-spacing:0.12em;text-transform:uppercase;">Hi ${name},</p>` : ""}
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
           </h1>
           <p style="margin:0 0 32px;font-size:15px;color:#9a9a7a;line-height:1.8;">
             ${isInvite
-              ? "Sahil Bahri has created a workspace for you to track project progress, review proposals, approve scopes, and access deliverables."
+              ? "Revo-Sys has created a workspace for you to track project progress, review proposals, approve scopes, and access deliverables."
               : "Click the button below to sign in to your workspace. This link expires in 24 hours."}
           </p>
           <table cellpadding="0" cellspacing="0"><tr>
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
           <p style="margin:0;font-family:monospace;font-size:10px;color:#4a4a3a;letter-spacing:0.08em;line-height:1.8;">
             THIS LINK EXPIRES IN 24 HOURS.<br/>
             IF YOU DID NOT REQUEST THIS, IGNORE THIS EMAIL.<br/><br/>
-            S.BAHRI GTM CONSULTING · REVOSYS.PRO
+            REVO-SYS · GTM PLATFORM · REVOSYS.PRO
           </p>
         </td></tr>
       </table>
