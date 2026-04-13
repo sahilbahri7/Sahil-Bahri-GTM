@@ -1,5 +1,6 @@
-// AI proxy — uses Google Gemini (free tier via AI Studio)
-// Key stored in Vercel env var: Revosys_Gemini
+// AI proxy — uses Groq (free tier, no billing required)
+// Get a free API key at: https://console.groq.com
+// Add GROQ_API_KEY to Vercel environment variables
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,29 +12,29 @@ export default async function handler(req, res) {
   const { prompt, system } = req.body || {};
   if (!prompt) return res.status(400).json({ error: "Missing prompt" });
 
-  const apiKey = process.env.Revosys_Gemini;
-  if (!apiKey) return res.status(500).json({ error: "Revosys_Gemini not set in Vercel env vars" });
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY not set in Vercel env vars — get a free key at console.groq.com" });
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-    const fullPrompt = system ? `${system}\n\n${prompt}` : prompt;
-    const body = {
-      contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-      generationConfig: { maxOutputTokens: 1024 },
-    };
-
-    const r = await fetch(url, {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 1024,
+        messages: [
+          { role: "system", content: system || "You are a helpful assistant." },
+          { role: "user", content: prompt },
+        ],
+      }),
     });
 
     const data = await r.json();
-    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || "Gemini API error" });
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    return res.status(200).json({ text });
+    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || "Groq API error" });
+    return res.status(200).json({ text: data.choices?.[0]?.message?.content || "" });
   } catch (err) {
     return res.status(500).json({ error: err.message || "Unexpected error" });
   }

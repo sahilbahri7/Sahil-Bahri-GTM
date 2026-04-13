@@ -1282,9 +1282,14 @@ const SettingsPage=({data,dispatch,user})=>{
 // ============================================================
 export default function App(){
   const[data,dispatch]=useReducer(reducer,SEED);
-  const[user,setUser]=useState(null);
+  // Restore user from localStorage on load
+  const[user,setUserRaw]=useState(()=>{try{const s=localStorage.getItem("rs_user");return s?JSON.parse(s):null;}catch{return null;}});
+  const setUser=(u)=>{setUserRaw(u);try{if(u)localStorage.setItem("rs_user",JSON.stringify(u));else localStorage.removeItem("rs_user");}catch{}};
   const isPortalPath=window.location.pathname.startsWith("/portal");
-  const[page,setPage]=useState(isPortalPath?"login":"portfolio");
+  const[page,setPage]=useState(()=>{
+    if(user) return "dashboard";
+    return isPortalPath?"login":"portfolio";
+  });
   const[detailId,setDetailId]=useState(null);
   const[sidebar,setSidebar]=useState(true);
 
@@ -1297,10 +1302,10 @@ export default function App(){
   const nav=(p,id=null)=>{
     setPage(p);setDetailId(id);
     if(p==="portfolio"){window.history.pushState({},"","/");}
-    else if(p==="login"||p==="dashboard"||p==="clients"||p==="projects"||p==="project_detail"||p==="activity"||p==="settings"){window.history.pushState({},"","/portal");}
+    else{window.history.pushState({},"","/portal");}
   };
   const resetLogin=()=>{setLoginStep("email");setLoginEmail("");setLoginErr("");setLoginSending(false);};
-  const logout=()=>{setUser(null);setPage("portfolio");setDetailId(null);resetLogin();window.history.pushState({},"","/");};
+  const logout=()=>{setUser(null);setPage("portfolio");setDetailId(null);resetLogin();window.history.pushState({},"","/");try{localStorage.removeItem("rs_user");}catch{}};
 
   // Submit email — same flow for everyone, no reveal of whether account exists
   const submitEmail=async()=>{
