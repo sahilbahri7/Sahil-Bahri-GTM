@@ -699,9 +699,9 @@ const PortfolioPage = ({ data, onLogin }) => {
           </div>
           <div>
             <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>Revo-Sys is a boutique revenue operations consultancy building the systems that turn B2B complexity into predictable, scalable growth.</p>
-            <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>We specialize in building the operational backbone of B2B growth. With 6+ years across marketing operations, sales operations, and revenue architecture, I bridge the gap between strategic vision and technical execution for companies scaling their go-to-market motion.</p>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 24, fontWeight: 300 }}>My approach centers on unified data architectures: connecting CRM, marketing automation, product analytics, and enrichment tools into a single operational framework. I design lead scoring models, automated routing logic, pipeline workflows, and attribution systems that give revenue teams complete visibility from first touch to closed deal.</p>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 32, fontWeight: 300 }}>I also operate at the frontier of AI-powered RevOps: deploying no-code AI agents for prospecting, research automation, and intelligent CRM management using platforms like Make.com and MindStudio. My work reduces manual effort by 60%+ while increasing outreach effectiveness and pipeline velocity.</p>
+            <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>We specialize in building the operational backbone of B2B growth. With 6+ years across marketing operations, sales operations, and revenue architecture, Revo-Sys bridges the gap between strategic vision and technical execution for companies scaling their go-to-market motion.</p>
+            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 24, fontWeight: 300 }}>Our approach centers on unified data architectures: connecting CRM, marketing automation, product analytics, and enrichment tools into a single operational framework. We design lead scoring models, automated routing logic, pipeline workflows, and attribution systems that give revenue teams complete visibility from first touch to closed deal.</p>
+            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 32, fontWeight: 300 }}>We also operate at the frontier of AI-powered RevOps: deploying no-code AI agents for prospecting, research automation, and intelligent CRM management using platforms like Make.com and MindStudio. Our systems reduce manual effort by 60%+ while increasing outreach effectiveness and pipeline velocity.</p>
             {/* Services inline */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden" }}>{ps.services.map((svc, i) => (<div key={svc.id} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
           </div>
@@ -1088,7 +1088,7 @@ const SettingsPage=({data,dispatch,user})=>{
             {emailStatus==="error"&&`Delivery failed`}
           </div>
           <div style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.5}}>
-            {emailStatus==="sent"&&"Signed 24-hour link sent via Resend from portal@revosys.pro"}
+            {emailStatus==="sent"&&"Signed 24-hour link sent via Resend from sahil@revosys.pro"}
             {emailStatus==="error"&&`${emailErr} — check RESEND_API_KEY and MAGIC_SECRET in Vercel env vars`}
           </div>
         </div>
