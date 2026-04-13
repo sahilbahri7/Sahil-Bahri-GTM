@@ -12,8 +12,8 @@ export default async function handler(req, res) {
   const { prompt, system } = req.body || {};
   if (!prompt) return res.status(400).json({ error: "Missing prompt" });
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY not set in Vercel env vars — get a free key at console.groq.com" });
+  const apiKey = process.env.RevoSys_Groq;
+  if (!apiKey) return res.status(500).json({ error: "RevoSys_Groq not set in Vercel env vars" });
 
   try {
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
