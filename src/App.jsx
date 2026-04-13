@@ -161,6 +161,11 @@ const SEED = {
   ],
   proposals: [{ id: "pr1", projectId: "p1", title: "CRM Migration Proposal", content: "Phased migration approach covering data mapping, custom object migration, workflow recreation, and team training over a 12-week timeline.", status: "accepted", createdAt: "2025-01-26", updatedAt: "2025-02-01", sentAt: "2025-01-28" }],
   scopes: [{ id: "s1", projectId: "p1", title: "Phase 1: Discovery & Data Audit", sections: [{ id: "sec1", title: "Data Audit", content: "Complete audit of existing data including contacts, companies, deals, and custom objects." }, { id: "sec2", title: "Integration Mapping", content: "Document all current integrations and map equivalent solutions." }, { id: "sec3", title: "Timeline & Milestones", content: "Establish milestones with clear deliverables for each phase." }], version: 1, locked: false, approvedBy: null, approvedAt: null, createdAt: "2025-02-01", rate: { type: "project", amount: 12000, currency: "USD" }, scopeStatus: "accepted", signedBy: "Alex Chen", signedAt: "2025-02-05T14:22:00", clientEmail: "alex@client.com" }],
+  inbox: [
+    {id:"msg1",threadId:"th1",from:"ops@meridian.com",fromName:"Meridian Health",to:"sahil@revosys.pro",subject:"HubSpot Migration — Phase 1 Update",body:"Hi Sahil,\n\nThanks for the update on Phase 1. The data export looks clean and the team is happy with the mapping document.\n\nA couple of questions:\n1. When do we kick off the automation rebuild?\n2. Can we schedule a call for next week?\n\nBest,\nAlex",clientId:"c1",date:"2025-03-14T10:30:00",read:true,direction:"inbound"},
+    {id:"msg2",threadId:"th1",from:"sahil@revosys.pro",fromName:"Sahil — Revo-Sys",to:"ops@meridian.com",subject:"HubSpot Migration — Phase 1 Update",body:"Hi Alex,\n\nGreat to hear the team is happy with progress!\n\n1. Automation rebuild kicks off Monday — I'll send the workflow inventory today.\n2. Yes, let's do Tuesday 2pm EST. Calendar invite coming.\n\nSpeak soon,\nSahil",clientId:"c1",date:"2025-03-14T14:15:00",read:true,direction:"outbound"},
+    {id:"msg3",threadId:"th2",from:"cto@novatech.io",fromName:"NovaTech CTO",to:"sahil@revosys.pro",subject:"GTM Stack Review — Urgent",body:"Hi,\n\nWe need to revisit the lead scoring model. The sales team is flagging a lot of false positives — high scores on leads that aren't converting.\n\nCan we jump on a call this week?\n\nThanks",clientId:"c2",date:"2025-03-15T09:00:00",read:false,direction:"inbound"},
+  ],
   scopeVersions: [],
   tasks: [
     { id: "t1", projectId: "p1", scopeId: "s1", sectionId: "sec1", title: "Export Contact Data", description: "Export all contact records with custom fields", owner: "u2", status: "completed", visibility: "client", dueDate: "2025-02-15", createdAt: "2025-02-02", completedAt: "2025-02-14" },
@@ -219,6 +224,8 @@ function reducer(state, action) {
     // Token lifecycle now handled server-side via HMAC — no state storage needed.
     case "UPDATE_PORTFOLIO": return { ...state, portfolioSettings: { ...state.portfolioSettings, ...action.payload } };
     case "ACKNOWLEDGE_DELIVERY": return { ...state, activityLog: [...state.activityLog, log("delivery_acknowledged", action.userId, action.payload, "Delivery acknowledged")] };
+    case "ADD_MESSAGE": return {...state, inbox:[...(state.inbox||[]), {...action.payload,id:uid(),date:new Date().toISOString(),read:false}]};
+    case "MARK_READ": return {...state, inbox:(state.inbox||[]).map(m=>m.id===action.payload?{...m,read:true}:m)};
     default: return state;
   }
 }
@@ -939,32 +946,70 @@ const AITaskBreakdown=({projectId,userId,dispatch})=>{
 // ============================================================
 // APP PAGES (Dashboard, Clients, Projects, ProjectDetail, Activity, Settings)
 // ============================================================
-const DashboardPage=({data,user,onNav})=>{const my=data.tasks.filter(t=>t.owner===user.id);const stats=[{label:"Active Projects",val:data.projects.filter(p=>p.status==="active").length,c:"var(--amber)",dest:"projects"},{label:"Open Tasks",val:my.filter(t=>t.status!=="completed").length,c:"var(--sky)",dest:"projects"},{label:"Completed",val:my.filter(t=>t.status==="completed").length,c:"var(--success)",dest:"projects"},{label:"Clients",val:data.clients.filter(c=>c.status==="active").length,c:"var(--violet)",dest:"clients"}];const recent=[...data.activityLog].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).slice(0,8);const overdue=my.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());const[draftModal,setDraftModal]=useState(false);const[draftLoad,setDraftLoad]=useState(false);const[draftText,setDraftText]=useState("");const[hovStat,setHovStat]=useState(null);const runDraft=async()=>{setDraftLoad(true);const r=await callAI(`Based on this recent project activity, write a professional weekly client update email:\n${recent.map(a=>`- ${a.details} (${new Date(a.timestamp).toLocaleDateString()})`).join("\n")}`,"You are a GTM consultant writing a concise, professional weekly client update email. Use a confident, clear tone. Include key milestones, current status, and any blockers. Return just the email body text.");setDraftText(r);setDraftLoad(false);};return(<div><div style={{marginBottom:40}}><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Dashboard</span><h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8}}>Welcome, {user.name.split(" ")[0]}</h1></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:"var(--border)",borderRadius:12,overflow:"hidden",marginBottom:40}}>{stats.map((s,i)=>(<div key={i} onClick={()=>onNav&&onNav(s.dest)} onMouseEnter={()=>setHovStat(i)} onMouseLeave={()=>setHovStat(null)} style={{padding:"28px 24px",background:hovStat===i?"var(--ink-3)":"var(--ink-2)",cursor:"pointer",transition:"background .15s"}}><div style={{fontFamily:"var(--serif)",fontSize:40,fontWeight:400,color:s.c,fontStyle:"italic"}}>{s.val}</div><div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:8}}>{s.label}</div></div>))}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--cream)",margin:0}}>Recent Activity</h3>{user.role==="admin"&&<Btn v="ai" size="sm" icon="ai" onClick={()=>{setDraftModal(true);if(!draftText)runDraft();}}>Draft Weekly Update</Btn>}</div>{recent.map(a=>(<div key={a.id} style={{padding:"10px 0",borderBottom:"1px solid var(--border)",display:"flex",gap:14,alignItems:"flex-start"}}><span style={{width:5,height:5,borderRadius:"50%",background:"var(--amber)",marginTop:7,flexShrink:0}}/><div><p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.5,margin:0}}>{a.details}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{new Date(a.timestamp).toLocaleDateString()}</span></div></div>))}</div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:overdue.length?"var(--danger)":"var(--cream)",marginBottom:20}}>{overdue.length?`${overdue.length} Overdue`:"Upcoming Tasks"}</h3>{(overdue.length?overdue:my.filter(t=>t.status!=="completed").slice(0,6)).map(t=>{const p=data.projects.find(p=>p.id===t.projectId);return(<div key={t.id} style={{padding:"10px 0",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{t.title}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{p?.name}</span></div><Badge status={t.status}/></div>);})}{my.filter(t=>t.status!=="completed").length===0&&<p style={{color:"var(--cream-mute)",fontSize:13,fontStyle:"italic"}}>All clear</p>}</div></div>
-{user.role==="admin"&&<div style={{marginTop:32,padding:"24px 28px",background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}>
-  <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:4}}>AI Workspace</div>
-  <h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--cream)",marginBottom:20}}>Tools to reduce manual work</h3>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-    {[
-      {title:"Meeting → Tasks",desc:"Paste meeting notes, AI extracts action items and creates tasks automatically.",icon:"activity",color:"var(--sky)"},
-      {title:"Proposal Writer",desc:"Describe the client situation, AI drafts a full project proposal ready to send.",icon:"doc",color:"var(--violet)"},
-      {title:"Scope → Timeline",desc:"Convert scope sections into a phased timeline with realistic milestones.",icon:"target",color:"var(--amber)"},
-      {title:"Risk Detector",desc:"AI scans overdue tasks, scope changes, and flags projects at risk.",icon:"search",color:"var(--danger)"},
-      {title:"Invoice Generator",desc:"Select a project, AI generates an invoice from scope rate and completed deliverables.",icon:"star",color:"var(--success)"},
-      {title:"Client Update Email",desc:"Select a client, AI writes a professional weekly update from recent activity.",icon:"send",color:"var(--sage)"},
-    ].map((t,i)=>(
-      <div key={i} style={{padding:"18px 16px",background:"var(--ink)",borderRadius:12,border:`1px solid ${t.color}22`,cursor:"pointer",transition:"all .2s"}}
-        onMouseEnter={e=>{e.currentTarget.style.borderColor=t.color+"44";e.currentTarget.style.background=`${t.color}08`;}}
-        onMouseLeave={e=>{e.currentTarget.style.borderColor=t.color+"22";e.currentTarget.style.background="var(--ink)";}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-          <div style={{width:32,height:32,borderRadius:8,background:`${t.color}12`,border:`1px solid ${t.color}25`,display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name={t.icon} size={14} style={{color:t.color}}/></div>
-          <div style={{fontFamily:"var(--mono)",fontSize:11,color:t.color,letterSpacing:"0.06em"}}>{t.title}</div>
-        </div>
-        <p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{t.desc}</p>
-        <div style={{marginTop:10,fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>COMING SOON</div>
+const CHAT_SUGGESTIONS=["Summarize my open projects","Which tasks are overdue?","Draft a client update email","Suggest next steps for my pipeline","What should I focus on today?"];
+const DashboardPage=({data,user,onNav})=>{
+  const my=data.tasks.filter(t=>t.owner===user.id);
+  const stats=[{label:"Active Projects",val:data.projects.filter(p=>p.status==="active").length,c:"var(--amber)",dest:"projects"},{label:"Open Tasks",val:my.filter(t=>t.status!=="completed").length,c:"var(--sky)",dest:"projects"},{label:"Completed",val:my.filter(t=>t.status==="completed").length,c:"var(--success)",dest:"projects"},{label:"Clients",val:data.clients.filter(c=>c.status==="active").length,c:"var(--violet)",dest:"clients"}];
+  const recent=[...data.activityLog].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).slice(0,8);
+  const overdue=my.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());
+  const[draftModal,setDraftModal]=useState(false);
+  const[draftLoad,setDraftLoad]=useState(false);
+  const[draftText,setDraftText]=useState("");
+  const[hovStat,setHovStat]=useState(null);
+  const[chatMessages,setChatMessages]=useState([{role:"assistant",content:"Hi! I'm your Revo-Sys AI assistant. Ask me about your projects, clients, or GTM strategy."}]);
+  const[chatInput,setChatInput]=useState("");
+  const[chatLoading,setChatLoading]=useState(false);
+  const chatEndRef=useRef(null);
+  useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[chatMessages]);
+  const runDraft=async()=>{setDraftLoad(true);const r=await callAI(`Based on this recent project activity, write a professional weekly client update email:\n${recent.map(a=>`- ${a.details} (${new Date(a.timestamp).toLocaleDateString()})`).join("\n")}`,"You are a GTM consultant writing a concise, professional weekly client update email. Use a confident, clear tone. Include key milestones, current status, and any blockers. Return just the email body text.");setDraftText(r);setDraftLoad(false);};
+  const sendChat=async(msg)=>{
+    const text=(msg||chatInput).trim();
+    if(!text||chatLoading)return;
+    setChatInput("");
+    const newMsgs=[...chatMessages,{role:"user",content:text}];
+    setChatMessages(newMsgs);
+    setChatLoading(true);
+    const ctx=`User: ${user.name} (${user.role}). Projects: ${data.projects.map(p=>p.name).join(", ")||"none"}. Open tasks: ${data.tasks.filter(t=>t.status!=="completed").length}. Overdue: ${data.tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date()).length}. Clients: ${data.clients.map(c=>c.name).join(", ")||"none"}.`;
+    const history=newMsgs.slice(-6).map(m=>`${m.role==="user"?"User":"Assistant"}: ${m.content}`).join("\n");
+    const reply=await callAI(`Context: ${ctx}\n\nConversation:\n${history}`,"You are a helpful GTM and RevOps assistant for Revo-Sys. Answer concisely and practically based on the user's project data provided.");
+    setChatMessages(prev=>[...prev,{role:"assistant",content:reply}]);
+    setChatLoading(false);
+  };
+  return(<div>
+    <div style={{marginBottom:40}}><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Dashboard</span><h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8}}>Welcome, {user.name.split(" ")[0]}</h1></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:"var(--border)",borderRadius:12,overflow:"hidden",marginBottom:40}}>{stats.map((s,i)=>(<div key={i} onClick={()=>onNav&&onNav(s.dest)} onMouseEnter={()=>setHovStat(i)} onMouseLeave={()=>setHovStat(null)} style={{padding:"28px 24px",background:hovStat===i?"var(--ink-3)":"var(--ink-2)",cursor:"pointer",transition:"background .15s"}}><div style={{fontFamily:"var(--serif)",fontSize:40,fontWeight:400,color:s.c,fontStyle:"italic"}}>{s.val}</div><div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:8}}>{s.label}</div></div>))}</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--cream)",margin:0}}>Recent Activity</h3>{user.role==="admin"&&<Btn v="ai" size="sm" icon="ai" onClick={()=>{setDraftModal(true);if(!draftText)runDraft();}}>Draft Weekly Update</Btn>}</div>{recent.map(a=>(<div key={a.id} style={{padding:"10px 0",borderBottom:"1px solid var(--border)",display:"flex",gap:14,alignItems:"flex-start"}}><span style={{width:5,height:5,borderRadius:"50%",background:"var(--amber)",marginTop:7,flexShrink:0}}/><div><p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.5,margin:0}}>{a.details}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{new Date(a.timestamp).toLocaleDateString()}</span></div></div>))}</div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:overdue.length?"var(--danger)":"var(--cream)",marginBottom:20}}>{overdue.length?`${overdue.length} Overdue`:"Upcoming Tasks"}</h3>{(overdue.length?overdue:my.filter(t=>t.status!=="completed").slice(0,6)).map(t=>{const p=data.projects.find(p=>p.id===t.projectId);return(<div key={t.id} style={{padding:"10px 0",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{t.title}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{p?.name}</span></div><Badge status={t.status}/></div>);})}{my.filter(t=>t.status!=="completed").length===0&&<p style={{color:"var(--cream-mute)",fontSize:13,fontStyle:"italic"}}>All clear</p>}</div></div>
+{/* AI Chat Panel */}
+<div style={{marginTop:32,background:"var(--ink-2)",borderRadius:16,border:"1px solid var(--border)",display:"flex",flexDirection:"column",height:500}}>
+  <div style={{padding:"18px 24px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:12}}>
+    <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,var(--violet),var(--sky))",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="ai" size={16}/></div>
+    <div><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.1em",textTransform:"uppercase"}}>AI Assistant</div><div style={{fontSize:12,color:"var(--cream-mute)"}}>Ask anything about your projects, clients, or GTM strategy</div></div>
+  </div>
+  <div style={{flex:1,overflowY:"auto",padding:"16px 24px",display:"flex",flexDirection:"column",gap:10}}>
+    {chatMessages.map((m,i)=>(
+      <div key={i} style={{display:"flex",gap:8,justifyContent:m.role==="user"?"flex-end":"flex-start",alignItems:"flex-end"}}>
+        {m.role==="assistant"&&<div style={{width:26,height:26,borderRadius:8,background:"linear-gradient(135deg,var(--violet),var(--sky))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="ai" size={11}/></div>}
+        <div style={{maxWidth:"70%",padding:"10px 14px",borderRadius:m.role==="user"?"12px 12px 4px 12px":"12px 12px 12px 4px",background:m.role==="user"?"var(--amber)":"var(--ink)",color:m.role==="user"?"var(--ink)":"var(--cream-dim)",fontSize:13,lineHeight:1.7,border:m.role==="user"?"none":"1px solid var(--border)",whiteSpace:"pre-wrap"}}>{m.content}</div>
+        {m.role==="user"&&<div style={{width:26,height:26,borderRadius:8,background:"rgba(196,162,101,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"var(--mono)",fontSize:9,color:"var(--amber)"}}>{user.avatar}</div>}
       </div>
     ))}
+    {chatLoading&&<div style={{display:"flex",gap:8,alignItems:"flex-end"}}><div style={{width:26,height:26,borderRadius:8,background:"linear-gradient(135deg,var(--violet),var(--sky))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="ai" size={11}/></div><div style={{padding:"10px 14px",borderRadius:"12px 12px 12px 4px",background:"var(--ink)",border:"1px solid var(--border)"}}><div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:"var(--violet)",animation:`flowPulse 1.2s ease-in-out ${i*0.2}s infinite`}}/>)}</div></div></div>}
+    <div ref={chatEndRef}/>
   </div>
-</div>}
+  <div style={{padding:"8px 24px 10px",display:"flex",gap:6,flexWrap:"wrap"}}>
+    {CHAT_SUGGESTIONS.map(s=>(
+      <button key={s} onClick={()=>sendChat(s)} disabled={chatLoading} style={{padding:"5px 10px",borderRadius:16,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",transition:"all .15s"}}
+        onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--amber)";e.currentTarget.style.color="var(--amber)";}}
+        onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--cream-mute)";}}>
+        {s}
+      </button>
+    ))}
+  </div>
+  <div style={{padding:"10px 24px 18px",display:"flex",gap:8}}>
+    <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat();}}} placeholder="Ask anything..." style={{flex:1,padding:"11px 16px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:10,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}/>
+    <button onClick={()=>sendChat()} disabled={!chatInput.trim()||chatLoading} style={{width:42,height:42,borderRadius:10,background:chatInput.trim()&&!chatLoading?"var(--amber)":"var(--ink-3)",border:"none",cursor:chatInput.trim()&&!chatLoading?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",color:chatInput.trim()&&!chatLoading?"var(--ink)":"var(--cream-mute)",transition:"all .2s",flexShrink:0}}><Icon name="send" size={15}/></button>
+  </div>
+</div>
 <Modal open={draftModal} onClose={()=>setDraftModal(false)} title="Draft Weekly Client Update" wide>
   {draftLoad?<div style={{padding:40,textAlign:"center"}}><div style={{width:24,height:24,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:16}}/><p style={{color:"var(--cream-mute)",fontSize:13}}>Drafting update from activity log...</p></div>:<div>
     <div style={{padding:20,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",color:"var(--cream-dim)",fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap",marginBottom:16,minHeight:160}}>{draftText||"Click 'Regenerate' to draft an update."}</div>
@@ -1278,6 +1323,242 @@ const SettingsPage=({data,dispatch,user})=>{
 };
 
 // ============================================================
+// AI AGENTS
+// ============================================================
+const ScopeBuilderAgent=({data,dispatch,user})=>{
+  const[input,setInput]=useState("");
+  const[loading,setLoading]=useState(false);
+  const[result,setResult]=useState(null);
+  const[selectedProject,setSelectedProject]=useState(data.projects[0]?.id||"");
+  const[saved,setSaved]=useState(false);
+  const generate=async()=>{
+    if(!input.trim())return;
+    setLoading(true);setResult(null);setSaved(false);
+    const raw=await callAI(`Based on these client requirements, generate a detailed project scope.\n\nRequirements:\n${input}\n\nReturn ONLY valid JSON: {"title":"scope title","rateSuggestion":"e.g. $8,000–$12,000","sections":[{"title":"section title","content":"detailed content"}]}`,"You are a senior GTM consultant. Generate 4-6 detailed sections. Return only valid JSON.");
+    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setResult(p);}
+    catch{setResult({title:"Generated Scope",rateSuggestion:"TBD",sections:[{title:"Scope Overview",content:raw}]});}
+    setLoading(false);
+  };
+  const saveScope=()=>{
+    if(!result||!selectedProject)return;
+    dispatch({type:"ADD_SCOPE",payload:{projectId:selectedProject,title:result.title,sections:result.sections.map((s,i)=>({id:`sec_${Date.now()}_${i}`,title:s.title,content:s.content})),rate:{type:"project",amount:0,currency:"USD"},scopeStatus:"draft"},userId:user.id});
+    setSaved(true);
+  };
+  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",padding:28,animation:"fadeUp .3s ease-out"}}>
+    <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",marginBottom:6}}>Scope Builder Agent</h3>
+    <p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>Paste client requirements, meeting notes, or a project brief. AI generates a complete project scope.</p>
+    <Field label="Requirements / Meeting Notes" value={input} onChange={setInput} type="textarea" rows={8} placeholder="e.g. 'Client needs a full CRM migration from Salesforce to HubSpot. They have 50k contacts, 3 sales teams...'"/>
+    <Btn icon="ai" v="ai" onClick={generate} disabled={!input.trim()||loading}>{loading?"Generating...":"Generate Scope"}</Btn>
+    {result&&<div style={{marginTop:24,animation:"fadeUp .3s ease-out"}}>
+      <div style={{padding:20,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",marginBottom:16}}>
+        <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",letterSpacing:"0.1em",marginBottom:6}}>GENERATED SCOPE</div>
+        <h3 style={{fontSize:18,color:"var(--cream)",fontWeight:500,marginBottom:4}}>{result.title}</h3>
+        <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)"}}>{result.rateSuggestion}</span>
+        <div style={{marginTop:16}}>{result.sections?.map((s,i)=>(<div key={i} style={{padding:"14px 16px",marginBottom:8,background:"var(--ink-2)",borderRadius:8,borderLeft:"2px solid var(--amber)"}}><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",marginBottom:4}}>{s.title}</div><p style={{fontSize:13,color:"var(--cream-mute)",lineHeight:1.7,margin:0}}>{s.content}</p></div>))}</div>
+      </div>
+      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+        <select value={selectedProject} onChange={e=>setSelectedProject(e.target.value)} style={{padding:"10px 14px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>{data.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <Btn icon="check" onClick={saveScope} disabled={saved}>{saved?"Saved ✓":"Save to Project"}</Btn>
+        <Btn v="secondary" onClick={()=>{setResult(null);setInput("");}}>Start Over</Btn>
+      </div>
+    </div>}
+  </div>);
+};
+
+const BrandDocAgent=({data,dispatch,user})=>{
+  const[url,setUrl]=useState("");
+  const[clientId,setClientId]=useState(data.clients[0]?.id||"");
+  const[loading,setLoading]=useState(false);
+  const[doc,setDoc]=useState(null);
+  const[signModal,setSignModal]=useState(false);
+  const[signerName,setSignerName]=useState("");
+  const[signed,setSigned]=useState(false);
+  const generate=async()=>{
+    if(!clientId)return;
+    setLoading(true);setDoc(null);
+    const client=data.clients.find(c=>c.id===clientId);
+    const raw=await callAI(`Create a branded professional proposal for ${client?.name||"this client"} (${client?.company||""}, industry: ${client?.industry||"B2B"}), website: ${url||"not provided"}.\n\nReturn ONLY valid JSON: {"headline":"main headline","tagline":"short tagline","sections":[{"title":"section","content":"content"}],"investmentRange":"$X,XXX–$XX,XXX","timeline":"X weeks"}`,"You are creating a compelling business proposal. Be specific to the client's industry. Return only valid JSON.");
+    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setDoc(p);}
+    catch{setDoc({headline:"Proposal",tagline:"",sections:[{title:"Overview",content:raw}],investmentRange:"TBD",timeline:"TBD"});}
+    setLoading(false);
+  };
+  const client=data.clients.find(c=>c.id===clientId);
+  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",padding:28,animation:"fadeUp .3s ease-out"}}>
+    <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",marginBottom:6}}>Brand Doc Creator</h3>
+    <p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>Select a client and optionally enter their website. AI generates a fully branded proposal ready to send for signature.</p>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+      <Field label="Client" value={clientId} onChange={setClientId} type="select" options={data.clients.map(c=>({value:c.id,label:c.company||c.name}))}/>
+      <Field label="Client Website (optional)" value={url} onChange={setUrl} placeholder="https://client.com"/>
+    </div>
+    <Btn icon="ai" v="ai" onClick={generate} disabled={!clientId||loading}>{loading?"Building Document...":"Build Document"}</Btn>
+    {doc&&<div style={{marginTop:24,animation:"fadeUp .3s ease-out"}}>
+      <div style={{padding:28,background:"var(--ink)",borderRadius:12,border:"1px solid var(--border)",marginBottom:16}}>
+        <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--violet)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:8}}>REVO-SYS PROPOSAL</div>
+        <h2 style={{fontFamily:"var(--serif)",fontSize:26,fontStyle:"italic",color:"var(--cream)",marginBottom:4}}>{doc.headline}</h2>
+        <p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",marginBottom:20}}>{doc.tagline}</p>
+        {doc.sections?.map((s,i)=>(<div key={i} style={{marginBottom:16,paddingBottom:16,borderBottom:"1px solid var(--border)"}}><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--violet)",letterSpacing:"0.06em",marginBottom:6}}>{s.title}</div><p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,margin:0}}>{s.content}</p></div>))}
+        <div style={{display:"flex",gap:24,marginTop:8}}>
+          <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>INVESTMENT</div><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)",marginTop:2}}>{doc.investmentRange}</div></div>
+          <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>TIMELINE</div><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--amber)",marginTop:2}}>{doc.timeline}</div></div>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <Btn icon="send" onClick={()=>setSignModal(true)}>Send for Signature</Btn>
+        <Btn v="secondary" onClick={()=>setDoc(null)}>Regenerate</Btn>
+      </div>
+    </div>}
+    <Modal open={signModal} onClose={()=>setSignModal(false)} title="Send for Signature">
+      {signed?<div style={{textAlign:"center",padding:"32px 0"}}><div style={{fontSize:40,marginBottom:12}}>✓</div><p style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--success)"}}>Document sent for signature</p><p style={{color:"var(--cream-mute)",fontSize:13,marginTop:8}}>The client will receive a signature link via email.</p><div style={{marginTop:20}}><Btn onClick={()=>{setSignModal(false);setSigned(false);}}>Close</Btn></div></div>
+      :<div><p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>The document will be emailed to the client for digital signature.</p><Field label="Signer Name" value={signerName} onChange={setSignerName} placeholder="Client's full name"/><Field label="Signer Email" value={client?.email||""} onChange={()=>{}} disabled/><div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}><Btn v="secondary" onClick={()=>setSignModal(false)}>Cancel</Btn><Btn icon="send" onClick={()=>setSigned(true)} disabled={!signerName}>Send Document</Btn></div></div>}
+    </Modal>
+  </div>);
+};
+
+const FollowUpAgent=({data,dispatch,user})=>{
+  const[loading,setLoading]=useState(false);
+  const[actions,setActions]=useState([]);
+  const[drafting,setDrafting]=useState(null);
+  const[draftResult,setDraftResult]=useState({});
+  const scan=async()=>{
+    setLoading(true);setActions([]);
+    const overdue=data.tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());
+    const summary=data.projects.filter(p=>p.status==="active").map(p=>{const tasks=data.tasks.filter(t=>t.projectId===p.id);const od=tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());const client=data.clients.find(c=>c.id===p.clientId);return`${p.name} (client:${client?.name||"unknown"}, overdue:${od.length}, updated:${new Date(p.updatedAt).toLocaleDateString()})`;}).join("; ");
+    const raw=await callAI(`Analyze this portfolio and give top 4-5 prioritized follow-up actions:\n\n${summary}\n\nTotal overdue tasks: ${overdue.length}\n\nReturn ONLY valid JSON array: [{"priority":"HIGH|MEDIUM|LOW","project":"name","action":"what to do","reason":"why","type":"email|task|call"}]`,"You are a senior account manager. Be specific and actionable. Return only valid JSON array.");
+    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setActions(Array.isArray(p)?p:[]);}
+    catch{setActions([{priority:"HIGH",project:"All Projects",action:"Review project statuses",reason:raw,type:"task"}]);}
+    setLoading(false);
+  };
+  const draftAction=async(action,idx)=>{
+    setDrafting(idx);
+    const draft=await callAI(`Draft a professional ${action.type==="email"?"client email":"action plan"} for:\nProject: ${action.project}\nAction: ${action.action}\nReason: ${action.reason}`,"You are a GTM consultant. Write concise, professional content. For emails include subject line and body.");
+    setDraftResult(prev=>({...prev,[idx]:draft}));
+    setDrafting(null);
+  };
+  const pc={HIGH:"var(--danger)",MEDIUM:"var(--amber)",LOW:"var(--sky)"};
+  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",padding:28,animation:"fadeUp .3s ease-out"}}>
+    <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",marginBottom:6}}>Follow-up Agent</h3>
+    <p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>Scans all active projects, identifies at-risk accounts and overdue items, drafts prioritized follow-up actions.</p>
+    <Btn icon="search" v="ai" onClick={scan} disabled={loading}>{loading?"Scanning...":"Scan Projects"}</Btn>
+    {actions.length>0&&<div style={{marginTop:24,display:"flex",flexDirection:"column",gap:10,animation:"fadeUp .3s ease-out"}}>
+      {actions.map((a,i)=>(<div key={i} style={{padding:"18px 20px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",borderLeft:`3px solid ${pc[a.priority]||"var(--cream-mute)"}`}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:pc[a.priority],letterSpacing:"0.1em",textTransform:"uppercase",padding:"2px 8px",borderRadius:4,background:`${pc[a.priority]}18`}}>{a.priority}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{a.project}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--sky)",marginLeft:"auto",textTransform:"uppercase"}}>{a.type}</span>
+            </div>
+            <p style={{fontSize:14,color:"var(--cream)",fontWeight:500,margin:"0 0 4px"}}>{a.action}</p>
+            <p style={{fontSize:12,color:"var(--cream-mute)",margin:0,lineHeight:1.5}}>{a.reason}</p>
+            {draftResult[i]&&<div style={{marginTop:12,padding:"12px 14px",background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{draftResult[i]}</div>}
+          </div>
+          <Btn v="secondary" size="sm" icon="ai" onClick={()=>draftAction(a,i)} disabled={drafting===i}>{drafting===i?"Drafting...":draftResult[i]?"Redraft":"Draft"}</Btn>
+        </div>
+      </div>))}
+    </div>}
+  </div>);
+};
+
+const AgentsPage=({data,dispatch,user})=>{
+  const[activeAgent,setActiveAgent]=useState(null);
+  return(<div>
+    <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Automation</span>
+    <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8,marginBottom:40}}>AI Agents</h1>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:24}}>
+      {[
+        {id:"scope",title:"Scope Builder",desc:"Paste client requirements or meeting notes — AI generates a complete project scope with sections and rate suggestion.",icon:"doc",color:"var(--amber)",tag:"SCOPE AUTOMATION"},
+        {id:"brand",title:"Brand Doc Creator",desc:"Select a client and enter their website — AI generates a fully branded proposal ready to send for e-signature.",icon:"star",color:"var(--violet)",tag:"DOCUMENT AUTOMATION"},
+        {id:"followup",title:"Follow-up Agent",desc:"Scans all projects, identifies at-risk accounts and overdue items, then drafts prioritized follow-up actions.",icon:"activity",color:"var(--sky)",tag:"RELATIONSHIP AUTOMATION"},
+      ].map(a=>(
+        <div key={a.id} onClick={()=>setActiveAgent(activeAgent===a.id?null:a.id)} style={{padding:"24px",background:activeAgent===a.id?`${a.color}08`:"var(--ink-2)",borderRadius:14,border:`1px solid ${activeAgent===a.id?a.color+"40":"var(--border)"}`,cursor:"pointer",transition:"all .2s"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+            <div style={{width:40,height:40,borderRadius:10,background:`${a.color}12`,border:`1px solid ${a.color}25`,display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name={a.icon} size={18}/></div>
+            <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:a.color,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:2}}>{a.tag}</div><div style={{fontSize:15,color:"var(--cream)",fontWeight:500}}>{a.title}</div></div>
+          </div>
+          <p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.7,margin:"0 0 14px"}}>{a.desc}</p>
+          <span style={{fontFamily:"var(--mono)",fontSize:10,color:a.color,letterSpacing:"0.06em"}}>{activeAgent===a.id?"▲ CLOSE":"▼ OPEN AGENT"}</span>
+        </div>
+      ))}
+    </div>
+    {activeAgent==="scope"&&<ScopeBuilderAgent data={data} dispatch={dispatch} user={user}/>}
+    {activeAgent==="brand"&&<BrandDocAgent data={data} dispatch={dispatch} user={user}/>}
+    {activeAgent==="followup"&&<FollowUpAgent data={data} dispatch={dispatch} user={user}/>}
+  </div>);
+};
+
+// ============================================================
+// INBOX PAGE
+// ============================================================
+const InboxPage=({data,dispatch,user})=>{
+  const[selected,setSelected]=useState(null);
+  const[replyText,setReplyText]=useState("");
+  const[composing,setComposing]=useState(false);
+  const[composeForm,setComposeForm]=useState({to:"",subject:"",body:""});
+  const[aiDrafting,setAiDrafting]=useState(false);
+  const messages=(user.role==="client"?(data.inbox||[]).filter(m=>m.clientId===user.clientId):(data.inbox||[]));
+  const threads=messages.reduce((acc,m)=>{if(!acc[m.threadId])acc[m.threadId]=[];acc[m.threadId].push(m);return acc;},{});
+  const threadList=Object.entries(threads).map(([id,msgs])=>{const sorted=[...msgs].sort((a,b)=>new Date(b.date)-new Date(a.date));return{id,latest:sorted[0],count:msgs.length,unread:msgs.filter(m=>!m.read).length,messages:sorted};}).sort((a,b)=>new Date(b.latest.date)-new Date(a.latest.date));
+  const selThread=selected?threadList.find(t=>t.id===selected):null;
+  const openThread=(tid)=>{setSelected(tid);(threads[tid]||[]).forEach(m=>{if(!m.read)dispatch({type:"MARK_READ",payload:m.id});});};
+  const sendReply=()=>{if(!replyText.trim()||!selThread)return;dispatch({type:"ADD_MESSAGE",payload:{threadId:selected,from:"sahil@revosys.pro",fromName:"Sahil — Revo-Sys",to:selThread.latest.direction==="inbound"?selThread.latest.from:selThread.latest.to,subject:selThread.latest.subject,body:replyText,clientId:selThread.latest.clientId,direction:"outbound"}});setReplyText("");};
+  const aiDraftReply=async()=>{if(!selThread)return;setAiDrafting(true);const ctx=selThread.messages.slice(0,3).map(m=>`${m.fromName}: ${m.body}`).join("\n\n---\n\n");const draft=await callAI(`Draft a professional reply to this email thread:\n\n${ctx}`,"You are Sahil from Revo-Sys. Write a concise professional reply — email body only, no subject line.");setReplyText(draft);setAiDrafting(false);};
+  const totalUnread=(data.inbox||[]).filter(m=>!m.read).length;
+  return(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 100px)"}}>
+    <div style={{marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+      <div><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Communications</span><h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8}}>Inbox{totalUnread>0&&<span style={{marginLeft:12,fontFamily:"var(--mono)",fontSize:14,color:"var(--amber)"}}>{totalUnread} unread</span>}</h1></div>
+      {user.role!=="client"&&<Btn icon="edit" onClick={()=>setComposing(true)}>Compose</Btn>}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:16,flex:1,minHeight:0}}>
+      <div style={{background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)",overflowY:"auto"}}>
+        {threadList.length===0?<div style={{padding:"48px 20px",textAlign:"center",color:"var(--cream-mute)",fontSize:13,fontStyle:"italic"}}>No messages</div>
+        :threadList.map(t=>{const client=data.clients.find(c=>c.id===t.latest.clientId);return(<div key={t.id} onClick={()=>openThread(t.id)} style={{padding:"14px 18px",borderBottom:"1px solid var(--border)",cursor:"pointer",background:selected===t.id?"rgba(196,162,101,0.06)":"transparent",borderLeft:selected===t.id?"3px solid var(--amber)":"3px solid transparent",transition:"all .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.background="var(--ink-3)"}
+          onMouseLeave={e=>e.currentTarget.style.background=selected===t.id?"rgba(196,162,101,0.06)":"transparent"}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+            <span style={{fontSize:13,color:"var(--cream)",fontWeight:t.unread>0?600:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{t.latest.direction==="inbound"?t.latest.fromName:t.latest.to}</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",flexShrink:0}}>{new Date(t.latest.date).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}</span>
+          </div>
+          <div style={{fontSize:12,color:t.unread>0?"var(--cream-dim)":"var(--cream-mute)",fontWeight:t.unread>0?500:400,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:3}}>{t.latest.subject}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            {client&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--amber)",letterSpacing:"0.06em"}}>{client.company}</span>}
+            {t.unread>0&&<span style={{marginLeft:"auto",minWidth:18,height:18,borderRadius:9,background:"var(--amber)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:9,color:"var(--ink)",fontWeight:700,padding:"0 5px"}}>{t.unread}</span>}
+          </div>
+        </div>);})}
+      </div>
+      {selThread?(<div style={{background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)",display:"flex",flexDirection:"column",minHeight:0}}>
+        <div style={{padding:"18px 24px",borderBottom:"1px solid var(--border)"}}><h3 style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)",margin:"0 0 2px"}}>{selThread.latest.subject}</h3><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{selThread.count} message{selThread.count!==1?"s":""}</span></div>
+        <div style={{flex:1,overflowY:"auto",padding:"20px 24px",display:"flex",flexDirection:"column",gap:14}}>
+          {[...selThread.messages].reverse().map(m=>(<div key={m.id} style={{padding:"16px 20px",borderRadius:10,background:m.direction==="outbound"?"rgba(196,162,101,0.04)":"var(--ink)",border:`1px solid ${m.direction==="outbound"?"rgba(196,162,101,0.15)":"var(--border)"}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+              <div><span style={{fontSize:13,color:"var(--cream)",fontWeight:500}}>{m.fromName}</span><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",marginLeft:8}}>{m.from}</span></div>
+              <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{new Date(m.date).toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+            </div>
+            <p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,margin:0,whiteSpace:"pre-wrap"}}>{m.body}</p>
+          </div>))}
+        </div>
+        {user.role!=="client"&&<div style={{padding:"14px 24px 18px",borderTop:"1px solid var(--border)"}}>
+          <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Write a reply..." rows={3} style={{width:"100%",padding:"11px 16px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:10,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)",resize:"none",marginBottom:8}}/>
+          <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+            <Btn v="ai" size="sm" icon="ai" onClick={aiDraftReply} disabled={aiDrafting}>{aiDrafting?"Drafting...":"AI Draft"}</Btn>
+            <Btn size="sm" icon="send" onClick={sendReply} disabled={!replyText.trim()}>Send Reply</Btn>
+          </div>
+        </div>}
+      </div>)
+      :<div style={{background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",color:"var(--cream-mute)"}}><div style={{opacity:0.15,marginBottom:16}}><Icon name="send" size={48}/></div><p style={{fontFamily:"var(--serif)",fontSize:15,fontStyle:"italic"}}>Select a conversation</p></div></div>}
+    </div>
+    <Modal open={composing} onClose={()=>setComposing(false)} title="New Message" wide>
+      <Field label="To" value={composeForm.to} onChange={v=>setComposeForm({...composeForm,to:v})} placeholder="client@company.com"/>
+      <Field label="Subject" value={composeForm.subject} onChange={v=>setComposeForm({...composeForm,subject:v})}/>
+      <Field label="Message" value={composeForm.body} onChange={v=>setComposeForm({...composeForm,body:v})} type="textarea" rows={7}/>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <Btn v="secondary" onClick={()=>setComposing(false)}>Cancel</Btn>
+        <Btn icon="send" onClick={()=>{dispatch({type:"ADD_MESSAGE",payload:{threadId:uid(),from:"sahil@revosys.pro",fromName:"Sahil — Revo-Sys",to:composeForm.to,subject:composeForm.subject,body:composeForm.body,clientId:"",direction:"outbound"}});setComposing(false);setComposeForm({to:"",subject:"",body:""}); }} disabled={!composeForm.to||!composeForm.subject}>Send</Btn>
+      </div>
+    </Modal>
+  </div>);
+};
+
+// ============================================================
 // MAIN APP
 // ============================================================
 export default function App(){
@@ -1378,8 +1659,8 @@ export default function App(){
   const vd=getVis();
 
   // Nav items — admin/internal get full suite, clients get their slice
-  const adminNav=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"clients",label:"Clients",icon:"users",roles:["admin","internal"]},{key:"projects",label:"Projects",icon:"folder"},{key:"activity",label:"Activity",icon:"activity",roles:["admin","internal"]},{key:"settings",label:"Settings",icon:"settings",roles:["admin"]}];
-  const clientNav=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"projects",label:"My Projects",icon:"folder"}];
+  const adminNav=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"clients",label:"Clients",icon:"users",roles:["admin","internal"]},{key:"projects",label:"Projects",icon:"folder"},{key:"activity",label:"Activity",icon:"activity",roles:["admin","internal"]},{key:"agents",label:"Agents",icon:"ai",roles:["admin","internal"]},{key:"inbox",label:"Inbox",icon:"send"},{key:"settings",label:"Settings",icon:"settings",roles:["admin"]}];
+  const clientNav=[{key:"dashboard",label:"Dashboard",icon:"dash"},{key:"projects",label:"My Projects",icon:"folder"},{key:"inbox",label:"Inbox",icon:"send"}];
   const navItems=user?.role==="client" ? clientNav : adminNav;
 
   if(!user){
@@ -1438,6 +1719,6 @@ export default function App(){
   }
 
 
-  return(<div style={{display:"flex",minHeight:"100vh",background:"var(--ink)",fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><aside style={{width:sidebar?220:56,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .25s ease",overflow:"hidden",flexShrink:0}}><div style={{padding:sidebar?"20px 16px":"20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid var(--border)"}}><button onClick={()=>setSidebar(!sidebar)} className="ghost-btn"><Icon name="menu" size={18}/></button>{sidebar&&<span style={{whiteSpace:"nowrap"}}><span style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>}</div><nav style={{flex:1,padding:"12px 8px"}}>{navItems.filter(n=>!n.roles||n.roles.includes(user.role)).map(n=>(<button key={n.key} onClick={()=>nav(n.key)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name={n.icon} size={16}/>{sidebar&&<span>{n.label}</span>}</button>))}</nav><div style={{padding:"12px 8px",borderTop:"1px solid var(--border)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:6}}><div style={{width:32,height:32,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{user.avatar}</div>{sidebar&&<div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{user.name}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"capitalize"}}>{user.role}</span></div>}</div><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",background:"none",border:"none",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="logout" size={16}/>{sidebar&&<span>Sign Out</span>}</button></div></aside><main style={{flex:1,overflow:"auto",padding:"36px 48px"}}>{page==="dashboard"&&<DashboardPage data={vd} user={user} onNav={nav}/>}{page==="clients"&&<ClientsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="projects"&&<ProjectsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="project_detail"&&<ProjectDetail data={vd} dispatch={dispatch} user={user} projectId={detailId} onNav={nav}/>}{page==="activity"&&<ActivityPage data={vd}/>}{page==="settings"&&<SettingsPage data={data} dispatch={dispatch} user={user}/>}</main><Analytics /></div>);
+  return(<div style={{display:"flex",minHeight:"100vh",background:"var(--ink)",fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><aside style={{width:sidebar?220:56,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .25s ease",overflow:"hidden",flexShrink:0}}><div style={{padding:sidebar?"20px 16px":"20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid var(--border)"}}><button onClick={()=>setSidebar(!sidebar)} className="ghost-btn"><Icon name="menu" size={18}/></button>{sidebar&&<span style={{whiteSpace:"nowrap"}}><span style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>}</div><nav style={{flex:1,padding:"12px 8px"}}>{navItems.filter(n=>!n.roles||n.roles.includes(user.role)).map(n=>(<button key={n.key} onClick={()=>nav(n.key)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name={n.icon} size={16}/>{sidebar&&<span>{n.label}</span>}</button>))}</nav><div style={{padding:"12px 8px",borderTop:"1px solid var(--border)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:6}}><div style={{width:32,height:32,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{user.avatar}</div>{sidebar&&<div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{user.name}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"capitalize"}}>{user.role}</span></div>}</div><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",background:"none",border:"none",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="logout" size={16}/>{sidebar&&<span>Sign Out</span>}</button></div></aside><main style={{flex:1,overflow:"auto",padding:"36px 48px"}}>{page==="dashboard"&&<DashboardPage data={vd} user={user} onNav={nav}/>}{page==="clients"&&<ClientsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="projects"&&<ProjectsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="project_detail"&&<ProjectDetail data={vd} dispatch={dispatch} user={user} projectId={detailId} onNav={nav}/>}{page==="activity"&&<ActivityPage data={vd}/>}{page==="settings"&&<SettingsPage data={data} dispatch={dispatch} user={user}/>}{page==="agents"&&<AgentsPage data={vd} dispatch={dispatch} user={user}/>}{page==="inbox"&&<InboxPage data={vd} dispatch={dispatch} user={user}/>}</main><Analytics /></div>);
 
 }
