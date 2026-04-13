@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const resend = new Resend(apiKey);
 
     const token = generateToken(to);
-    const magicLink = `${APP_URL}?token=${token}`;
+    const magicLink = `${APP_URL}/portal?token=${token}`;
     const isInvite = type === "invite";
 
     const subject = isInvite

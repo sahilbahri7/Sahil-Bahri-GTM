@@ -1283,7 +1283,8 @@ const SettingsPage=({data,dispatch,user})=>{
 export default function App(){
   const[data,dispatch]=useReducer(reducer,SEED);
   const[user,setUser]=useState(null);
-  const[page,setPage]=useState("portfolio");
+  const isPortalPath=window.location.pathname.startsWith("/portal");
+  const[page,setPage]=useState(isPortalPath?"login":"portfolio");
   const[detailId,setDetailId]=useState(null);
   const[sidebar,setSidebar]=useState(true);
 
@@ -1293,9 +1294,13 @@ export default function App(){
   const[loginErr,setLoginErr]=useState("");
   const[loginSending,setLoginSending]=useState(false);
 
-  const nav=(p,id=null)=>{setPage(p);setDetailId(id);};
+  const nav=(p,id=null)=>{
+    setPage(p);setDetailId(id);
+    if(p==="portfolio"){window.history.pushState({},"","/");}
+    else if(p==="login"||p==="dashboard"||p==="clients"||p==="projects"||p==="project_detail"||p==="activity"||p==="settings"){window.history.pushState({},"","/portal");}
+  };
   const resetLogin=()=>{setLoginStep("email");setLoginEmail("");setLoginErr("");setLoginSending(false);};
-  const logout=()=>{setUser(null);nav("portfolio");resetLogin();};
+  const logout=()=>{setUser(null);setPage("portfolio");setDetailId(null);resetLogin();window.history.pushState({},"","/");};
 
   // Submit email — same flow for everyone, no reveal of whether account exists
   const submitEmail=async()=>{
@@ -1424,7 +1429,7 @@ export default function App(){
       <Analytics />
       </div>
     );
-    return(<div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><><PortfolioPage data={data} onLogin={()=>nav("login")}/><Analytics /></></div>);
+    return(<div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><><PortfolioPage data={data} onLogin={()=>{window.history.pushState({},"","/portal");setPage("login");}}/><Analytics /></></div>);
   }
 
 
