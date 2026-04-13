@@ -17,14 +17,11 @@ export default async function handler(req, res) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
+    const fullPrompt = system ? `${system}\n\n${prompt}` : prompt;
     const body = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
       generationConfig: { maxOutputTokens: 1024 },
     };
-
-    if (system) {
-      body.systemInstruction = { parts: [{ text: system }] };
-    }
 
     const r = await fetch(url, {
       method: "POST",
