@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: "Revosys_Gemini not set in Vercel env vars" });
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const body = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
