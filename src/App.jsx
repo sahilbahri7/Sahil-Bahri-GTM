@@ -1527,18 +1527,398 @@ const FollowUpAgent=({data,dispatch,user})=>{
   return <AgentChat title="Follow-up Agent" color="var(--sky)" icon="activity" tag="RELATIONSHIP MANAGEMENT" description="Continuously monitors your portfolio for at-risk accounts, stale projects, and overdue tasks. Asks about context behind the data, then generates prioritized follow-up actions with ready-to-send messages for each client." capabilities={["Risk Detection","Account Health","Draft Messages","Priority Actions","Multi-Channel"]} data={data} initialMessage={`I've scanned your portfolio. Here's what I see:\n\n• ${data.projects.filter(p=>p.status==="active").length} active projects\n• ${data.tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date()).length} overdue tasks\n• ${data.clients.filter(c=>c.status==="active").length} active clients\n\nWould you like me to analyze which accounts need attention? Tell me if there's any context I should know — recent meetings, pending decisions, or clients you're worried about.`} processMessage={processMessage}/>;
 };
 
+// ============================================================
+// JOB FINDER AGENT — Full pipeline: Search → Review → Scope → Asset → Approve → Apply
+// ============================================================
+const JOB_SCHEDULE_KEY="rs_job_schedule";
+const JOB_CACHE_KEY="rs_job_cache";
+
+const JobFinderAgent=({data,dispatch,user})=>{
+  const[phase,setPhase]=useState("search"); // search | results | detail | scope | asset | approve | applied
+  const[jobs,setJobs]=useState(()=>{try{const c=localStorage.getItem(JOB_CACHE_KEY);return c?JSON.parse(c):[];}catch{return[];}});
+  const[loading,setLoading]=useState(false);
+  const[searchForm,setSearchForm]=useState({keywords:"CRM implementation, GTM systems, revenue operations, AI automation, HubSpot consultant",platforms:"LinkedIn, Upwork, Toptal, Reddit, We Work Remotely",type:"freelance, contract, part-time"});
+  const[selectedJob,setSelectedJob]=useState(null);
+  const[scope,setScope]=useState(null);
+  const[asset,setAsset]=useState(null);
+  const[branding,setBranding]=useState(null);
+  const[scrapeLoad,setScrapeLoad]=useState(false);
+  const[approvalStatus,setApprovalStatus]=useState("pending"); // pending | approved | rejected
+  const[schedule,setSchedule]=useState(()=>{try{const s=localStorage.getItem(JOB_SCHEDULE_KEY);return s?JSON.parse(s):null;}catch{return null;}});
+  const[showSchedule,setShowSchedule]=useState(false);
+  const[viewMode,setViewMode]=useState("cards"); // cards | table
+  const[filterPlatform,setFilterPlatform]=useState("all");
+  const[filterUrgency,setFilterUrgency]=useState("all");
+  const[sortBy,setSortBy]=useState("fitScore"); // fitScore | urgency | budget
+  const base=window.location.hostname==="localhost"?"https://revosys.pro":"";
+
+  // Search for jobs
+  const searchJobs=async()=>{
+    setLoading(true);setJobs([]);setPhase("results");
+    try{
+      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords,platforms:searchForm.platforms,jobType:searchForm.type})});
+      const d=await r.json();
+      if(d.jobs&&d.jobs.length>0){setJobs(d.jobs);try{localStorage.setItem(JOB_CACHE_KEY,JSON.stringify(d.jobs));}catch{}}
+      else{setJobs([]);}
+    }catch{setJobs([]);}
+    setLoading(false);
+  };
+
+  // Scrape company website for branding
+  const scrapeCompany=async(url)=>{
+    setScrapeLoad(true);setBranding(null);
+    try{
+      const r=await fetch(`${base}/api/scrape-url`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
+      const d=await r.json();
+      setBranding(d);
+    }catch(e){setBranding({error:e.message});}
+    setScrapeLoad(false);
+  };
+
+  // Generate scope for selected job
+  const generateScope=async(job)=>{
+    setLoading(true);setScope(null);
+    const brandCtx=branding?`\n\nCompany branding/website info:\nTitle: ${branding.title}\nDescription: ${branding.description}\nContent excerpt: ${branding.text?.substring(0,800)}`:"";
+    const raw=await callAI(`Create a tailored project scope/proposal for this job opportunity:\n\nJob: ${job.title}\nCompany: ${job.company} (${job.companyIndustry})\nDescription: ${job.description}\nRequirements: ${job.requirements?.join(", ")}\nBudget: ${job.budget}\nDuration: ${job.duration}${brandCtx}\n\nReturn ONLY valid JSON: {"title":"scope title matching the job","executive_summary":"2-3 sentences tailored to this company","sections":[{"title":"section","content":"detailed content"}],"timeline":"proposed timeline","investment":"proposed rate/budget","differentiators":["why Revo-Sys is the best fit 1","reason 2","reason 3"]}`,"You are Sahil Bahri, founder of Revo-Sys, a GTM/RevOps consultancy. Create a compelling, personalized scope that demonstrates deep expertise. Reference the company's specific needs. Return only valid JSON.");
+    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setScope(p);}
+    catch{setScope({title:"Tailored Scope",executive_summary:raw,sections:[{title:"Overview",content:raw}],timeline:"TBD",investment:"TBD",differentiators:["Deep RevOps expertise"]});}
+    setLoading(false);
+  };
+
+  // Generate work asset (case study / portfolio piece)
+  const generateAsset=async(job)=>{
+    setLoading(true);setAsset(null);
+    const raw=await callAI(`Create a compelling work sample/case study that demonstrates Revo-Sys expertise directly relevant to this job:\n\nJob: ${job.title} at ${job.company}\nIndustry: ${job.companyIndustry}\nRequirements: ${job.requirements?.join(", ")}\nDescription: ${job.description}\n\nExisting portfolio context — Revo-Sys has done: HubSpot CRM migrations, GTM revenue engine builds, data mapping, API integrations, workflow automation.\n\nReturn ONLY valid JSON: {"title":"case study title","subtitle":"one line","client_type":"anonymized e.g. Series B SaaS","challenge":"what the client faced","approach":[{"phase":"Phase 1","title":"step","detail":"what was done"}],"results":[{"metric":"e.g. 40%","label":"improvement in X"}],"technologies":["tech1","tech2"],"testimonial":"short fictional client quote","relevance":"2 sentences on why this is relevant to the target job"}`,"You are creating a portfolio case study for Revo-Sys. Make it feel real and impressive. Directly align with the job requirements. Return only valid JSON.");
+    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setAsset(p);}
+    catch{setAsset({title:"Case Study",subtitle:raw,client_type:"B2B SaaS",challenge:raw,approach:[{phase:"Phase 1",title:"Discovery",detail:raw}],results:[{metric:"40%",label:"efficiency gain"}],technologies:["HubSpot"],testimonial:"Excellent work.",relevance:"Directly relevant."});}
+    setLoading(false);
+  };
+
+  // Schedule management
+  const saveSchedule=(freq)=>{
+    const s={frequency:freq,createdAt:new Date().toISOString(),nextRun:getNextRun(freq),enabled:true};
+    setSchedule(s);
+    try{localStorage.setItem(JOB_SCHEDULE_KEY,JSON.stringify(s));}catch{}
+    setShowSchedule(false);
+  };
+  const clearSchedule=()=>{setSchedule(null);try{localStorage.removeItem(JOB_SCHEDULE_KEY);}catch{}};
+  const getNextRun=(freq)=>{const now=new Date();if(freq==="daily")now.setDate(now.getDate()+1);else if(freq==="weekly")now.setDate(now.getDate()+7);else if(freq==="biweekly")now.setDate(now.getDate()+14);else now.setMonth(now.getMonth()+1);now.setHours(9,0,0,0);return now.toISOString();};
+
+  // Filtering and sorting
+  const platforms=[...new Set(jobs.map(j=>j.platform))];
+  const filtered=jobs.filter(j=>(filterPlatform==="all"||j.platform===filterPlatform)&&(filterUrgency==="all"||j.urgency===filterUrgency));
+  const sorted=[...filtered].sort((a,b)=>{
+    if(sortBy==="fitScore")return(b.fitScore||0)-(a.fitScore||0);
+    if(sortBy==="urgency"){const o={HIGH:3,MEDIUM:2,LOW:1};return(o[b.urgency]||0)-(o[a.urgency]||0);}
+    return 0;
+  });
+
+  const urgCol={HIGH:"var(--danger)",MEDIUM:"var(--amber)",LOW:"var(--sky)"};
+  const platCol={LinkedIn:"#0A66C2",Upwork:"#14A800",Toptal:"#204ECF",Reddit:"#FF4500","We Work Remotely":"#1A1A2E",Freelancer:"#29B2FE"};
+
+  // ====== PHASE: SEARCH ======
+  if(phase==="search") return(
+    <div style={{animation:"fadeUp .3s ease-out"}}>
+      <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+          <div>
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>JOB INTELLIGENCE</div>
+            <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",margin:0}}>Configure Search</h3>
+          </div>
+          {schedule&&<div style={{padding:"8px 14px",background:"rgba(107,158,111,0.08)",borderRadius:8,border:"1px solid rgba(107,158,111,0.2)"}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.08em"}}>AUTO-SEARCH {schedule.frequency.toUpperCase()}</div>
+            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",marginTop:2}}>Next: {new Date(schedule.nextRun).toLocaleDateString()}</div>
+          </div>}
+        </div>
+        <Field label="Keywords / Skills" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} type="textarea" rows={2} placeholder="CRM implementation, GTM systems, HubSpot consultant..."/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <Field label="Platforms" value={searchForm.platforms} onChange={v=>setSearchForm({...searchForm,platforms:v})} placeholder="LinkedIn, Upwork, Toptal..."/>
+          <Field label="Job Type" value={searchForm.type} onChange={v=>setSearchForm({...searchForm,type:v})} placeholder="freelance, contract, part-time"/>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+          <Btn icon="search" v="ai" onClick={searchJobs}>Search Jobs</Btn>
+          <Btn v="secondary" onClick={()=>setShowSchedule(!showSchedule)}>Schedule Runs</Btn>
+          {jobs.length>0&&<Btn v="secondary" onClick={()=>setPhase("results")}>View Cached ({jobs.length})</Btn>}
+        </div>
+        {showSchedule&&<div style={{marginTop:20,padding:20,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",animation:"fadeUp .2s ease-out"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:12}}>AUTO-SEARCH SCHEDULE</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {["daily","weekly","biweekly","monthly"].map(f=>(
+              <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"8px 16px",borderRadius:8,background:schedule?.frequency===f?"rgba(107,158,111,0.12)":"var(--ink-2)",border:`1px solid ${schedule?.frequency===f?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f?"var(--success)":"var(--cream-mute)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+            ))}
+            {schedule&&<button onClick={clearSchedule} style={{padding:"8px 16px",borderRadius:8,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
+          </div>
+          {schedule&&<p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)",marginTop:10}}>Scheduled: runs {schedule.frequency}, next at {new Date(schedule.nextRun).toLocaleString()}</p>}
+        </div>}
+      </div>
+    </div>
+  );
+
+  // ====== PHASE: RESULTS ======
+  if(phase==="results") return(
+    <div style={{animation:"fadeUp .3s ease-out"}}>
+      {/* Controls bar */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <button onClick={()=>setPhase("search")} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontFamily:"var(--mono)",fontSize:11,letterSpacing:"0.06em"}}><Icon name="back" size={13}/> Search</button>
+          <span style={{color:"var(--border)"}}>|</span>
+          <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)"}}>{sorted.length} jobs</span>
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {/* View toggle */}
+          {["cards","table"].map(v=><button key={v} onClick={()=>setViewMode(v)} style={{padding:"5px 12px",borderRadius:6,background:viewMode===v?"rgba(107,158,111,0.1)":"transparent",border:viewMode===v?"1px solid rgba(107,158,111,0.25)":"1px solid var(--border)",color:viewMode===v?"var(--success)":"var(--cream-mute)",fontFamily:"var(--mono)",fontSize:10,cursor:"pointer",textTransform:"capitalize"}}>{v}</button>)}
+          <span style={{color:"var(--border)"}}>|</span>
+          {/* Platform filter */}
+          <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{padding:"5px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:6,color:"var(--cream)",fontSize:11,fontFamily:"var(--mono)"}}><option value="all">All Platforms</option>{platforms.map(p=><option key={p} value={p}>{p}</option>)}</select>
+          {/* Urgency filter */}
+          <select value={filterUrgency} onChange={e=>setFilterUrgency(e.target.value)} style={{padding:"5px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:6,color:"var(--cream)",fontSize:11,fontFamily:"var(--mono)"}}><option value="all">All Urgency</option>{["HIGH","MEDIUM","LOW"].map(u=><option key={u} value={u}>{u}</option>)}</select>
+          {/* Sort */}
+          <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"5px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:6,color:"var(--cream)",fontSize:11,fontFamily:"var(--mono)"}}><option value="fitScore">Best Fit</option><option value="urgency">Urgency</option></select>
+          <Btn size="sm" v="ai" icon="search" onClick={searchJobs} disabled={loading}>{loading?"Searching...":"Refresh"}</Btn>
+        </div>
+      </div>
+
+      {loading?<div style={{padding:60,textAlign:"center"}}><div style={{width:24,height:24,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:16}}/><p style={{color:"var(--cream-mute)",fontSize:13}}>Scanning job platforms...</p></div>
+      :sorted.length===0?<div style={{padding:60,textAlign:"center"}}><Icon name="search" size={40}/><p style={{color:"var(--cream-mute)",fontSize:14,marginTop:16}}>No jobs found. Try adjusting your search criteria.</p><Btn v="secondary" onClick={()=>setPhase("search")}>Back to Search</Btn></div>
+      :viewMode==="cards"?(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+          {sorted.map(job=>(
+            <div key={job.id} style={{padding:"22px",background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",cursor:"pointer",transition:"all .2s",position:"relative",overflow:"hidden"}} onClick={()=>{setSelectedJob(job);setPhase("detail");}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--success)";e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="none";}}>
+              {/* Fit score bar */}
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"var(--border)"}}><div style={{height:"100%",width:`${job.fitScore||0}%`,background:`linear-gradient(90deg,var(--success),var(--amber))`,borderRadius:"0 2px 2px 0"}}/></div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,marginTop:4}}>
+                <div>
+                  <span style={{fontFamily:"var(--mono)",fontSize:9,color:platCol[job.platform]||"var(--cream-mute)",letterSpacing:"0.08em",textTransform:"uppercase",padding:"2px 8px",borderRadius:4,background:`${platCol[job.platform]||"var(--cream-mute)"}15`}}>{job.platform}</span>
+                  <span style={{fontFamily:"var(--mono)",fontSize:9,color:urgCol[job.urgency],letterSpacing:"0.08em",textTransform:"uppercase",padding:"2px 8px",borderRadius:4,background:`${urgCol[job.urgency]}15`,marginLeft:6}}>{job.urgency}</span>
+                </div>
+                <div style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--success)"}}>{job.fitScore}%</div>
+              </div>
+              <h3 style={{fontSize:15,color:"var(--cream)",fontWeight:500,margin:"0 0 4px",lineHeight:1.4}}>{job.title}</h3>
+              <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",margin:"0 0 8px"}}>{job.company} · {job.companyIndustry}</p>
+              <p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:"0 0 12px"}}>{job.description?.substring(0,120)}...</p>
+              <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:11,fontFamily:"var(--mono)",color:"var(--cream-mute)"}}>
+                <span>{job.budget}</span>
+                <span>·</span>
+                <span>{job.duration}</span>
+                <span>·</span>
+                <span>{job.location}</span>
+                <span>·</span>
+                <span>{job.posted}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ):(
+        // Table view
+        <div style={{borderRadius:12,border:"1px solid var(--border)",overflow:"hidden"}}>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 100px 100px 80px 60px",background:"var(--ink-3)",padding:"10px 16px",gap:12}}>
+            {["Job","Company","Platform","Budget","Urgency","Fit"].map(h=><span key={h} style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{h}</span>)}
+          </div>
+          {sorted.map(job=>(
+            <div key={job.id} onClick={()=>{setSelectedJob(job);setPhase("detail");}} style={{display:"grid",gridTemplateColumns:"2fr 1fr 100px 100px 80px 60px",padding:"14px 16px",gap:12,alignItems:"center",background:"var(--ink-2)",borderTop:"1px solid var(--border)",cursor:"pointer",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--ink-3)"} onMouseLeave={e=>e.currentTarget.style.background="var(--ink-2)"}>
+              <div><div style={{fontSize:13,color:"var(--cream)",fontWeight:500}}>{job.title}</div><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{job.type} · {job.duration}</span></div>
+              <span style={{fontSize:12,color:"var(--amber)"}}>{job.company}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:10,color:platCol[job.platform]||"var(--cream-mute)"}}>{job.platform}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-dim)"}}>{job.budget}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:urgCol[job.urgency],letterSpacing:"0.06em"}}>{job.urgency}</span>
+              <span style={{fontFamily:"var(--serif)",fontSize:16,fontStyle:"italic",color:"var(--success)"}}>{job.fitScore}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ====== PHASE: JOB DETAIL ======
+  if(phase==="detail"&&selectedJob){const job=selectedJob;return(
+    <div style={{animation:"fadeUp .3s ease-out"}}>
+      <button onClick={()=>{setPhase("results");setSelectedJob(null);setBranding(null);setScope(null);setAsset(null);setApprovalStatus("pending");}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontFamily:"var(--mono)",fontSize:11,letterSpacing:"0.06em",marginBottom:20}}><Icon name="back" size={13}/> Back to Results</button>
+      <div style={{display:"grid",gridTemplateColumns:"5fr 3fr",gap:20}}>
+        {/* Main detail */}
+        <div>
+          <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16}}>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:platCol[job.platform]||"var(--cream-mute)",padding:"3px 10px",borderRadius:4,background:`${platCol[job.platform]||"var(--cream-mute)"}15`,letterSpacing:"0.08em"}}>{job.platform}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:urgCol[job.urgency],padding:"3px 10px",borderRadius:4,background:`${urgCol[job.urgency]}15`,letterSpacing:"0.08em"}}>{job.urgency} URGENCY</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",padding:"3px 10px",borderRadius:4,background:"var(--ink)",letterSpacing:"0.08em"}}>{job.posted}</span>
+            </div>
+            <h2 style={{fontFamily:"var(--serif)",fontSize:28,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 6px"}}>{job.title}</h2>
+            <p style={{fontFamily:"var(--mono)",fontSize:13,color:"var(--amber)",margin:"0 0 16px"}}>{job.company} · {job.companyIndustry} · {job.location}</p>
+            <p style={{fontSize:14,color:"var(--cream-dim)",lineHeight:1.8,margin:"0 0 20px"}}>{job.description}</p>
+            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10}}>REQUIREMENTS</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
+              {job.requirements?.map((r,i)=><span key={i} style={{padding:"5px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",fontSize:12,color:"var(--cream-dim)"}}>{r}</span>)}
+            </div>
+            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10}}>INTENT SIGNALS</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {job.signals?.map((s,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:6,height:6,borderRadius:"50%",background:"var(--success)",animation:`flowPulse 2s ease-in-out ${i*0.3}s infinite`}}/><span style={{fontSize:12,color:"var(--cream-dim)"}}>{s}</span></div>)}
+            </div>
+          </div>
+
+          {/* Pipeline buttons */}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {!scope&&<Btn v="ai" icon="doc" onClick={()=>{generateScope(job);setPhase("scope");}} disabled={loading}>Generate Tailored Scope</Btn>}
+            {scope&&!asset&&<Btn v="ai" icon="star" onClick={()=>{generateAsset(job);setPhase("asset");}} disabled={loading}>Create Work Asset</Btn>}
+            {scope&&asset&&approvalStatus==="pending"&&<Btn icon="check" onClick={()=>setPhase("approve")}>Submit for Approval</Btn>}
+            {job.url&&<Btn v="secondary" onClick={()=>window.open(job.url,"_blank")}>View Original</Btn>}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div>
+          <div style={{padding:22,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)",marginBottom:12}}>
+            {[["Fit Score",<span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--success)"}}>{job.fitScore}%</span>],["Budget",job.budget],["Duration",job.duration],["Type",job.type],["Location",job.location]].map(([l,v])=>(<div key={l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid var(--border)",fontSize:13}}><span style={{color:"var(--cream-mute)"}}>{l}</span><span style={{color:"var(--cream-dim)"}}>{v}</span></div>))}
+          </div>
+          {/* Company branding scraper */}
+          {job.companyWebsite&&<div style={{padding:22,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10}}>COMPANY INTEL</div>
+            {!branding&&<Btn size="sm" v="secondary" onClick={()=>scrapeCompany(job.companyWebsite)} disabled={scrapeLoad}>{scrapeLoad?"Scraping...":"Scrape Website"}</Btn>}
+            {branding&&!branding.error&&<div style={{animation:"fadeUp .3s ease-out"}}>
+              <p style={{fontSize:13,color:"var(--cream)",fontWeight:500,margin:"0 0 4px"}}>{branding.title||branding.ogTitle}</p>
+              <p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.5,margin:"0 0 8px"}}>{branding.description||branding.ogDesc||"No description found"}</p>
+              {branding.ogImage&&<img src={branding.ogImage} alt="" style={{width:"100%",borderRadius:8,marginTop:8,border:"1px solid var(--border)"}} onError={e=>e.target.style.display="none"}/>}
+              <p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",marginTop:8}}>✓ Branding data captured</p>
+            </div>}
+            {branding?.error&&<p style={{fontSize:12,color:"var(--danger)"}}>{branding.error}</p>}
+          </div>}
+        </div>
+      </div>
+    </div>
+  );}
+
+  // ====== PHASE: SCOPE ======
+  if(phase==="scope"&&selectedJob) return(
+    <div style={{animation:"fadeUp .3s ease-out"}}>
+      <button onClick={()=>setPhase("detail")} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontFamily:"var(--mono)",fontSize:11,marginBottom:20}}><Icon name="back" size={13}/> Back to Job</button>
+      {loading?<div style={{padding:60,textAlign:"center"}}><div style={{width:24,height:24,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:16}}/><p style={{color:"var(--cream-mute)",fontSize:13}}>Generating tailored scope for {selectedJob.company}...</p></div>
+      :scope&&<div>
+        <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid rgba(196,162,101,0.2)"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:8}}>TAILORED SCOPE — {selectedJob.company}</div>
+          <h2 style={{fontFamily:"var(--serif)",fontSize:26,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 8px"}}>{scope.title}</h2>
+          <p style={{fontSize:14,color:"var(--cream-dim)",lineHeight:1.8,margin:"0 0 24px"}}>{scope.executive_summary}</p>
+          {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"16px 20px",marginBottom:8,background:"var(--ink)",borderRadius:10,borderLeft:"2px solid var(--amber)"}}><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",marginBottom:6}}>{s.title}</div><p style={{fontSize:13,color:"var(--cream-mute)",lineHeight:1.7,margin:0}}>{s.content}</p></div>))}
+          <div style={{display:"flex",gap:24,marginTop:20,padding:"16px 0",borderTop:"1px solid var(--border)"}}>
+            <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>INVESTMENT</div><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)",marginTop:2}}>{scope.investment}</div></div>
+            <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>TIMELINE</div><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--amber)",marginTop:2}}>{scope.timeline}</div></div>
+          </div>
+          {scope.differentiators&&<div style={{marginTop:16}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>WHY REVO-SYS</div>
+            {scope.differentiators.map((d,i)=><div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6}}><span style={{color:"var(--success)",flexShrink:0,marginTop:2}}><Icon name="check" size={12}/></span><span style={{fontSize:13,color:"var(--cream-dim)  "}}>{d}</span></div>)}
+          </div>}
+        </div>
+        <div style={{display:"flex",gap:10,marginTop:16}}>
+          <Btn v="ai" icon="star" onClick={()=>{generateAsset(selectedJob);setPhase("asset");}}>Next: Create Work Asset</Btn>
+          <Btn v="secondary" onClick={()=>navigator.clipboard?.writeText(JSON.stringify(scope,null,2))}>Copy JSON</Btn>
+          <Btn v="secondary" onClick={()=>{setScope(null);generateScope(selectedJob);}}>Regenerate</Btn>
+        </div>
+      </div>}
+    </div>
+  );
+
+  // ====== PHASE: ASSET ======
+  if(phase==="asset"&&selectedJob) return(
+    <div style={{animation:"fadeUp .3s ease-out"}}>
+      <button onClick={()=>setPhase("scope")} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontFamily:"var(--mono)",fontSize:11,marginBottom:20}}><Icon name="back" size={13}/> Back to Scope</button>
+      {loading?<div style={{padding:60,textAlign:"center"}}><div style={{width:24,height:24,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:16}}/><p style={{color:"var(--cream-mute)",fontSize:13}}>Creating relevant work asset for {selectedJob.company}...</p></div>
+      :asset&&<div>
+        <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid rgba(124,111,160,0.2)"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--violet)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:8}}>PORTFOLIO ASSET — CASE STUDY</div>
+          <h2 style={{fontFamily:"var(--serif)",fontSize:26,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 4px"}}>{asset.title}</h2>
+          <p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--violet)",margin:"0 0 16px"}}>{asset.subtitle} · {asset.client_type}</p>
+          <div style={{padding:18,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",marginBottom:16}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--danger)",letterSpacing:"0.1em",marginBottom:6}}>THE CHALLENGE</div>
+            <p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.7,margin:0}}>{asset.challenge}</p>
+          </div>
+          <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10}}>OUR APPROACH</div>
+          {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:14,marginBottom:12,alignItems:"flex-start"}}><div style={{width:32,height:32,borderRadius:8,background:"rgba(124,111,160,0.1)",border:"1px solid rgba(124,111,160,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:10,color:"var(--violet)",flexShrink:0}}>{i+1}</div><div><div style={{fontSize:13,color:"var(--cream)",fontWeight:500,marginBottom:2}}>{p.title}</div><p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{p.detail}</p></div></div>))}
+          <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(asset.results?.length||1,4)},1fr)`,gap:10,marginTop:20,padding:"16px 0",borderTop:"1px solid var(--border)"}}>
+            {asset.results?.map((r,i)=>(<div key={i} style={{textAlign:"center",padding:"12px",background:"var(--ink)",borderRadius:8}}><div style={{fontFamily:"var(--serif)",fontSize:28,fontStyle:"italic",color:"var(--success)"}}>{r.metric}</div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.06em",marginTop:4}}>{r.label}</div></div>))}
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:14}}>
+            {asset.technologies?.map((t,i)=><span key={i} style={{padding:"4px 10px",borderRadius:6,background:"rgba(124,111,160,0.08)",border:"1px solid rgba(124,111,160,0.15)",fontFamily:"var(--mono)",fontSize:10,color:"var(--violet)"}}>{t}</span>)}
+          </div>
+          {asset.testimonial&&<div style={{marginTop:16,padding:"14px 18px",background:"var(--ink)",borderRadius:8,borderLeft:"2px solid var(--amber)"}}><p style={{fontSize:13,color:"var(--cream-dim)",fontStyle:"italic",lineHeight:1.6,margin:0}}>"{asset.testimonial}"</p></div>}
+          <div style={{marginTop:12,padding:"10px 14px",background:"rgba(107,158,111,0.06)",borderRadius:8,border:"1px solid rgba(107,158,111,0.15)"}}><p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)",margin:0}}>RELEVANCE: {asset.relevance}</p></div>
+        </div>
+        <div style={{display:"flex",gap:10,marginTop:16}}>
+          <Btn icon="check" onClick={()=>setPhase("approve")}>Submit for Approval</Btn>
+          <Btn v="secondary" onClick={()=>navigator.clipboard?.writeText(JSON.stringify(asset,null,2))}>Copy JSON</Btn>
+          <Btn v="secondary" onClick={()=>{setAsset(null);generateAsset(selectedJob);}}>Regenerate</Btn>
+        </div>
+      </div>}
+    </div>
+  );
+
+  // ====== PHASE: APPROVE ======
+  if(phase==="approve"&&selectedJob) return(
+    <div style={{animation:"fadeUp .3s ease-out"}}>
+      <button onClick={()=>setPhase("asset")} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontFamily:"var(--mono)",fontSize:11,marginBottom:20}}><Icon name="back" size={13}/> Back to Asset</button>
+      <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid rgba(196,162,101,0.25)",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24}}>
+          <div style={{width:48,height:48,borderRadius:12,background:"rgba(196,162,101,0.1)",border:"1px solid rgba(196,162,101,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--amber)"}}>SB</div>
+          <div><div style={{fontSize:16,color:"var(--cream)",fontWeight:500}}>Approval Required</div><p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",margin:0}}>Sahil Bahri · Founder, Revo-Sys</p></div>
+        </div>
+        {/* Summary */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          <div style={{padding:16,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)"}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--amber)",letterSpacing:"0.1em",marginBottom:6}}>TARGET JOB</div>
+            <div style={{fontSize:14,color:"var(--cream)",fontWeight:500}}>{selectedJob.title}</div>
+            <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)"}}>at {selectedJob.company} · {selectedJob.budget}</div>
+          </div>
+          <div style={{padding:16,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)"}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--violet)",letterSpacing:"0.1em",marginBottom:6}}>ASSETS READY</div>
+            <div style={{display:"flex",gap:8}}>{scope&&<span style={{padding:"4px 10px",borderRadius:6,background:"rgba(196,162,101,0.08)",border:"1px solid rgba(196,162,101,0.15)",fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)"}}>Scope ✓</span>}{asset&&<span style={{padding:"4px 10px",borderRadius:6,background:"rgba(124,111,160,0.08)",border:"1px solid rgba(124,111,160,0.15)",fontFamily:"var(--mono)",fontSize:10,color:"var(--violet)"}}>Case Study ✓</span>}</div>
+          </div>
+        </div>
+        {/* Approval action */}
+        {approvalStatus==="pending"&&<div style={{display:"flex",gap:10,justifyContent:"center",padding:"20px 0"}}>
+          <Btn onClick={()=>setApprovalStatus("approved")} style={{padding:"14px 40px",fontSize:15}}>Approve & Proceed</Btn>
+          <Btn v="danger" onClick={()=>{setApprovalStatus("rejected");setPhase("detail");}}>Reject</Btn>
+        </div>}
+        {approvalStatus==="approved"&&<div style={{textAlign:"center",padding:"20px 0",animation:"fadeUp .3s ease-out"}}>
+          <div style={{width:60,height:60,borderRadius:"50%",background:"rgba(107,158,111,0.12)",border:"2px solid rgba(107,158,111,0.3)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:12}}><Icon name="check" size={28}/></div>
+          <p style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)",margin:"0 0 8px"}}>Approved</p>
+          <p style={{fontSize:13,color:"var(--cream-mute)",marginBottom:16}}>Ready to apply with your tailored scope and case study.</p>
+          <Btn v="ai" icon="send" onClick={()=>setPhase("applied")} style={{padding:"14px 40px",fontSize:15}}>Apply Now</Btn>
+        </div>}
+      </div>
+    </div>
+  );
+
+  // ====== PHASE: APPLIED ======
+  if(phase==="applied"&&selectedJob) return(
+    <div style={{animation:"fadeUp .4s ease-out"}}>
+      <div style={{padding:40,background:"var(--ink-2)",borderRadius:16,border:"1px solid rgba(107,158,111,0.25)",textAlign:"center"}}>
+        <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(107,158,111,0.12)",border:"2px solid rgba(107,158,111,0.3)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:20,animation:"scaleIn .5s ease-out"}}><Icon name="check" size={36}/></div>
+        <h2 style={{fontFamily:"var(--serif)",fontSize:32,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 8px"}}>Application Sent</h2>
+        <p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.06em",margin:"0 0 24px"}}>{selectedJob.title} at {selectedJob.company}</p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:28,maxWidth:400,margin:"0 auto 28px"}}>
+          {[["Scope","Attached","var(--amber)"],["Case Study","Attached","var(--violet)"],["Status","Submitted","var(--success)"]].map(([l,v,c])=><div key={l} style={{padding:"12px",background:"var(--ink)",borderRadius:8,border:"1px solid var(--border)"}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:3}}>{l}</div><div style={{fontFamily:"var(--mono)",fontSize:11,color:c}}>{v}</div></div>)}
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+          <Btn v="secondary" onClick={()=>{setPhase("results");setSelectedJob(null);setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}}>Find More Jobs</Btn>
+          <Btn v="secondary" onClick={()=>setPhase("search")}>New Search</Btn>
+        </div>
+      </div>
+    </div>
+  );
+
+  return null;
+};
+
 const AgentsPage=({data,dispatch,user})=>{
   const[activeAgent,setActiveAgent]=useState(null);
   const agents=[
     {id:"scope",title:"Scope Builder",desc:"Guided conversation to build detailed project scopes — asks about requirements, stakeholders, timeline, then generates a complete scope document.",icon:"doc",color:"var(--amber)",tag:"SCOPE AUTOMATION",capabilities:["Guided Discovery","4-6 Sections","Rate Estimation"]},
     {id:"prospect",title:"Prospecting Agent",desc:"Analyzes your client data for intent signals, identifies upsell opportunities, and crafts personalized multi-channel outreach sequences.",icon:"target",color:"var(--violet)",tag:"REVENUE INTELLIGENCE",capabilities:["Intent Signals","ICP Builder","Outreach Sequences"]},
     {id:"followup",title:"Follow-up Agent",desc:"Monitors portfolio health, detects at-risk accounts, and drafts prioritized follow-up messages ready to send.",icon:"activity",color:"var(--sky)",tag:"RELATIONSHIP MANAGEMENT",capabilities:["Risk Detection","Draft Messages","Priority Actions"]},
+    {id:"jobfinder",title:"Job Finder",desc:"Scrapes LinkedIn, Upwork, Reddit for CRM/GTM/AI ops contracts — generates tailored scopes and assets, then applies with your approval.",icon:"search",color:"var(--success)",tag:"JOB INTELLIGENCE",capabilities:["Multi-Platform","Auto-Scope","Asset Builder","Apply Flow","Scheduled Runs"]},
   ];
   return(<div>
     <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Automation</span>
     <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8,marginBottom:12}}>AI Agents</h1>
     <p style={{fontSize:14,color:"var(--cream-mute)",lineHeight:1.7,marginBottom:32,maxWidth:600}}>Conversational agents that ask the right questions, analyze your data, and deliver actionable outputs — not just text generation.</p>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:24}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16,marginBottom:24}}>
       {agents.map(a=>(
         <div key={a.id} onClick={()=>setActiveAgent(activeAgent===a.id?null:a.id)} style={{padding:"24px",background:activeAgent===a.id?`${a.color}08`:"var(--ink-2)",borderRadius:14,border:`1px solid ${activeAgent===a.id?a.color+"40":"var(--border)"}`,cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>{if(activeAgent!==a.id)e.currentTarget.style.borderColor=`${a.color}25`;}} onMouseLeave={e=>{if(activeAgent!==a.id)e.currentTarget.style.borderColor="var(--border)";}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
@@ -1556,6 +1936,7 @@ const AgentsPage=({data,dispatch,user})=>{
     {activeAgent==="scope"&&<ScopeBuilderAgent data={data} dispatch={dispatch} user={user}/>}
     {activeAgent==="prospect"&&<ProspectingAgent data={data} dispatch={dispatch} user={user}/>}
     {activeAgent==="followup"&&<FollowUpAgent data={data} dispatch={dispatch} user={user}/>}
+    {activeAgent==="jobfinder"&&<JobFinderAgent data={data} dispatch={dispatch} user={user}/>}
   </div>);
 };
 
