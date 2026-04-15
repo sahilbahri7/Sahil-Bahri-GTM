@@ -249,6 +249,10 @@ const CSS = `
 @keyframes barGrow{from{width:0}to{width:var(--bar-w)}}
 @keyframes numberGlow{0%,100%{text-shadow:none}50%{text-shadow:0 0 20px currentColor}}
 @keyframes borderPulse{0%,100%{border-color:rgba(196,162,101,0.15)}50%{border-color:rgba(196,162,101,0.4)}}
+@keyframes shinyBorder{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.ai-chat-glow{position:relative;border:none!important;background:var(--ink-2);isolation:isolate}
+.ai-chat-glow::before{content:'';position:absolute;inset:-2px;border-radius:18px;background:linear-gradient(135deg,#4285f4,#ea4335,#fbbc04,#34a853,#7c6fa0,#5b8fa8,#c4a265,#4285f4);background-size:400% 400%;animation:shinyBorder 6s ease infinite;z-index:-1;opacity:.7}
+.ai-chat-glow::after{content:'';position:absolute;inset:0;border-radius:16px;background:var(--ink-2);z-index:-1}
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--ink:#0B0B0B;--ink-2:#111111;--ink-3:#1A1A1A;--ink-4:#222;--ink-5:#2a2a2a;--cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#7A756D;--amber:#C4A265;--sky:#5B8FA8;--violet:#7C6FA0;--success:#6B9E6F;--danger:#A85B5B;--sage:#7B8F7E;--rose:#A8726F;--border:rgba(232,224,212,0.08);--border-h:rgba(232,224,212,0.15);--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
 body{background:var(--ink);color:var(--cream);font-family:var(--sans);-webkit-font-smoothing:antialiased}
@@ -980,7 +984,7 @@ const DashboardPage=({data,user,onNav})=>{
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:"var(--border)",borderRadius:12,overflow:"hidden",marginBottom:40}}>{stats.map((s,i)=>(<div key={i} onClick={()=>onNav&&onNav(s.dest)} onMouseEnter={()=>setHovStat(i)} onMouseLeave={()=>setHovStat(null)} style={{padding:"28px 24px",background:hovStat===i?"var(--ink-3)":"var(--ink-2)",cursor:"pointer",transition:"background .15s"}}><div style={{fontFamily:"var(--serif)",fontSize:40,fontWeight:400,color:s.c,fontStyle:"italic"}}>{s.val}</div><div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:8}}>{s.label}</div></div>))}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}><h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--cream)",margin:0}}>Recent Activity</h3>{user.role==="admin"&&<Btn v="ai" size="sm" icon="ai" onClick={()=>{setDraftModal(true);if(!draftText)runDraft();}}>Draft Weekly Update</Btn>}</div>{recent.map(a=>(<div key={a.id} style={{padding:"10px 0",borderBottom:"1px solid var(--border)",display:"flex",gap:14,alignItems:"flex-start"}}><span style={{width:5,height:5,borderRadius:"50%",background:"var(--amber)",marginTop:7,flexShrink:0}}/><div><p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.5,margin:0}}>{a.details}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{new Date(a.timestamp).toLocaleDateString()}</span></div></div>))}</div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><h3 style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:overdue.length?"var(--danger)":"var(--cream)",marginBottom:20}}>{overdue.length?`${overdue.length} Overdue`:"Upcoming Tasks"}</h3>{(overdue.length?overdue:my.filter(t=>t.status!=="completed").slice(0,6)).map(t=>{const p=data.projects.find(p=>p.id===t.projectId);return(<div key={t.id} style={{padding:"10px 0",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{t.title}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{p?.name}</span></div><Badge status={t.status}/></div>);})}{my.filter(t=>t.status!=="completed").length===0&&<p style={{color:"var(--cream-mute)",fontSize:13,fontStyle:"italic"}}>All clear</p>}</div></div>
 {/* AI Chat Panel */}
-<div style={{marginTop:32,background:"var(--ink-2)",borderRadius:16,border:"1px solid var(--border)",display:"flex",flexDirection:"column",height:500}}>
+<div className="ai-chat-glow" style={{marginTop:32,background:"var(--ink-2)",borderRadius:16,display:"flex",flexDirection:"column",height:500}}>
   <div style={{padding:"18px 24px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:12}}>
     <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,var(--violet),var(--sky))",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="ai" size={16}/></div>
     <div><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.1em",textTransform:"uppercase"}}>AI Assistant</div><div style={{fontSize:12,color:"var(--cream-mute)"}}>Ask anything about your projects, clients, or GTM strategy</div></div>
@@ -1117,7 +1121,45 @@ const TasksTabContent=({vis,sel,detail,setDetail,data,user,dispatch,projectId,tM
 };
 
 // ProjectDetail with all sub-tabs (Overview, Proposals, Scopes, Tasks, Delivery)
-const ProjectDetail=({data,dispatch,user,projectId,onNav})=>{const project=data.projects.find(p=>p.id===projectId);const[tab,setTab]=useState("overview");if(!project)return <Empty icon="folder" title="Project not found"/>;const client=data.clients.find(c=>c.id===project.clientId);const proposals=data.proposals.filter(p=>p.projectId===projectId);const scopes=data.scopes.filter(s=>s.projectId===projectId);const tasks=data.tasks.filter(t=>t.projectId===projectId);const vis=user.role==="client"?tasks.filter(t=>t.visibility==="client"):tasks;const done=vis.filter(t=>t.status==="completed");const deliverables=data.deliverables.filter(d=>tasks.some(t=>t.id===d.taskId));const[pModal,setPModal]=useState(false);const[pEdit,setPEdit]=useState(null);const[pForm,setPForm]=useState({title:"",content:""});const[sModal,setSModal]=useState(false);const[sEdit,setSEdit]=useState(null);const[sForm,setSForm]=useState({title:"",sections:[{id:uid(),title:"",content:""}],rateType:"project",rateAmount:"",rateHours:""});const[sTemplateStep,setSTemplateStep]=useState("pick");// "pick" | "edit"const[expanded,setExpanded]=useState(null);const[tModal,setTModal]=useState(false);const[tEdit,setTEdit]=useState(null);const[tForm,setTForm]=useState({title:"",description:"",owner:"",visibility:"client",dueDate:"",status:"todo"});const[detail,setDetail]=useState(null);const[comment,setComment]=useState("");const[filter,setFilter]=useState("all");const[showMentions,setShowMentions]=useState(false);const cRef=useRef(null);const[summary,setSummary]=useState("");const[sumLoad,setSumLoad]=useState(false);const[ack,setAck]=useState(false);const pct=vis.length>0?Math.round((done.length/vis.length)*100):0;const filtered=filter==="all"?vis:vis.filter(t=>t.status===filter);const sel=detail?vis.find(t=>t.id===detail):null;const tComments=detail?data.comments.filter(c=>c.taskId===detail):[];const tDelivs=detail?data.deliverables.filter(d=>d.taskId===detail):[];const counts={all:vis.length,todo:vis.filter(t=>t.status==="todo").length,in_progress:vis.filter(t=>t.status==="in_progress").length,completed:vis.filter(t=>t.status==="completed").length};
+const ProjectDetail=({data,dispatch,user,projectId,onNav})=>{
+  // ALL hooks must be declared before any conditional return (React rules of hooks)
+  const[tab,setTab]=useState("overview");
+  const[pModal,setPModal]=useState(false);
+  const[pEdit,setPEdit]=useState(null);
+  const[pForm,setPForm]=useState({title:"",content:""});
+  const[sModal,setSModal]=useState(false);
+  const[sEdit,setSEdit]=useState(null);
+  const[sForm,setSForm]=useState({title:"",sections:[{id:uid(),title:"",content:""}],rateType:"project",rateAmount:"",rateHours:""});
+  const[sTemplateStep,setSTemplateStep]=useState("pick");
+  const[expanded,setExpanded]=useState(null);
+  const[tModal,setTModal]=useState(false);
+  const[tEdit,setTEdit]=useState(null);
+  const[tForm,setTForm]=useState({title:"",description:"",owner:"",visibility:"client",dueDate:"",status:"todo"});
+  const[detail,setDetail]=useState(null);
+  const[comment,setComment]=useState("");
+  const[filter,setFilter]=useState("all");
+  const[showMentions,setShowMentions]=useState(false);
+  const cRef=useRef(null);
+  const[summary,setSummary]=useState("");
+  const[sumLoad,setSumLoad]=useState(false);
+  const[ack,setAck]=useState(false);
+
+  const project=data.projects.find(p=>p.id===projectId);
+  if(!project)return <Empty icon="folder" title="Project not found"/>;
+
+  const client=data.clients.find(c=>c.id===project.clientId);
+  const proposals=data.proposals.filter(p=>p.projectId===projectId);
+  const scopes=data.scopes.filter(s=>s.projectId===projectId);
+  const tasks=data.tasks.filter(t=>t.projectId===projectId);
+  const vis=user.role==="client"?tasks.filter(t=>t.visibility==="client"):tasks;
+  const done=vis.filter(t=>t.status==="completed");
+  const deliverables=data.deliverables.filter(d=>tasks.some(t=>t.id===d.taskId));
+  const pct=vis.length>0?Math.round((done.length/vis.length)*100):0;
+  const filtered=filter==="all"?vis:vis.filter(t=>t.status===filter);
+  const sel=detail?vis.find(t=>t.id===detail):null;
+  const tComments=detail?data.comments.filter(c=>c.taskId===detail):[];
+  const tDelivs=detail?data.deliverables.filter(d=>d.taskId===detail):[];
+  const counts={all:vis.length,todo:vis.filter(t=>t.status==="todo").length,in_progress:vis.filter(t=>t.status==="in_progress").length,completed:vis.filter(t=>t.status==="completed").length};
 return(<div><button onClick={()=>detail?setDetail(null):onNav("projects")} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",marginBottom:24,fontFamily:"var(--mono)",fontSize:11,letterSpacing:"0.05em"}}><Icon name="back" size={14}/> {detail?"Tasks":"Projects"}</button>{!detail&&<><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:40}}><div><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase"}}>{project.category}</span><h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8}}>{project.name}</h1></div><Badge status={project.status}/></div><Tabs tabs={[{key:"overview",label:"Overview"},{key:"proposals",label:"Proposals",count:proposals.length},{key:"scopes",label:"Scopes",count:scopes.length},{key:"tasks",label:"Tasks",count:vis.length},{key:"delivery",label:"Delivery"}]} active={tab} onChange={setTab}/></>}
 {/* Overview */}
 {tab==="overview"&&!detail&&<div style={{display:"grid",gridTemplateColumns:"5fr 3fr",gap:24}}><div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)",marginBottom:20}}><p style={{color:"var(--cream-dim)",fontSize:15,lineHeight:1.8}}>{project.description}</p></div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)"}}>{done.length}/{vis.length} tasks</span><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>{pct}%</span></div><div style={{height:3,background:"var(--border)",borderRadius:2}}><div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,var(--amber),var(--success))",borderRadius:2}}/></div></div></div><div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)",marginBottom:20}}>{client?<><p style={{fontSize:15,color:"var(--cream)",margin:"0 0 3px"}}>{client.name}</p><p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--cream-mute)",margin:0}}>{client.company}</p></>:<p style={{color:"var(--cream-mute)"}}>Unassigned</p>}</div><div style={{padding:28,background:"var(--ink-2)",borderRadius:12,border:"1px solid var(--border)"}}>{[["Deliverables",deliverables.length],["Created",new Date(project.createdAt).toLocaleDateString()]].map(([l,v])=>(<div key={l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid var(--border)",fontSize:13}}><span style={{color:"var(--cream-mute)"}}>{l}</span><span style={{color:"var(--cream-dim)"}}>{v}</span></div>))}</div></div></div>}
@@ -1323,165 +1365,196 @@ const SettingsPage=({data,dispatch,user})=>{
 };
 
 // ============================================================
-// AI AGENTS
+// AI AGENTS — Conversational, multi-step, HubSpot-style
 // ============================================================
-const ScopeBuilderAgent=({data,dispatch,user})=>{
+
+// Shared conversational agent shell
+const AgentChat=({title,color,icon,tag,description,capabilities,data,initialMessage,processMessage})=>{
+  const[messages,setMessages]=useState([{role:"agent",content:initialMessage}]);
   const[input,setInput]=useState("");
   const[loading,setLoading]=useState(false);
-  const[result,setResult]=useState(null);
-  const[selectedProject,setSelectedProject]=useState(data.projects[0]?.id||"");
-  const[saved,setSaved]=useState(false);
-  const generate=async()=>{
-    if(!input.trim())return;
-    setLoading(true);setResult(null);setSaved(false);
-    const raw=await callAI(`Based on these client requirements, generate a detailed project scope.\n\nRequirements:\n${input}\n\nReturn ONLY valid JSON: {"title":"scope title","rateSuggestion":"e.g. $8,000–$12,000","sections":[{"title":"section title","content":"detailed content"}]}`,"You are a senior GTM consultant. Generate 4-6 detailed sections. Return only valid JSON.");
-    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setResult(p);}
-    catch{setResult({title:"Generated Scope",rateSuggestion:"TBD",sections:[{title:"Scope Overview",content:raw}]});}
+  const[artifacts,setArtifacts]=useState([]);
+  const endRef=useRef(null);
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
+
+  const send=async(text)=>{
+    const msg=(text||input).trim();
+    if(!msg||loading)return;
+    setInput("");
+    const newMsgs=[...messages,{role:"user",content:msg}];
+    setMessages(newMsgs);
+    setLoading(true);
+    const{reply,newArtifacts}=await processMessage(msg,newMsgs,artifacts);
+    setMessages(prev=>[...prev,{role:"agent",content:reply}]);
+    if(newArtifacts)setArtifacts(prev=>[...prev,...newArtifacts]);
     setLoading(false);
   };
-  const saveScope=()=>{
-    if(!result||!selectedProject)return;
-    dispatch({type:"ADD_SCOPE",payload:{projectId:selectedProject,title:result.title,sections:result.sections.map((s,i)=>({id:`sec_${Date.now()}_${i}`,title:s.title,content:s.content})),rate:{type:"project",amount:0,currency:"USD"},scopeStatus:"draft"},userId:user.id});
-    setSaved(true);
-  };
-  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",padding:28,animation:"fadeUp .3s ease-out"}}>
-    <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",marginBottom:6}}>Scope Builder Agent</h3>
-    <p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>Paste client requirements, meeting notes, or a project brief. AI generates a complete project scope.</p>
-    <Field label="Requirements / Meeting Notes" value={input} onChange={setInput} type="textarea" rows={8} placeholder="e.g. 'Client needs a full CRM migration from Salesforce to HubSpot. They have 50k contacts, 3 sales teams...'"/>
-    <Btn icon="ai" v="ai" onClick={generate} disabled={!input.trim()||loading}>{loading?"Generating...":"Generate Scope"}</Btn>
-    {result&&<div style={{marginTop:24,animation:"fadeUp .3s ease-out"}}>
-      <div style={{padding:20,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",marginBottom:16}}>
-        <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",letterSpacing:"0.1em",marginBottom:6}}>GENERATED SCOPE</div>
-        <h3 style={{fontSize:18,color:"var(--cream)",fontWeight:500,marginBottom:4}}>{result.title}</h3>
-        <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)"}}>{result.rateSuggestion}</span>
-        <div style={{marginTop:16}}>{result.sections?.map((s,i)=>(<div key={i} style={{padding:"14px 16px",marginBottom:8,background:"var(--ink-2)",borderRadius:8,borderLeft:"2px solid var(--amber)"}}><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",marginBottom:4}}>{s.title}</div><p style={{fontSize:13,color:"var(--cream-mute)",lineHeight:1.7,margin:0}}>{s.content}</p></div>))}</div>
+
+  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:`1px solid ${color}30`,animation:"fadeUp .3s ease-out",overflow:"hidden"}}>
+    {/* Agent header with description */}
+    <div style={{padding:"24px 28px",borderBottom:`1px solid ${color}20`,background:`${color}05`}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+        <div style={{width:40,height:40,borderRadius:10,background:`${color}15`,border:`1px solid ${color}30`,display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name={icon} size={18}/></div>
+        <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:color,letterSpacing:"0.12em",textTransform:"uppercase"}}>{tag}</div><div style={{fontSize:17,color:"var(--cream)",fontWeight:500}}>{title}</div></div>
       </div>
-      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-        <select value={selectedProject} onChange={e=>setSelectedProject(e.target.value)} style={{padding:"10px 14px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>{data.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <Btn icon="check" onClick={saveScope} disabled={saved}>{saved?"Saved ✓":"Save to Project"}</Btn>
-        <Btn v="secondary" onClick={()=>{setResult(null);setInput("");}}>Start Over</Btn>
+      <p style={{fontSize:13,color:"var(--cream-mute)",lineHeight:1.7,margin:"0 0 14px"}}>{description}</p>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {capabilities.map((c,i)=><span key={i} style={{padding:"4px 10px",borderRadius:20,background:`${color}10`,border:`1px solid ${color}20`,fontFamily:"var(--mono)",fontSize:9,color:color,letterSpacing:"0.06em"}}>{c}</span>)}
       </div>
-    </div>}
+    </div>
+    {/* Chat area */}
+    <div style={{height:380,overflowY:"auto",padding:"16px 24px",display:"flex",flexDirection:"column",gap:10}}>
+      {messages.map((m,i)=>(
+        <div key={i} style={{display:"flex",gap:8,justifyContent:m.role==="user"?"flex-end":"flex-start",alignItems:"flex-end",animation:i>0?"fadeUp .3s ease-out":"none"}}>
+          {m.role==="agent"&&<div style={{width:26,height:26,borderRadius:8,background:`${color}20`,border:`1px solid ${color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name={icon} size={11}/></div>}
+          <div style={{maxWidth:"75%",padding:"10px 14px",borderRadius:m.role==="user"?"12px 12px 4px 12px":"12px 12px 12px 4px",background:m.role==="user"?color:"var(--ink)",color:m.role==="user"?"var(--ink)":"var(--cream-dim)",fontSize:13,lineHeight:1.7,border:m.role==="user"?"none":"1px solid var(--border)",whiteSpace:"pre-wrap"}}>{m.content}</div>
+        </div>
+      ))}
+      {/* Artifacts display */}
+      {artifacts.map((a,i)=>(
+        <div key={`art_${i}`} style={{padding:"14px 18px",background:"var(--ink)",borderRadius:10,border:`1px solid ${color}25`,borderLeft:`3px solid ${color}`,animation:"fadeUp .3s ease-out"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:color,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>{a.type}</div>
+          <div style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{a.content}</div>
+          {a.actions&&<div style={{display:"flex",gap:6,marginTop:10}}>{a.actions.map((act,ai)=><Btn key={ai} size="sm" v={ai===0?"primary":"secondary"} onClick={act.fn}>{act.label}</Btn>)}</div>}
+        </div>
+      ))}
+      {loading&&<div style={{display:"flex",gap:8,alignItems:"flex-end"}}><div style={{width:26,height:26,borderRadius:8,background:`${color}20`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name={icon} size={11}/></div><div style={{padding:"10px 14px",borderRadius:"12px 12px 12px 4px",background:"var(--ink)",border:"1px solid var(--border)"}}><div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:color,animation:`flowPulse 1.2s ease-in-out ${i*0.2}s infinite`}}/>)}</div></div></div>}
+      <div ref={endRef}/>
+    </div>
+    {/* Input */}
+    <div style={{padding:"12px 20px",borderTop:"1px solid var(--border)",display:"flex",gap:8}}>
+      <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Type your response..." style={{flex:1,padding:"10px 14px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}/>
+      <Btn v="ai" onClick={()=>send()} disabled={!input.trim()||loading}><Icon name="send" size={14}/></Btn>
+    </div>
   </div>);
 };
 
-const BrandDocAgent=({data,dispatch,user})=>{
-  const[url,setUrl]=useState("");
-  const[clientId,setClientId]=useState(data.clients[0]?.id||"");
-  const[loading,setLoading]=useState(false);
-  const[doc,setDoc]=useState(null);
-  const[signModal,setSignModal]=useState(false);
-  const[signerName,setSignerName]=useState("");
-  const[signed,setSigned]=useState(false);
-  const generate=async()=>{
-    if(!clientId)return;
-    setLoading(true);setDoc(null);
-    const client=data.clients.find(c=>c.id===clientId);
-    const raw=await callAI(`Create a branded professional proposal for ${client?.name||"this client"} (${client?.company||""}, industry: ${client?.industry||"B2B"}), website: ${url||"not provided"}.\n\nReturn ONLY valid JSON: {"headline":"main headline","tagline":"short tagline","sections":[{"title":"section","content":"content"}],"investmentRange":"$X,XXX–$XX,XXX","timeline":"X weeks"}`,"You are creating a compelling business proposal. Be specific to the client's industry. Return only valid JSON.");
-    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setDoc(p);}
-    catch{setDoc({headline:"Proposal",tagline:"",sections:[{title:"Overview",content:raw}],investmentRange:"TBD",timeline:"TBD"});}
-    setLoading(false);
+const ScopeBuilderAgent=({data,dispatch,user})=>{
+  const processMessage=async(msg,history,artifacts)=>{
+    const step=history.filter(m=>m.role==="user").length;
+    const prevCtx=history.map(m=>`${m.role==="user"?"User":"Agent"}: ${m.content}`).join("\n");
+    if(step===1){
+      const reply=await callAI(`The user wants to build a scope. They said: "${msg}"\n\nAsk 2-3 clarifying questions about: project type, number of stakeholders, integrations needed, timeline expectations, and budget range. Be conversational and specific based on what they told you.`,"You are a senior GTM consultant at Revo-Sys helping build a project scope. Ask targeted follow-up questions. Be concise.");
+      return{reply};
+    }
+    if(step===2){
+      const reply=await callAI(`Conversation so far:\n${prevCtx}\n\nBased on the answers, ask 1-2 more specific questions about: deliverables they expect, success metrics, any compliance/security needs, and who the key stakeholders are. Then tell them you have enough to generate the scope.`,"You are a senior GTM consultant. Gather final details before generating the scope. Be brief and targeted.");
+      return{reply};
+    }
+    // Step 3+: Generate scope
+    const raw=await callAI(`Full conversation:\n${prevCtx}\n\nBased on ALL the information gathered, generate a detailed project scope.\n\nReturn ONLY valid JSON: {"title":"scope title","rateSuggestion":"$X,XXX–$XX,XXX","sections":[{"title":"section title","content":"detailed content with specifics from the conversation"}]}`,"You are a senior GTM consultant. Generate 4-6 detailed, specific sections based on the conversation. Include specific details the user mentioned. Return only valid JSON.");
+    let result;
+    try{result=JSON.parse(raw.replace(/```json?|```/g,"").trim());}
+    catch{result={title:"Generated Scope",rateSuggestion:"TBD",sections:[{title:"Scope Overview",content:raw}]};}
+    const scopeText=`${result.title}\nEstimated: ${result.rateSuggestion}\n\n${result.sections.map(s=>`[${s.title}]\n${s.content}`).join("\n\n")}`;
+    const newArtifacts=[{type:"Generated Scope",content:scopeText,actions:[
+      {label:"Save to Project",fn:()=>{const pid=data.projects[0]?.id;if(pid){dispatch({type:"ADD_SCOPE",payload:{projectId:pid,title:result.title,sections:result.sections.map((s,i)=>({id:`sec_${Date.now()}_${i}`,title:s.title,content:s.content})),rate:{type:"project",amount:0,currency:"USD"},scopeStatus:"draft"},userId:user.id});alert("Scope saved!");}}},
+      {label:"Copy",fn:()=>navigator.clipboard?.writeText(scopeText)}
+    ]}];
+    return{reply:`Here's your scope — "${result.title}" with ${result.sections.length} sections. Estimated investment: ${result.rateSuggestion}.\n\nI've generated it as an artifact below. You can save it directly to a project or copy it. Want me to adjust anything?`,newArtifacts};
   };
-  const client=data.clients.find(c=>c.id===clientId);
-  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",padding:28,animation:"fadeUp .3s ease-out"}}>
-    <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",marginBottom:6}}>Brand Doc Creator</h3>
-    <p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>Select a client and optionally enter their website. AI generates a fully branded proposal ready to send for signature.</p>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-      <Field label="Client" value={clientId} onChange={setClientId} type="select" options={data.clients.map(c=>({value:c.id,label:c.company||c.name}))}/>
-      <Field label="Client Website (optional)" value={url} onChange={setUrl} placeholder="https://client.com"/>
-    </div>
-    <Btn icon="ai" v="ai" onClick={generate} disabled={!clientId||loading}>{loading?"Building Document...":"Build Document"}</Btn>
-    {doc&&<div style={{marginTop:24,animation:"fadeUp .3s ease-out"}}>
-      <div style={{padding:28,background:"var(--ink)",borderRadius:12,border:"1px solid var(--border)",marginBottom:16}}>
-        <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--violet)",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:8}}>REVO-SYS PROPOSAL</div>
-        <h2 style={{fontFamily:"var(--serif)",fontSize:26,fontStyle:"italic",color:"var(--cream)",marginBottom:4}}>{doc.headline}</h2>
-        <p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",marginBottom:20}}>{doc.tagline}</p>
-        {doc.sections?.map((s,i)=>(<div key={i} style={{marginBottom:16,paddingBottom:16,borderBottom:"1px solid var(--border)"}}><div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--violet)",letterSpacing:"0.06em",marginBottom:6}}>{s.title}</div><p style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,margin:0}}>{s.content}</p></div>))}
-        <div style={{display:"flex",gap:24,marginTop:8}}>
-          <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>INVESTMENT</div><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)",marginTop:2}}>{doc.investmentRange}</div></div>
-          <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>TIMELINE</div><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--amber)",marginTop:2}}>{doc.timeline}</div></div>
-        </div>
-      </div>
-      <div style={{display:"flex",gap:10}}>
-        <Btn icon="send" onClick={()=>setSignModal(true)}>Send for Signature</Btn>
-        <Btn v="secondary" onClick={()=>setDoc(null)}>Regenerate</Btn>
-      </div>
-    </div>}
-    <Modal open={signModal} onClose={()=>setSignModal(false)} title="Send for Signature">
-      {signed?<div style={{textAlign:"center",padding:"32px 0"}}><div style={{fontSize:40,marginBottom:12}}>✓</div><p style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--success)"}}>Document sent for signature</p><p style={{color:"var(--cream-mute)",fontSize:13,marginTop:8}}>The client will receive a signature link via email.</p><div style={{marginTop:20}}><Btn onClick={()=>{setSignModal(false);setSigned(false);}}>Close</Btn></div></div>
-      :<div><p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>The document will be emailed to the client for digital signature.</p><Field label="Signer Name" value={signerName} onChange={setSignerName} placeholder="Client's full name"/><Field label="Signer Email" value={client?.email||""} onChange={()=>{}} disabled/><div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}><Btn v="secondary" onClick={()=>setSignModal(false)}>Cancel</Btn><Btn icon="send" onClick={()=>setSigned(true)} disabled={!signerName}>Send Document</Btn></div></div>}
-    </Modal>
-  </div>);
+  return <AgentChat title="Scope Builder" color="var(--amber)" icon="doc" tag="SCOPE AUTOMATION" description="Builds comprehensive project scopes through a guided conversation. Asks about your client's needs, timeline, stakeholders, and budget — then generates a detailed, ready-to-send scope document." capabilities={["Guided Discovery","Auto-Sections","Rate Estimation","Save to Project"]} data={data} initialMessage="Hi! I'm your Scope Builder agent. Tell me about the project you need to scope — what's the client asking for? I'll ask a few targeted questions and then generate a complete scope for you." processMessage={processMessage}/>;
+};
+
+const ProspectingAgent=({data,dispatch,user})=>{
+  const processMessage=async(msg,history,artifacts)=>{
+    const step=history.filter(m=>m.role==="user").length;
+    const prevCtx=history.map(m=>`${m.role==="user"?"User":"Agent"}: ${m.content}`).join("\n");
+    const clientCtx=data.clients.map(c=>`${c.name} (${c.company}, ${c.industry||"unknown industry"}, status: ${c.status})`).join("; ");
+    const projCtx=data.projects.map(p=>{const c=data.clients.find(cl=>cl.id===p.clientId);const tasks=data.tasks.filter(t=>t.projectId===p.id);const overdue=tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());return`${p.name} (client: ${c?.company||"unknown"}, status: ${p.status}, tasks: ${tasks.length}, overdue: ${overdue.length})`;}).join("; ");
+
+    if(step===1){
+      const reply=await callAI(`User wants prospecting help. They said: "${msg}"\n\nCurrent clients: ${clientCtx}\nCurrent projects: ${projCtx}\n\nBased on their existing client base, ask them:\n1. What's their ideal customer profile (industry, company size, tech stack)?\n2. Are they looking to expand existing accounts or acquire new ones?\n3. What's their typical deal size and sales cycle?\n\nAlso share 1-2 quick observations about intent signals you notice from their current portfolio (e.g., overdue tasks might mean capacity issues, completed projects might mean upsell opportunities).`,"You are a senior GTM strategist and prospecting expert at Revo-Sys. You help identify ideal prospects and craft personalized outreach. Be conversational and insightful.");
+      return{reply};
+    }
+    if(step===2){
+      const reply=await callAI(`Conversation:\n${prevCtx}\n\nExisting clients: ${clientCtx}\nProjects: ${projCtx}\n\nBased on their answers, ask about:\n1. What messaging/value props have worked in past outreach?\n2. Any specific companies or verticals they're targeting?\n3. What channels do they prefer (email, LinkedIn, calls)?\n\nAlso identify 2-3 "intent signals" from their current data — like which clients might be ready for upsell, which projects indicate expertise they can promote.`,"You are a GTM prospecting expert. Gather targeting info and share portfolio insights. Be concise.");
+      return{reply};
+    }
+    // Step 3+: Generate prospecting plan with personalized sequences
+    const raw=await callAI(`Full conversation:\n${prevCtx}\n\nClients: ${clientCtx}\nProjects: ${projCtx}\n\nGenerate a prospecting playbook.\n\nReturn ONLY valid JSON: {"icpSummary":"ideal customer profile summary","intentSignals":[{"signal":"what you noticed","implication":"what it means","action":"recommended action"}],"sequences":[{"name":"sequence name","target":"who this targets","steps":[{"channel":"email|linkedin|call","day":"Day X","subject":"subject/hook","content":"full message draft"}]}],"upsellOpportunities":[{"client":"client name","opportunity":"what to offer","reason":"why now"}]}`,"You are a senior prospecting strategist. Create specific, personalized outreach sequences using data from the conversation. Return only valid JSON.");
+    let result;
+    try{result=JSON.parse(raw.replace(/```json?|```/g,"").trim());}
+    catch{result={icpSummary:raw,intentSignals:[],sequences:[],upsellOpportunities:[]};}
+
+    const parts=[];
+    if(result.intentSignals?.length>0) parts.push(`INTENT SIGNALS\n${result.intentSignals.map(s=>`• ${s.signal} → ${s.implication} → Action: ${s.action}`).join("\n")}`);
+    if(result.upsellOpportunities?.length>0) parts.push(`\nUPSELL OPPORTUNITIES\n${result.upsellOpportunities.map(u=>`• ${u.client}: ${u.opportunity} (${u.reason})`).join("\n")}`);
+    const seqText=result.sequences?.map(s=>`\n--- ${s.name} (Target: ${s.target}) ---\n${s.steps?.map(st=>`${st.day} [${st.channel}] ${st.subject||""}\n${st.content}`).join("\n\n")}`).join("\n")||"";
+
+    const newArtifacts=[];
+    if(parts.length>0) newArtifacts.push({type:"Intent Signals & Opportunities",content:parts.join("\n")});
+    if(seqText) newArtifacts.push({type:"Outreach Sequences",content:seqText,actions:[{label:"Copy All",fn:()=>navigator.clipboard?.writeText(seqText)}]});
+
+    return{reply:`Here's your prospecting playbook!\n\nICP: ${result.icpSummary}\n\nI found ${result.intentSignals?.length||0} intent signals, ${result.upsellOpportunities?.length||0} upsell opportunities, and created ${result.sequences?.length||0} outreach sequences.\n\nCheck the artifacts below. Want me to refine any sequence or draft more personalized messaging?`,newArtifacts};
+  };
+  return <AgentChat title="Prospecting Agent" color="var(--violet)" icon="target" tag="REVENUE INTELLIGENCE" description="Analyzes your client portfolio for intent signals, identifies upsell opportunities, builds ideal customer profiles, and generates personalized multi-channel outreach sequences — like a dedicated SDR that knows your entire book of business." capabilities={["Intent Signals","ICP Builder","Outreach Sequences","Upsell Detection","Multi-Channel"]} data={data} initialMessage="Hi! I'm your Prospecting Agent. I've already scanned your client portfolio and project data for signals.\n\nTell me — are you looking to:\n• Find new prospects similar to your best clients?\n• Identify upsell opportunities in existing accounts?\n• Build outreach sequences for a specific vertical?\n\nWhat's your prospecting goal right now?" processMessage={processMessage}/>;
 };
 
 const FollowUpAgent=({data,dispatch,user})=>{
-  const[loading,setLoading]=useState(false);
-  const[actions,setActions]=useState([]);
-  const[drafting,setDrafting]=useState(null);
-  const[draftResult,setDraftResult]=useState({});
-  const scan=async()=>{
-    setLoading(true);setActions([]);
+  const processMessage=async(msg,history,artifacts)=>{
+    const step=history.filter(m=>m.role==="user").length;
+    const prevCtx=history.map(m=>`${m.role==="user"?"User":"Agent"}: ${m.content}`).join("\n");
     const overdue=data.tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());
-    const summary=data.projects.filter(p=>p.status==="active").map(p=>{const tasks=data.tasks.filter(t=>t.projectId===p.id);const od=tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());const client=data.clients.find(c=>c.id===p.clientId);return`${p.name} (client:${client?.name||"unknown"}, overdue:${od.length}, updated:${new Date(p.updatedAt).toLocaleDateString()})`;}).join("; ");
-    const raw=await callAI(`Analyze this portfolio and give top 4-5 prioritized follow-up actions:\n\n${summary}\n\nTotal overdue tasks: ${overdue.length}\n\nReturn ONLY valid JSON array: [{"priority":"HIGH|MEDIUM|LOW","project":"name","action":"what to do","reason":"why","type":"email|task|call"}]`,"You are a senior account manager. Be specific and actionable. Return only valid JSON array.");
-    try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setActions(Array.isArray(p)?p:[]);}
-    catch{setActions([{priority:"HIGH",project:"All Projects",action:"Review project statuses",reason:raw,type:"task"}]);}
-    setLoading(false);
+    const projSummary=data.projects.filter(p=>p.status==="active").map(p=>{const tasks=data.tasks.filter(t=>t.projectId===p.id);const od=tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date());const client=data.clients.find(c=>c.id===p.clientId);const lastActivity=data.activityLog.filter(a=>a.entityId===p.id).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];return`${p.name} (client: ${client?.name||"unknown"}, company: ${client?.company||""}, overdue: ${od.length}/${tasks.length} tasks, last activity: ${lastActivity?new Date(lastActivity.timestamp).toLocaleDateString():"unknown"})`;}).join("\n");
+
+    if(step===1){
+      const reply=await callAI(`User said: "${msg}"\n\nPortfolio status:\n${projSummary}\nTotal overdue: ${overdue.length}\n\nAnalyze the portfolio and:\n1. Identify which accounts are at risk (overdue tasks, no recent activity)\n2. Ask the user about any context that data doesn't show (recent calls, pending decisions, blockers)\n3. Ask which accounts they want to prioritize for follow-up\n\nBe specific — mention actual project/client names from the data.`,"You are a senior account manager at Revo-Sys. You help maintain client relationships and prevent churn. Analyze data and ask smart questions. Be specific and use real names from the data.");
+      return{reply};
+    }
+    if(step===2){
+      const reply=await callAI(`Conversation:\n${prevCtx}\n\nPortfolio:\n${projSummary}\n\nBased on their context, ask:\n1. What tone do they prefer for follow-ups (formal/casual)?\n2. Any specific asks or updates to include per client?\n3. Confirm which channels to use (email, Slack, call)\n\nThen tell them you'll generate the follow-up plan.`,"You are a senior account manager. Gather final details for crafting perfect follow-ups. Be brief.");
+      return{reply};
+    }
+    // Generate follow-up plan
+    const raw=await callAI(`Full conversation:\n${prevCtx}\n\nPortfolio:\n${projSummary}\n\nGenerate follow-up actions and draft communications.\n\nReturn ONLY valid JSON: [{"priority":"HIGH|MEDIUM|LOW","client":"client name","project":"project name","riskLevel":"at-risk|healthy|needs-attention","action":"specific action","channel":"email|call|slack","draftMessage":"full draft message ready to send","reason":"why this follow-up matters now"}]`,"You are a senior account manager. Create specific, personalized follow-up actions with ready-to-send messages. Use details from the conversation. Return only valid JSON array.");
+    let actions;
+    try{actions=JSON.parse(raw.replace(/```json?|```/g,"").trim());if(!Array.isArray(actions))actions=[actions];}
+    catch{actions=[{priority:"HIGH",client:"All",project:"All",riskLevel:"needs-attention",action:"Review portfolio",channel:"email",draftMessage:raw,reason:"Unable to parse structured actions"}];}
+
+    const pc={HIGH:"#A85B5B",MEDIUM:"#C4A265",LOW:"#5B8FA8"};
+    const newArtifacts=actions.map(a=>({
+      type:`${a.priority} — ${a.client} (${a.channel})`,
+      content:`${a.action}\n\nReason: ${a.reason}\n\n--- Draft ${a.channel} ---\n${a.draftMessage}`,
+      actions:[
+        {label:`Copy ${a.channel} Draft`,fn:()=>navigator.clipboard?.writeText(a.draftMessage)},
+        ...(a.channel==="email"?[{label:"Send via Inbox",fn:()=>alert(`Navigate to Inbox to send to ${a.client}`)}]:[])
+      ]
+    }));
+
+    return{reply:`Done! I've generated ${actions.length} follow-up actions prioritized by risk level.\n\n${actions.filter(a=>a.priority==="HIGH").length} high priority, ${actions.filter(a=>a.priority==="MEDIUM").length} medium, ${actions.filter(a=>a.priority==="LOW").length} low.\n\nEach one has a ready-to-send draft below. Want me to adjust the tone or add anything to any of them?`,newArtifacts};
   };
-  const draftAction=async(action,idx)=>{
-    setDrafting(idx);
-    const draft=await callAI(`Draft a professional ${action.type==="email"?"client email":"action plan"} for:\nProject: ${action.project}\nAction: ${action.action}\nReason: ${action.reason}`,"You are a GTM consultant. Write concise, professional content. For emails include subject line and body.");
-    setDraftResult(prev=>({...prev,[idx]:draft}));
-    setDrafting(null);
-  };
-  const pc={HIGH:"var(--danger)",MEDIUM:"var(--amber)",LOW:"var(--sky)"};
-  return(<div style={{background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",padding:28,animation:"fadeUp .3s ease-out"}}>
-    <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",marginBottom:6}}>Follow-up Agent</h3>
-    <p style={{color:"var(--cream-mute)",fontSize:13,marginBottom:20}}>Scans all active projects, identifies at-risk accounts and overdue items, drafts prioritized follow-up actions.</p>
-    <Btn icon="search" v="ai" onClick={scan} disabled={loading}>{loading?"Scanning...":"Scan Projects"}</Btn>
-    {actions.length>0&&<div style={{marginTop:24,display:"flex",flexDirection:"column",gap:10,animation:"fadeUp .3s ease-out"}}>
-      {actions.map((a,i)=>(<div key={i} style={{padding:"18px 20px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",borderLeft:`3px solid ${pc[a.priority]||"var(--cream-mute)"}`}}>
-        <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
-              <span style={{fontFamily:"var(--mono)",fontSize:9,color:pc[a.priority],letterSpacing:"0.1em",textTransform:"uppercase",padding:"2px 8px",borderRadius:4,background:`${pc[a.priority]}18`}}>{a.priority}</span>
-              <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{a.project}</span>
-              <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--sky)",marginLeft:"auto",textTransform:"uppercase"}}>{a.type}</span>
-            </div>
-            <p style={{fontSize:14,color:"var(--cream)",fontWeight:500,margin:"0 0 4px"}}>{a.action}</p>
-            <p style={{fontSize:12,color:"var(--cream-mute)",margin:0,lineHeight:1.5}}>{a.reason}</p>
-            {draftResult[i]&&<div style={{marginTop:12,padding:"12px 14px",background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{draftResult[i]}</div>}
-          </div>
-          <Btn v="secondary" size="sm" icon="ai" onClick={()=>draftAction(a,i)} disabled={drafting===i}>{drafting===i?"Drafting...":draftResult[i]?"Redraft":"Draft"}</Btn>
-        </div>
-      </div>))}
-    </div>}
-  </div>);
+  return <AgentChat title="Follow-up Agent" color="var(--sky)" icon="activity" tag="RELATIONSHIP MANAGEMENT" description="Continuously monitors your portfolio for at-risk accounts, stale projects, and overdue tasks. Asks about context behind the data, then generates prioritized follow-up actions with ready-to-send messages for each client." capabilities={["Risk Detection","Account Health","Draft Messages","Priority Actions","Multi-Channel"]} data={data} initialMessage={`I've scanned your portfolio. Here's what I see:\n\n• ${data.projects.filter(p=>p.status==="active").length} active projects\n• ${data.tasks.filter(t=>t.status!=="completed"&&t.dueDate&&new Date(t.dueDate)<new Date()).length} overdue tasks\n• ${data.clients.filter(c=>c.status==="active").length} active clients\n\nWould you like me to analyze which accounts need attention? Tell me if there's any context I should know — recent meetings, pending decisions, or clients you're worried about.`} processMessage={processMessage}/>;
 };
 
 const AgentsPage=({data,dispatch,user})=>{
   const[activeAgent,setActiveAgent]=useState(null);
+  const agents=[
+    {id:"scope",title:"Scope Builder",desc:"Guided conversation to build detailed project scopes — asks about requirements, stakeholders, timeline, then generates a complete scope document.",icon:"doc",color:"var(--amber)",tag:"SCOPE AUTOMATION",capabilities:["Guided Discovery","4-6 Sections","Rate Estimation"]},
+    {id:"prospect",title:"Prospecting Agent",desc:"Analyzes your client data for intent signals, identifies upsell opportunities, and crafts personalized multi-channel outreach sequences.",icon:"target",color:"var(--violet)",tag:"REVENUE INTELLIGENCE",capabilities:["Intent Signals","ICP Builder","Outreach Sequences"]},
+    {id:"followup",title:"Follow-up Agent",desc:"Monitors portfolio health, detects at-risk accounts, and drafts prioritized follow-up messages ready to send.",icon:"activity",color:"var(--sky)",tag:"RELATIONSHIP MANAGEMENT",capabilities:["Risk Detection","Draft Messages","Priority Actions"]},
+  ];
   return(<div>
     <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Automation</span>
-    <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8,marginBottom:40}}>AI Agents</h1>
+    <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8,marginBottom:12}}>AI Agents</h1>
+    <p style={{fontSize:14,color:"var(--cream-mute)",lineHeight:1.7,marginBottom:32,maxWidth:600}}>Conversational agents that ask the right questions, analyze your data, and deliver actionable outputs — not just text generation.</p>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:24}}>
-      {[
-        {id:"scope",title:"Scope Builder",desc:"Paste client requirements or meeting notes — AI generates a complete project scope with sections and rate suggestion.",icon:"doc",color:"var(--amber)",tag:"SCOPE AUTOMATION"},
-        {id:"brand",title:"Brand Doc Creator",desc:"Select a client and enter their website — AI generates a fully branded proposal ready to send for e-signature.",icon:"star",color:"var(--violet)",tag:"DOCUMENT AUTOMATION"},
-        {id:"followup",title:"Follow-up Agent",desc:"Scans all projects, identifies at-risk accounts and overdue items, then drafts prioritized follow-up actions.",icon:"activity",color:"var(--sky)",tag:"RELATIONSHIP AUTOMATION"},
-      ].map(a=>(
-        <div key={a.id} onClick={()=>setActiveAgent(activeAgent===a.id?null:a.id)} style={{padding:"24px",background:activeAgent===a.id?`${a.color}08`:"var(--ink-2)",borderRadius:14,border:`1px solid ${activeAgent===a.id?a.color+"40":"var(--border)"}`,cursor:"pointer",transition:"all .2s"}}>
+      {agents.map(a=>(
+        <div key={a.id} onClick={()=>setActiveAgent(activeAgent===a.id?null:a.id)} style={{padding:"24px",background:activeAgent===a.id?`${a.color}08`:"var(--ink-2)",borderRadius:14,border:`1px solid ${activeAgent===a.id?a.color+"40":"var(--border)"}`,cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>{if(activeAgent!==a.id)e.currentTarget.style.borderColor=`${a.color}25`;}} onMouseLeave={e=>{if(activeAgent!==a.id)e.currentTarget.style.borderColor="var(--border)";}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
             <div style={{width:40,height:40,borderRadius:10,background:`${a.color}12`,border:`1px solid ${a.color}25`,display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name={a.icon} size={18}/></div>
             <div><div style={{fontFamily:"var(--mono)",fontSize:9,color:a.color,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:2}}>{a.tag}</div><div style={{fontSize:15,color:"var(--cream)",fontWeight:500}}>{a.title}</div></div>
           </div>
-          <p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.7,margin:"0 0 14px"}}>{a.desc}</p>
+          <p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.7,margin:"0 0 12px"}}>{a.desc}</p>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:12}}>
+            {a.capabilities.map((c,i)=><span key={i} style={{padding:"3px 8px",borderRadius:12,background:`${a.color}08`,fontFamily:"var(--mono)",fontSize:8,color:a.color,letterSpacing:"0.06em"}}>{c}</span>)}
+          </div>
           <span style={{fontFamily:"var(--mono)",fontSize:10,color:a.color,letterSpacing:"0.06em"}}>{activeAgent===a.id?"▲ CLOSE":"▼ OPEN AGENT"}</span>
         </div>
       ))}
     </div>
     {activeAgent==="scope"&&<ScopeBuilderAgent data={data} dispatch={dispatch} user={user}/>}
-    {activeAgent==="brand"&&<BrandDocAgent data={data} dispatch={dispatch} user={user}/>}
+    {activeAgent==="prospect"&&<ProspectingAgent data={data} dispatch={dispatch} user={user}/>}
     {activeAgent==="followup"&&<FollowUpAgent data={data} dispatch={dispatch} user={user}/>}
   </div>);
 };
