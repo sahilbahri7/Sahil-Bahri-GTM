@@ -5,7 +5,7 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;
 
 async function callAI(prompt, sys = "You are an expert GTM/RevOps consultant. Improve the given content for clarity, professionalism, and strategic impact. Return ONLY the improved text.") {
   try {
-    const base = window.location.hostname === "localhost" ? "https://revosys.pro" : "";
+    const base = window.location.hostname === "localhost" ? "https://www.revosys.pro" : "";
     const r = await fetch(`${base}/api/ai`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1557,7 +1557,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const[lastRun,setLastRun]=useState(()=>{try{return localStorage.getItem("rs_job_last_run")||null;}catch{return null;}});
   const[autoRunStatus,setAutoRunStatus]=useState("");
   const autoRanRef=useRef(false);
-  const base=window.location.hostname==="localhost"?"https://revosys.pro":"";
+  const base=window.location.hostname==="localhost"?"https://www.revosys.pro":"";
   const platCol={LinkedIn:"#0A66C2",Indeed:"#2164F3",Glassdoor:"#0CAA41",ZipRecruiter:"#5BA9A0",Remotive:"#14A800",Jobicy:"#7C6FA0","BeBee":"#F5A623","SimplyHired":"#2164F3","Talent.com":"#5BA9A0"};
 
   // Persist filters whenever they change
