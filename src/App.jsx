@@ -1537,7 +1537,7 @@ const JOB_CACHE_KEY="rs_job_cache";
 const JobFinderAgent=({data,dispatch,user})=>{
   const[jobs,setJobs]=useState(()=>{try{const c=localStorage.getItem(JOB_CACHE_KEY);return c?JSON.parse(c):[];}catch{return[];}});
   const[loading,setLoading]=useState(false);
-  const[searchForm,setSearchForm]=useState({keywords:"CRM,HubSpot,Salesforce,revenue operations,GTM,marketing operations,AI automation"});
+  const[searchForm,setSearchForm]=useState({keywords:"CRM,HubSpot,Salesforce,revenue operations,GTM,marketing operations,AI automation",location:"",title:"",jobType:"",datePosted:"month"});
   const[selectedJob,setSelectedJob]=useState(null);
   const[scope,setScope]=useState(null);
   const[asset,setAsset]=useState(null);
@@ -1550,16 +1550,17 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const[detailPhase,setDetailPhase]=useState("info"); // info | scope | asset | approve | applied
   const[filterPlatform,setFilterPlatform]=useState("all");
   const[apiSources,setApiSources]=useState([]);
+  const[hasRapid,setHasRapid]=useState(false);
   const base=window.location.hostname==="localhost"?"https://revosys.pro":"";
 
   // Search for REAL jobs from aggregated APIs
   const searchJobs=async()=>{
     setLoading(true);setJobs([]);setSidebarOpen(true);
     try{
-      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords})});
+      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords,location:searchForm.location,title:searchForm.title,jobType:searchForm.jobType,datePosted:searchForm.datePosted})});
       const d=await r.json();
-      if(d.jobs&&d.jobs.length>0){setJobs(d.jobs);setApiSources(d.sources||[]);try{localStorage.setItem(JOB_CACHE_KEY,JSON.stringify(d.jobs));}catch{}}
-      else{setJobs([]);setApiSources(d.sources||[]);}
+      if(d.jobs&&d.jobs.length>0){setJobs(d.jobs);setApiSources(d.sources||[]);setHasRapid(!!d.hasRapidAPI);try{localStorage.setItem(JOB_CACHE_KEY,JSON.stringify(d.jobs));}catch{}}
+      else{setJobs([]);setApiSources(d.sources||[]);setHasRapid(!!d.hasRapidAPI);}
     }catch{setJobs([]);}
     setLoading(false);
   };
@@ -1606,7 +1607,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
 
   const platforms=[...new Set(jobs.map(j=>j.platform))];
   const filtered=jobs.filter(j=>filterPlatform==="all"||j.platform===filterPlatform);
-  const platCol={Remotive:"#14A800",Himalayas:"#5B8FA8",Jobicy:"#7C6FA0",Arbeitnow:"#C4A265"};
+  const platCol={LinkedIn:"#0A66C2",Indeed:"#2164F3",Glassdoor:"#0CAA41",ZipRecruiter:"#5BA9A0",Remotive:"#14A800",Himalayas:"#5B8FA8",Jobicy:"#7C6FA0",Arbeitnow:"#C4A265",Upwork:"#14A800"};
 
   // Close detail and go back to sidebar
   const closeDetail=()=>{setSelectedJob(null);setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setDetailPhase("info");};
@@ -1618,7 +1619,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
         <div>
           <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>JOB INTELLIGENCE — LIVE DATA</div>
           <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",margin:0}}>Job Search</h3>
-          <p style={{fontSize:12,color:"var(--cream-mute)",marginTop:4}}>Sources: Remotive, Himalayas, Jobicy, Arbeitnow — real listings, real links</p>
+          <p style={{fontSize:12,color:"var(--cream-mute)",marginTop:4}}>Sources: LinkedIn, Indeed, Glassdoor, ZipRecruiter, Remotive, Himalayas, Jobicy, Arbeitnow</p>
         </div>
         {schedule&&<div style={{padding:"8px 14px",background:"rgba(107,158,111,0.08)",borderRadius:8,border:"1px solid rgba(107,158,111,0.2)"}}>
           <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.08em"}}>AUTO-SEARCH {schedule.frequency.toUpperCase()}</div>
@@ -1626,8 +1627,18 @@ const JobFinderAgent=({data,dispatch,user})=>{
         </div>}
       </div>
       <Field label="Keywords (comma-separated)" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="CRM, HubSpot, Salesforce, revenue operations, GTM..."/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
+        <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, New York, London..."/>
+        <Field label="Title filter" value={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="Consultant, Manager, Ops..."/>
+        <div>
+          <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>DATE POSTED</label>
+          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"10px 12px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>
+            <option value="today">Today</option><option value="3days">Last 3 days</option><option value="week">Last week</option><option value="month">Last month</option><option value="all">All time</option>
+          </select>
+        </div>
+      </div>
       <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-        <Btn icon="search" v="ai" onClick={searchJobs} disabled={loading}>{loading?"Scanning 4 platforms...":"Search Jobs"}</Btn>
+        <Btn icon="search" v="ai" onClick={searchJobs} disabled={loading}>{loading?"Scanning 8 platforms...":"Search Jobs"}</Btn>
         <Btn v="secondary" onClick={()=>setShowSchedule(!showSchedule)}>Schedule</Btn>
         {jobs.length>0&&!sidebarOpen&&<Btn v="secondary" onClick={()=>setSidebarOpen(true)}>Show Results ({jobs.length})</Btn>}
       </div>
