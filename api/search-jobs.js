@@ -1,5 +1,5 @@
-// Job search endpoint — uses Groq AI to find and structure relevant job listings
-// Searches for CRM implementation, GTM systems, AI operations contract/freelance work
+// Job search endpoint — aggregates REAL jobs from free public APIs
+// Sources: Remotive, Jobicy, Himalayas, and Arbeitsagentur (all free, no key required)
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -8,81 +8,201 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { keywords, platforms, jobType, customPrompt } = req.body || {};
+  const { keywords } = req.body || {};
+  const searchTerms = (keywords || "CRM,HubSpot,Salesforce,revenue operations,GTM,marketing operations")
+    .split(",")
+    .map((s) => s.trim().toLowerCase());
 
-  const apiKey = process.env.RevoSys_Groq;
-  if (!apiKey) return res.status(500).json({ error: "RevoSys_Groq not set" });
+  const allJobs = [];
+  const errors = [];
 
-  const defaultKeywords = keywords || "CRM implementation, GTM systems, revenue operations, AI operations, HubSpot consultant, Salesforce migration";
-  const defaultPlatforms = platforms || "LinkedIn, Upwork, Toptal, Reddit r/forhire, We Work Remotely, Freelancer";
-  const defaultType = jobType || "freelance, contract, part-time";
+  // Helper: check if a job matches any of the search keywords
+  const matches = (text) => {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return searchTerms.some((term) => lower.includes(term));
+  };
 
-  const searchPrompt = customPrompt || `You are a job search expert. Find 6-8 realistic, current freelance/contract job opportunities matching these criteria:
-
-KEYWORDS: ${defaultKeywords}
-PLATFORMS TO SEARCH: ${defaultPlatforms}
-JOB TYPE: ${defaultType}
-
-For each job, provide realistic details as if you found them on these platforms today. Include a mix of platforms.
-
-Return ONLY valid JSON array:
-[{
-  "id": "unique_id",
-  "title": "Job Title",
-  "company": "Company Name",
-  "platform": "LinkedIn|Upwork|Reddit|etc",
-  "type": "Contract|Freelance|Part-time",
-  "budget": "$X,XXX - $XX,XXX or $XX/hr",
-  "duration": "X months or Ongoing",
-  "location": "Remote|Hybrid|City",
-  "posted": "X days ago",
-  "description": "2-3 sentence description of what they need",
-  "requirements": ["req1", "req2", "req3"],
-  "signals": ["intent signal 1", "intent signal 2"],
-  "urgency": "HIGH|MEDIUM|LOW",
-  "fitScore": 85,
-  "url": "https://platform.com/jobs/...",
-  "companyWebsite": "https://company.com",
-  "companyIndustry": "Industry"
-}]
-
-Make the listings realistic with actual-sounding companies, specific tech stacks (HubSpot, Salesforce, Marketo, etc.), and varied budget ranges. Include intent signals like "expanding team", "post-funding", "migration deadline", etc.`;
-
+  // ── Source 1: Remotive (free, no key) ──
   try {
-    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        max_tokens: 3000,
-        temperature: 0.8,
-        messages: [
-          {
-            role: "system",
-            content: "You are a job search intelligence agent for a GTM/RevOps consultancy called Revo-Sys. You find realistic freelance and contract opportunities. Always return valid JSON arrays only — no markdown, no explanation.",
-          },
-          { role: "user", content: searchPrompt },
-        ],
-      }),
-    });
-
-    const data = await r.json();
-    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || "Search failed" });
-
-    const raw = data.choices?.[0]?.message?.content || "[]";
-    let jobs;
-    try {
-      jobs = JSON.parse(raw.replace(/```json?|```/g, "").trim());
-      if (!Array.isArray(jobs)) jobs = [jobs];
-    } catch {
-      return res.status(200).json({ jobs: [], raw, parseError: true });
+    // Remotive supports a search query param
+    const queries = ["crm", "hubspot", "salesforce", "revenue operations", "marketing operations", "gtm"];
+    const seen = new Set();
+    for (const q of queries) {
+      try {
+        const r = await fetch(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(q)}&limit=10`, {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(6000),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          for (const job of d.jobs || []) {
+            if (seen.has(job.id)) continue;
+            seen.add(job.id);
+            const desc = (job.title + " " + (job.description || "") + " " + (job.tags || []).join(" ")).toLowerCase();
+            if (matches(desc) || matches(job.title) || matches(job.company_name)) {
+              allJobs.push({
+                id: `remotive_${job.id}`,
+                title: job.title,
+                company: job.company_name,
+                companyLogo: job.company_logo || null,
+                companyWebsite: job.company_logo ? null : null,
+                platform: "Remotive",
+                type: job.job_type ? job.job_type.replace("_", " ") : "Full-time",
+                location: job.candidate_required_location || "Remote",
+                posted: job.publication_date ? new Date(job.publication_date).toLocaleDateString() : "Recent",
+                description: (job.description || "")
+                  .replace(/<[^>]+>/g, " ")
+                  .replace(/\s+/g, " ")
+                  .trim()
+                  .substring(0, 300),
+                tags: job.tags || [],
+                salary: job.salary || "Not listed",
+                url: job.url,
+                source: "remotive.com",
+              });
+            }
+          }
+        }
+      } catch {}
     }
-
-    return res.status(200).json({ jobs, count: jobs.length });
-  } catch (err) {
-    return res.status(500).json({ error: err.message || "Unexpected error" });
+  } catch (e) {
+    errors.push({ source: "Remotive", error: e.message });
   }
+
+  // ── Source 2: Himalayas (free, no key) ──
+  try {
+    const r = await fetch("https://himalayas.app/jobs/api?limit=50", {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      for (const job of d.jobs || []) {
+        const text = (job.title + " " + (job.description || "") + " " + (job.categories || []).join(" "));
+        if (matches(text) || matches(job.title) || matches(job.companyName)) {
+          allJobs.push({
+            id: `himalayas_${job.id}`,
+            title: job.title,
+            company: job.companyName || "Unknown",
+            companyLogo: job.companyLogo || null,
+            companyWebsite: job.companyUrl || null,
+            platform: "Himalayas",
+            type: job.type || "Full-time",
+            location: job.locationRestrictions?.[0] || "Worldwide",
+            posted: job.pubDate ? new Date(job.pubDate).toLocaleDateString() : "Recent",
+            description: (job.description || job.excerpt || "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .substring(0, 300),
+            tags: job.categories || [],
+            salary: job.minSalary && job.maxSalary
+              ? `$${(job.minSalary / 1000).toFixed(0)}k–$${(job.maxSalary / 1000).toFixed(0)}k`
+              : "Not listed",
+            url: job.applicationUrl || `https://himalayas.app/jobs/${job.slug}`,
+            source: "himalayas.app",
+          });
+        }
+      }
+    }
+  } catch (e) {
+    errors.push({ source: "Himalayas", error: e.message });
+  }
+
+  // ── Source 3: Jobicy (free, no key) ──
+  try {
+    const r = await fetch("https://jobicy.com/api/v2/remote-jobs?count=50&tag=crm,marketing,sales,operations", {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      for (const job of d.jobs || []) {
+        const text = (job.jobTitle + " " + (job.jobExcerpt || "") + " " + (job.jobIndustry || []));
+        if (matches(text) || matches(job.jobTitle) || matches(job.companyName)) {
+          allJobs.push({
+            id: `jobicy_${job.id}`,
+            title: job.jobTitle,
+            company: job.companyName || "Unknown",
+            companyLogo: job.companyLogo || null,
+            companyWebsite: job.companyWebsite || null,
+            platform: "Jobicy",
+            type: job.jobType || "Full-time",
+            location: job.jobGeo || "Remote",
+            posted: job.pubDate ? new Date(job.pubDate).toLocaleDateString() : "Recent",
+            description: (job.jobExcerpt || "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .substring(0, 300),
+            tags: job.jobIndustry ? [job.jobIndustry] : [],
+            salary: job.annualSalaryMin && job.annualSalaryMax
+              ? `$${(job.annualSalaryMin / 1000).toFixed(0)}k–$${(job.annualSalaryMax / 1000).toFixed(0)}k`
+              : "Not listed",
+            url: job.url,
+            source: "jobicy.com",
+          });
+        }
+      }
+    }
+  } catch (e) {
+    errors.push({ source: "Jobicy", error: e.message });
+  }
+
+  // ── Source 4: Arbeitnow (free, no key) ──
+  try {
+    const r = await fetch("https://www.arbeitnow.com/api/job-board-api?page=1", {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      for (const job of d.data || []) {
+        const text = (job.title + " " + (job.description || "") + " " + (job.tags || []).join(" "));
+        if (matches(text) || matches(job.title) || matches(job.company_name)) {
+          allJobs.push({
+            id: `arbeitnow_${job.slug}`,
+            title: job.title,
+            company: job.company_name || "Unknown",
+            companyLogo: null,
+            companyWebsite: null,
+            platform: "Arbeitnow",
+            type: job.remote ? "Remote" : "On-site",
+            location: job.location || "Not specified",
+            posted: job.created_at ? new Date(job.created_at * 1000).toLocaleDateString() : "Recent",
+            description: (job.description || "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .substring(0, 300),
+            tags: job.tags || [],
+            salary: "Not listed",
+            url: job.url,
+            source: "arbeitnow.com",
+          });
+        }
+      }
+    }
+  } catch (e) {
+    errors.push({ source: "Arbeitnow", error: e.message });
+  }
+
+  // Deduplicate by title+company
+  const seen = new Map();
+  const unique = [];
+  for (const j of allJobs) {
+    const key = (j.title + j.company).toLowerCase().replace(/\s+/g, "");
+    if (!seen.has(key)) {
+      seen.set(key, true);
+      unique.push(j);
+    }
+  }
+
+  return res.status(200).json({
+    jobs: unique,
+    count: unique.length,
+    sources: ["Remotive", "Himalayas", "Jobicy", "Arbeitnow"],
+    errors: errors.length > 0 ? errors : undefined,
+  });
 }
