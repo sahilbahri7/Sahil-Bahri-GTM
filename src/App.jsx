@@ -1539,7 +1539,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const[topPicks,setTopPicks]=useState(()=>{try{const c=localStorage.getItem("rs_job_top_picks");return c?JSON.parse(c):[];}catch{return[];}});
   const[loading,setLoading]=useState(false);
   const[ranking,setRanking]=useState(false);
-  const[searchForm,setSearchForm]=useState(()=>{try{const s=localStorage.getItem("rs_job_filters");return s?JSON.parse(s):{keywords:"CRM implementation, HubSpot consulting, Salesforce admin, revenue operations, GTM strategy, marketing operations",location:"Remote",title:"",datePosted:"week"};}catch{return{keywords:"CRM implementation, HubSpot consulting, Salesforce admin, revenue operations, GTM strategy, marketing operations",location:"Remote",title:"",datePosted:"week"};}});
+  const[searchForm,setSearchForm]=useState(()=>{try{const s=localStorage.getItem("rs_job_filters");return s?JSON.parse(s):{keywords:"CRM, HubSpot, Salesforce, marketing, operations, consulting, automation",location:"",title:"",datePosted:"month"};}catch{return{keywords:"CRM, HubSpot, Salesforce, marketing, operations, consulting, automation",location:"",title:"",datePosted:"month"};}});
   const[selectedJob,setSelectedJob]=useState(null);
   const[scope,setScope]=useState(null);
   const[asset,setAsset]=useState(null);
@@ -1620,16 +1620,17 @@ const JobFinderAgent=({data,dispatch,user})=>{
   };
 
   // ── Full autonomous pipeline: search → rank → present ──
-  const runAutonomous=async(silent=false)=>{
-    if(!silent)setAutoRunStatus("Searching across platforms...");
-    const foundJobs=await searchJobs(silent);
+  // openSidebar: whether to pop the sidebar open after search
+  const runAutonomous=async(openSidebar=true)=>{
+    setAutoRunStatus("Searching across platforms...");
+    const foundJobs=await searchJobs(!openSidebar);
     if(foundJobs.length>0){
-      if(!silent)setAutoRunStatus(`Found ${foundJobs.length} jobs. AI ranking top 5...`);
+      setAutoRunStatus(`Found ${foundJobs.length} jobs. AI ranking top 5...`);
       await rankJobs(foundJobs);
-      if(!silent){setAutoRunStatus("");setSidebarOpen(true);}
+      setAutoRunStatus("");
     }else{
-      if(!silent)setAutoRunStatus("No jobs found. Try adjusting filters.");
-      setTimeout(()=>setAutoRunStatus(""),3000);
+      setAutoRunStatus("No jobs found — try broadening keywords or changing date filter.");
+      setTimeout(()=>setAutoRunStatus(""),5000);
     }
   };
 
@@ -1644,10 +1645,10 @@ const JobFinderAgent=({data,dispatch,user})=>{
       return now>=nextRun;
     };
     if(shouldAutoRun()){
-      // Schedule is due — run autonomously
+      // Schedule is due — run autonomously, results on dashboard (no sidebar popup)
       runAutonomous(false);
     }else if(jobs.length===0&&!lastRun){
-      // First ever visit with no cached jobs — run initial search
+      // First ever visit — run initial search quietly
       runAutonomous(false);
     }
   },[]);// eslint-disable-line
@@ -1712,7 +1713,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
         </div>
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>setShowConfig(!showConfig)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>{showConfig?"Hide":"Configure"}</button>
-          <Btn icon="search" v="ai" onClick={()=>runAutonomous(false)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Run Now"}</Btn>
+          <Btn icon="search" v="ai" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Run Now"}</Btn>
         </div>
       </div>
 
@@ -1753,7 +1754,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
       </div>
       :<div style={{padding:30,textAlign:"center",color:"var(--cream-mute)",fontSize:12}}>
         <p style={{margin:"0 0 8px"}}>No jobs loaded yet. Click "Run Now" or configure filters below.</p>
-        <Btn v="ai" icon="search" onClick={()=>runAutonomous(false)} disabled={loading}>Search Jobs</Btn>
+        <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading}>Search Jobs</Btn>
       </div>}
     </div>
 
