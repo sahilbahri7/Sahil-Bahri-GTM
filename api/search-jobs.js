@@ -137,7 +137,7 @@ export default async function handler(req, res) {
               "X-RapidAPI-Key": rapidKey,
               "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
             },
-            signal: AbortSignal.timeout(12000),
+            signal: AbortSignal.timeout(20000),
           }
         );
 
