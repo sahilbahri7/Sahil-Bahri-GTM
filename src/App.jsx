@@ -1536,8 +1536,10 @@ const JOB_CACHE_KEY="rs_job_cache";
 
 const JobFinderAgent=({data,dispatch,user})=>{
   const[jobs,setJobs]=useState(()=>{try{const c=localStorage.getItem(JOB_CACHE_KEY);return c?JSON.parse(c):[];}catch{return[];}});
+  const[topPicks,setTopPicks]=useState(()=>{try{const c=localStorage.getItem("rs_job_top_picks");return c?JSON.parse(c):[];}catch{return[];}});
   const[loading,setLoading]=useState(false);
-  const[searchForm,setSearchForm]=useState({keywords:"CRM,HubSpot,Salesforce,revenue operations,GTM,marketing operations,AI automation",location:"",title:"",jobType:"",datePosted:"month"});
+  const[ranking,setRanking]=useState(false);
+  const[searchForm,setSearchForm]=useState(()=>{try{const s=localStorage.getItem("rs_job_filters");return s?JSON.parse(s):{keywords:"CRM implementation, HubSpot consulting, Salesforce admin, revenue operations, GTM strategy, marketing operations",location:"Remote",title:"",datePosted:"week"};}catch{return{keywords:"CRM implementation, HubSpot consulting, Salesforce admin, revenue operations, GTM strategy, marketing operations",location:"Remote",title:"",datePosted:"week"};}});
   const[selectedJob,setSelectedJob]=useState(null);
   const[scope,setScope]=useState(null);
   const[asset,setAsset]=useState(null);
@@ -1545,33 +1547,117 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const[scrapeLoad,setScrapeLoad]=useState(false);
   const[approvalStatus,setApprovalStatus]=useState("pending");
   const[schedule,setSchedule]=useState(()=>{try{const s=localStorage.getItem(JOB_SCHEDULE_KEY);return s?JSON.parse(s):null;}catch{return null;}});
-  const[showSchedule,setShowSchedule]=useState(false);
+  const[showConfig,setShowConfig]=useState(false);
   const[sidebarOpen,setSidebarOpen]=useState(false);
-  const[detailPhase,setDetailPhase]=useState("info"); // info | scope | asset | approve | applied
+  const[detailPhase,setDetailPhase]=useState("info");
   const[filterPlatform,setFilterPlatform]=useState("all");
   const[apiSources,setApiSources]=useState([]);
   const[hasRapid,setHasRapid]=useState(false);
+  const[apiErrors,setApiErrors]=useState([]);
+  const[lastRun,setLastRun]=useState(()=>{try{return localStorage.getItem("rs_job_last_run")||null;}catch{return null;}});
+  const[autoRunStatus,setAutoRunStatus]=useState("");
+  const autoRanRef=useRef(false);
   const base=window.location.hostname==="localhost"?"https://revosys.pro":"";
+  const platCol={LinkedIn:"#0A66C2",Indeed:"#2164F3",Glassdoor:"#0CAA41",ZipRecruiter:"#5BA9A0",Remotive:"#14A800",Jobicy:"#7C6FA0","BeBee":"#F5A623","SimplyHired":"#2164F3","Talent.com":"#5BA9A0"};
 
-  // Search for REAL jobs from aggregated APIs
-  const searchJobs=async()=>{
-    setLoading(true);setJobs([]);setSidebarOpen(true);
+  // Persist filters whenever they change
+  useEffect(()=>{try{localStorage.setItem("rs_job_filters",JSON.stringify(searchForm));}catch{}},[searchForm]);
+
+  // ── Core search function ──
+  const searchJobs=async(silent=false)=>{
+    setLoading(true);
+    if(!silent){setJobs([]);setSidebarOpen(true);}
+    setApiErrors([]);
     try{
-      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords,location:searchForm.location,title:searchForm.title,jobType:searchForm.jobType,datePosted:searchForm.datePosted})});
+      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords,location:searchForm.location,title:searchForm.title,datePosted:searchForm.datePosted})});
       const d=await r.json();
-      if(d.jobs&&d.jobs.length>0){setJobs(d.jobs);setApiSources(d.sources||[]);setHasRapid(!!d.hasRapidAPI);try{localStorage.setItem(JOB_CACHE_KEY,JSON.stringify(d.jobs));}catch{}}
-      else{setJobs([]);setApiSources(d.sources||[]);setHasRapid(!!d.hasRapidAPI);}
-    }catch{setJobs([]);}
-    setLoading(false);
+      const foundJobs=d.jobs||[];
+      setJobs(foundJobs);
+      setApiSources(d.sources||[]);
+      setHasRapid(!!d.hasRapidAPI);
+      setApiErrors(d.errors||[]);
+      try{localStorage.setItem(JOB_CACHE_KEY,JSON.stringify(foundJobs));}catch{}
+      // Update last run timestamp
+      const now=new Date().toISOString();
+      setLastRun(now);
+      try{localStorage.setItem("rs_job_last_run",now);}catch{}
+      // Update schedule nextRun
+      if(schedule?.enabled){
+        const updated={...schedule,nextRun:getNextRun(schedule.frequency),lastRun:now};
+        setSchedule(updated);
+        try{localStorage.setItem(JOB_SCHEDULE_KEY,JSON.stringify(updated));}catch{}
+      }
+      return foundJobs;
+    }catch(e){setJobs([]);setApiErrors([{source:"Network",error:e.message}]);return[];}
+    finally{setLoading(false);}
   };
+
+  // ── AI ranking: pick top 5 most relevant jobs ──
+  const rankJobs=async(jobList)=>{
+    if(!jobList||jobList.length<=5){setTopPicks(jobList||[]);try{localStorage.setItem("rs_job_top_picks",JSON.stringify(jobList||[]));}catch{};return;}
+    setRanking(true);
+    try{
+      const summaries=jobList.slice(0,30).map((j,i)=>`${i}: "${j.title}" at ${j.company} (${j.location}) — ${(j.description||"").substring(0,120)}`).join("\n");
+      const raw=await callAI(
+        `You are helping Sahil Bahri, founder of Revo-Sys (a GTM/RevOps consultancy), find the best consulting/contract jobs.\n\nHis expertise: CRM implementation (HubSpot, Salesforce), revenue operations, GTM strategy, marketing automation, AI-powered operations, data migration, workflow automation.\n\nFrom these ${jobList.length} jobs, pick the TOP 5 most relevant for consulting/contract work. Consider:\n- Relevance to RevOps/CRM/GTM consulting\n- Likelihood of being a contract/consulting engagement\n- Company size and potential deal value\n- Remote-friendliness\n\nJobs:\n${summaries}\n\nReturn ONLY a JSON array of the indices (0-based): [2, 5, 11, 0, 8]`,
+        "You are a job-matching AI. Return ONLY a valid JSON array of 5 integers. No explanation."
+      );
+      try{
+        const indices=JSON.parse(raw.replace(/```json?|```/g,"").trim());
+        if(Array.isArray(indices)){
+          const picks=indices.filter(i=>typeof i==="number"&&i>=0&&i<jobList.length).slice(0,5).map(i=>jobList[i]);
+          if(picks.length>0){setTopPicks(picks);try{localStorage.setItem("rs_job_top_picks",JSON.stringify(picks));}catch{};setRanking(false);return;}
+        }
+      }catch{}
+      // Fallback: just take first 5
+      const fallback=jobList.slice(0,5);
+      setTopPicks(fallback);try{localStorage.setItem("rs_job_top_picks",JSON.stringify(fallback));}catch{}
+    }catch{
+      const fallback=jobList.slice(0,5);
+      setTopPicks(fallback);try{localStorage.setItem("rs_job_top_picks",JSON.stringify(fallback));}catch{}
+    }
+    setRanking(false);
+  };
+
+  // ── Full autonomous pipeline: search → rank → present ──
+  const runAutonomous=async(silent=false)=>{
+    if(!silent)setAutoRunStatus("Searching across platforms...");
+    const foundJobs=await searchJobs(silent);
+    if(foundJobs.length>0){
+      if(!silent)setAutoRunStatus(`Found ${foundJobs.length} jobs. AI ranking top 5...`);
+      await rankJobs(foundJobs);
+      if(!silent){setAutoRunStatus("");setSidebarOpen(true);}
+    }else{
+      if(!silent)setAutoRunStatus("No jobs found. Try adjusting filters.");
+      setTimeout(()=>setAutoRunStatus(""),3000);
+    }
+  };
+
+  // ── Auto-run on mount if schedule is due ──
+  useEffect(()=>{
+    if(autoRanRef.current)return;
+    autoRanRef.current=true;
+    const shouldAutoRun=()=>{
+      if(!schedule?.enabled)return false;
+      const nextRun=new Date(schedule.nextRun);
+      const now=new Date();
+      return now>=nextRun;
+    };
+    if(shouldAutoRun()){
+      // Schedule is due — run autonomously
+      runAutonomous(false);
+    }else if(jobs.length===0&&!lastRun){
+      // First ever visit with no cached jobs — run initial search
+      runAutonomous(false);
+    }
+  },[]);// eslint-disable-line
 
   // Scrape company website for branding
   const scrapeCompany=async(url)=>{
     setScrapeLoad(true);setBranding(null);
     try{
       const r=await fetch(`${base}/api/scrape-url`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
-      const d=await r.json();
-      setBranding(d);
+      const d=await r.json();setBranding(d);
     }catch(e){setBranding({error:e.message});}
     setScrapeLoad(false);
   };
@@ -1597,36 +1683,84 @@ const JobFinderAgent=({data,dispatch,user})=>{
 
   // Schedule management
   const saveSchedule=(freq)=>{
-    const s={frequency:freq,createdAt:new Date().toISOString(),nextRun:getNextRun(freq),enabled:true};
+    const s={frequency:freq,createdAt:new Date().toISOString(),nextRun:getNextRun(freq),enabled:true,lastRun:lastRun};
     setSchedule(s);
     try{localStorage.setItem(JOB_SCHEDULE_KEY,JSON.stringify(s));}catch{}
-    setShowSchedule(false);
   };
   const clearSchedule=()=>{setSchedule(null);try{localStorage.removeItem(JOB_SCHEDULE_KEY);}catch{}};
   const getNextRun=(freq)=>{const now=new Date();if(freq==="daily")now.setDate(now.getDate()+1);else if(freq==="weekly")now.setDate(now.getDate()+7);else if(freq==="biweekly")now.setDate(now.getDate()+14);else now.setMonth(now.getMonth()+1);now.setHours(9,0,0,0);return now.toISOString();};
 
   const platforms=[...new Set(jobs.map(j=>j.platform))];
   const filtered=jobs.filter(j=>filterPlatform==="all"||j.platform===filterPlatform);
-  const platCol={LinkedIn:"#0A66C2",Indeed:"#2164F3",Glassdoor:"#0CAA41",ZipRecruiter:"#5BA9A0",Remotive:"#14A800",Himalayas:"#5B8FA8",Jobicy:"#7C6FA0",Arbeitnow:"#C4A265",Upwork:"#14A800"};
-
-  // Close detail and go back to sidebar
   const closeDetail=()=>{setSelectedJob(null);setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setDetailPhase("info");};
 
+  // ═══════════════════════════════════════════════
+  // MAIN UI — Dashboard-first, config is collapsible
+  // ═══════════════════════════════════════════════
   return(<div style={{animation:"fadeUp .3s ease-out"}}>
-    {/* Search config — always visible */}
+    {/* ── Top Picks Dashboard ── */}
     <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>JOB INTELLIGENCE — LIVE DATA</div>
-          <h3 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",margin:0}}>Job Search</h3>
-          <p style={{fontSize:12,color:"var(--cream-mute)",marginTop:4}}>Sources: LinkedIn, Indeed, Glassdoor, ZipRecruiter, Remotive, Himalayas, Jobicy, Arbeitnow</p>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>AUTONOMOUS JOB INTELLIGENCE</div>
+          <h3 style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)",margin:0}}>Today's Top Picks</h3>
+          <p style={{fontSize:12,color:"var(--cream-mute)",marginTop:4}}>
+            {lastRun?`Last scan: ${new Date(lastRun).toLocaleString()}`:"No scans yet"}
+            {schedule?.enabled&&<span style={{color:"var(--success)",marginLeft:8}}>· Auto-runs {schedule.frequency}</span>}
+            {hasRapid&&<span style={{color:"#0A66C2",marginLeft:8}}>· LinkedIn/Indeed active</span>}
+          </p>
         </div>
-        {schedule&&<div style={{padding:"8px 14px",background:"rgba(107,158,111,0.08)",borderRadius:8,border:"1px solid rgba(107,158,111,0.2)"}}>
-          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.08em"}}>AUTO-SEARCH {schedule.frequency.toUpperCase()}</div>
-          <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",marginTop:2}}>Next: {new Date(schedule.nextRun).toLocaleDateString()}</div>
-        </div>}
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>setShowConfig(!showConfig)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>{showConfig?"Hide":"Configure"}</button>
+          <Btn icon="search" v="ai" onClick={()=>runAutonomous(false)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Run Now"}</Btn>
+        </div>
       </div>
-      <Field label="Keywords (comma-separated)" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="CRM, HubSpot, Salesforce, revenue operations, GTM..."/>
+
+      {/* Auto-run status */}
+      {autoRunStatus&&<div style={{padding:"10px 14px",background:"rgba(107,158,111,0.06)",borderRadius:8,border:"1px solid rgba(107,158,111,0.15)",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{width:12,height:12,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+        <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)"}}>{autoRunStatus}</span>
+      </div>}
+
+      {/* API status warnings */}
+      {apiErrors.length>0&&<div style={{padding:"10px 14px",background:"rgba(168,91,91,0.06)",borderRadius:8,border:"1px solid rgba(168,91,91,0.15)",marginBottom:14}}>
+        {apiErrors.map((e,i)=><div key={i} style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--danger)",marginBottom:2}}>{e.source}: {e.error}</div>)}
+      </div>}
+
+      {/* Top 5 picks — shown as action cards */}
+      {(ranking||loading)&&topPicks.length===0?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>{loading?"Scanning platforms...":"AI is ranking the best matches..."}</p></div>
+      :topPicks.length>0?<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {topPicks.map((job,idx)=>(
+          <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setSidebarOpen(true);}} style={{padding:"16px 20px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",cursor:"pointer",display:"flex",gap:14,alignItems:"flex-start",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="var(--success)"} onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
+            <div style={{width:28,height:28,borderRadius:8,background:"rgba(107,158,111,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--success)",flexShrink:0}}>{idx+1}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",letterSpacing:"0.06em",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"var(--cream-mute)"}15`}}>{job.platform}</span>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:"var(--ink-2)"}}>{job.type}</span>
+                {job.salary!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--success)",padding:"2px 6px",borderRadius:3,background:"rgba(107,158,111,0.08)"}}>{job.salary}</span>}
+              </div>
+              <div style={{fontSize:14,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:2}}>{job.title}</div>
+              <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",marginBottom:4}}>{job.company} · {job.location}</div>
+              <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(job.description||"").substring(0,120)}</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+              <button onClick={e=>{e.stopPropagation();window.open(job.url,"_blank");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply</button>
+              <button onClick={e=>{e.stopPropagation();setSelectedJob(job);setDetailPhase("info");setSidebarOpen(true);}} style={{padding:"5px 10px",borderRadius:5,background:"var(--ink-2)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Details</button>
+            </div>
+          </div>
+        ))}
+        {jobs.length>5&&<button onClick={()=>setSidebarOpen(true)} style={{padding:"10px",borderRadius:8,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer",textAlign:"center"}}>View all {jobs.length} results →</button>}
+      </div>
+      :<div style={{padding:30,textAlign:"center",color:"var(--cream-mute)",fontSize:12}}>
+        <p style={{margin:"0 0 8px"}}>No jobs loaded yet. Click "Run Now" or configure filters below.</p>
+        <Btn v="ai" icon="search" onClick={()=>runAutonomous(false)} disabled={loading}>Search Jobs</Btn>
+      </div>}
+    </div>
+
+    {/* ── Collapsible Config Panel ── */}
+    {showConfig&&<div style={{padding:24,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16,animation:"fadeUp .2s ease-out"}}>
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:14}}>SEARCH CONFIGURATION</div>
+      <Field label="Keywords" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="CRM, HubSpot, Salesforce, revenue operations, GTM..."/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
         <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, New York, London..."/>
         <Field label="Title filter" value={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="Consultant, Manager, Ops..."/>
@@ -1637,26 +1771,29 @@ const JobFinderAgent=({data,dispatch,user})=>{
           </select>
         </div>
       </div>
-      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-        <Btn icon="search" v="ai" onClick={searchJobs} disabled={loading}>{loading?"Scanning 8 platforms...":"Search Jobs"}</Btn>
-        <Btn v="secondary" onClick={()=>setShowSchedule(!showSchedule)}>Schedule</Btn>
-        {jobs.length>0&&!sidebarOpen&&<Btn v="secondary" onClick={()=>setSidebarOpen(true)}>Show Results ({jobs.length})</Btn>}
-      </div>
-      {showSchedule&&<div style={{marginTop:20,padding:20,background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",animation:"fadeUp .2s ease-out"}}>
-        <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:12}}>AUTO-SEARCH SCHEDULE</div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {["daily","weekly","biweekly","monthly"].map(f=>(
-            <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"8px 16px",borderRadius:8,background:schedule?.frequency===f?"rgba(107,158,111,0.12)":"var(--ink-2)",border:`1px solid ${schedule?.frequency===f?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f?"var(--success)":"var(--cream-mute)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
-          ))}
-          {schedule&&<button onClick={clearSchedule} style={{padding:"8px 16px",borderRadius:8,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
-        </div>
-        {schedule&&<p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)",marginTop:10}}>Runs {schedule.frequency}, next at {new Date(schedule.nextRun).toLocaleString()}</p>}
-      </div>}
-    </div>
 
-    {/* ====== RESULTS SIDEBAR (slides in from right) ====== */}
+      {/* Schedule config */}
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8,marginTop:8}}>AUTO-RUN SCHEDULE</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+        {["daily","weekly","biweekly","monthly"].map(f=>(
+          <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"6px 14px",borderRadius:6,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+        ))}
+        {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
+      </div>
+      {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
+
+      {/* Sources status */}
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6}}>ACTIVE SOURCES</div>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+        {(hasRapid?["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Remotive","Jobicy"]:["Remotive","Jobicy"]).map(s=>(
+          <span key={s} style={{padding:"3px 8px",borderRadius:4,background:`${platCol[s]||"var(--cream-mute)"}12`,fontFamily:"var(--mono)",fontSize:9,color:platCol[s]||"var(--cream-mute)"}}>{s}</span>
+        ))}
+        {!hasRapid&&<span style={{padding:"3px 8px",borderRadius:4,background:"rgba(168,91,91,0.08)",fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)"}}>Add RevoSys_RapidAPI for LinkedIn/Indeed</span>}
+      </div>
+    </div>}
+
+    {/* ═══════ RESULTS SIDEBAR (slides in from right) ═══════ */}
     {sidebarOpen&&<div style={{position:"fixed",top:0,right:0,bottom:0,width:selectedJob?900:460,zIndex:999,display:"flex",transition:"width .3s ease"}}>
-      {/* Backdrop */}
       <div onClick={()=>{setSidebarOpen(false);closeDetail();}} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:-1}}/>
 
       {/* Job list panel */}
@@ -1683,11 +1820,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
               <div style={{fontSize:13,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:3}}>{job.title}</div>
               <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",marginBottom:4}}>{job.company}</div>
               <div style={{display:"flex",gap:8,fontSize:10,fontFamily:"var(--mono)",color:"var(--cream-mute)"}}>
-                <span>{job.salary}</span>
-                <span>·</span>
-                <span>{job.location}</span>
-                <span>·</span>
-                <span>{job.posted}</span>
+                <span>{job.salary}</span><span>·</span><span>{job.location}</span><span>·</span><span>{job.posted}</span>
               </div>
               {job.tags?.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:6}}>{job.tags.slice(0,4).map((t,i)=><span key={i} style={{padding:"1px 6px",borderRadius:3,background:"var(--ink)",fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{t}</span>)}</div>}
             </div>
@@ -1695,9 +1828,8 @@ const JobFinderAgent=({data,dispatch,user})=>{
         </div>
       </div>
 
-      {/* Detail panel — shows when a job is selected */}
+      {/* Detail panel */}
       {selectedJob&&<div style={{flex:1,background:"var(--ink)",borderLeft:"1px solid var(--border)",overflowY:"auto",padding:"24px 28px"}}>
-        {/* Detail header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
           <div style={{flex:1}}>
             <div style={{display:"flex",gap:6,marginBottom:8}}>
@@ -1710,21 +1842,18 @@ const JobFinderAgent=({data,dispatch,user})=>{
           {selectedJob.companyLogo&&<img src={selectedJob.companyLogo} alt="" style={{width:48,height:48,borderRadius:10,border:"1px solid var(--border)",objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
         </div>
 
-        {/* Info / Scope / Asset / Approve tabs */}
         <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid var(--border)"}}>
           {[{k:"info",l:"Details"},{k:"scope",l:"Scope",d:!scope},{k:"asset",l:"Asset",d:!asset},{k:"approve",l:"Apply",d:!scope||!asset}].map(t=>
             <button key={t.k} onClick={()=>!t.d&&setDetailPhase(t.k)} style={{padding:"8px 16px",background:"none",border:"none",borderBottom:detailPhase===t.k?"2px solid var(--cream)":"2px solid transparent",color:t.d?"var(--ink-5)":detailPhase===t.k?"var(--cream)":"var(--cream-mute)",fontSize:12,cursor:t.d?"default":"pointer",fontFamily:"var(--sans)",opacity:t.d?0.3:1}}>{t.l}</button>
           )}
         </div>
 
-        {/* DETAIL: Info */}
         {detailPhase==="info"&&<div>
           <div style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,marginBottom:16}}>{selectedJob.description}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
             {[["Salary",selectedJob.salary],["Type",selectedJob.type],["Location",selectedJob.location],["Source",selectedJob.source]].map(([l,v])=>(<div key={l} style={{padding:"10px 14px",background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:2}}>{l}</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{v||"—"}</div></div>))}
           </div>
           {selectedJob.tags?.length>0&&<div style={{marginBottom:16}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>TAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{selectedJob.tags.map((t,i)=><span key={i} style={{padding:"4px 10px",borderRadius:6,background:"var(--ink-2)",border:"1px solid var(--border)",fontSize:11,color:"var(--cream-dim)"}}>{t}</span>)}</div></div>}
-          {/* Company website */}
           {selectedJob.companyWebsite&&<div style={{padding:14,background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",marginBottom:16}}>
             <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>COMPANY WEBSITE</div>
             <a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:12,color:"var(--sky)",textDecoration:"none"}}>{selectedJob.companyWebsite}</a>
@@ -1733,11 +1862,10 @@ const JobFinderAgent=({data,dispatch,user})=>{
           </div>}
           <div style={{display:"flex",gap:8}}>
             <Btn v="ai" icon="doc" onClick={()=>generateScope(selectedJob)} disabled={loading}>Generate Scope</Btn>
-            <Btn v="secondary" onClick={()=>window.open(selectedJob.url,"_blank")}>View Original Listing →</Btn>
+            <Btn v="secondary" onClick={()=>window.open(selectedJob.url,"_blank")}>View Original Listing</Btn>
           </div>
         </div>}
 
-        {/* DETAIL: Scope */}
         {detailPhase==="scope"&&<div>
           {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Generating scope for {selectedJob.company}...</p></div>
           :scope&&<div style={{animation:"fadeUp .3s ease-out"}}>
@@ -1757,7 +1885,6 @@ const JobFinderAgent=({data,dispatch,user})=>{
           </div>}
         </div>}
 
-        {/* DETAIL: Asset */}
         {detailPhase==="asset"&&<div>
           {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Creating case study...</p></div>
           :asset&&<div style={{animation:"fadeUp .3s ease-out"}}>
@@ -1777,7 +1904,6 @@ const JobFinderAgent=({data,dispatch,user})=>{
           </div>}
         </div>}
 
-        {/* DETAIL: Approve & Apply */}
         {detailPhase==="approve"&&<div>
           {approvalStatus==="pending"&&<div style={{animation:"fadeUp .3s ease-out"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>

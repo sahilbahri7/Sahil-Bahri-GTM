@@ -1,9 +1,8 @@
-// Job search — aggregates REAL jobs from multiple sources
-// Primary: JSearch (RapidAPI) → LinkedIn, Indeed, Glassdoor, ZipRecruiter, Upwork
-// Fallback: Remotive, Himalayas, Jobicy, Arbeitnow (free, no key)
+// Job search — aggregates REAL jobs from multiple verified sources
+// Primary: JSearch (RapidAPI) → LinkedIn, Indeed, Glassdoor, ZipRecruiter
+// Fallback: Remotive, Jobicy (free, no key needed)
 //
 // Required env: RevoSys_RapidAPI (free at rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch)
-// Optional: works without it using fallback sources only
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -13,40 +12,42 @@ export default async function handler(req, res) {
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
-  const { keywords, location, title, datePosted, jobType } = req.body || {};
-  const query =
-    keywords || "CRM implementation HubSpot Salesforce revenue operations";
-  const loc = location || "";
-  const titleFilter = (title || "").toLowerCase();
+  const { keywords, location, title, datePosted } = req.body || {};
+  const query = (keywords || "CRM implementation HubSpot Salesforce revenue operations").trim();
+  const loc = (location || "").trim();
+  const titleFilter = (title || "").toLowerCase().trim();
   const allJobs = [];
   const errors = [];
   const activeSources = [];
 
-  // Build search query combining keywords + title + location for APIs that take a single query
-  const fullQuery = [query, titleFilter, loc].filter(Boolean).join(" ");
-
-  // Helper: normalize job object
-  const norm = (j) => ({
-    ...j,
-    _searchText: [j.title, j.company, j.description, ...(j.tags || [])]
-      .join(" ")
-      .toLowerCase(),
-  });
-
-  // Helper: post-filter by title if provided
+  // Helper: post-filter by title keyword
   const titleMatch = (job) => {
     if (!titleFilter) return true;
-    return job.title.toLowerCase().includes(titleFilter);
+    const t = (job.title || "").toLowerCase();
+    // Match any word from the title filter
+    return titleFilter.split(/[\s,]+/).filter(Boolean).some(w => t.includes(w));
   };
 
-  // Helper: post-filter by location if provided
+  // Helper: post-filter by location
   const locMatch = (job) => {
     if (!loc) return true;
     const l = loc.toLowerCase();
-    return (
-      (job.location || "").toLowerCase().includes(l) ||
-      l === "remote" && (job.location || "").toLowerCase().includes("remote")
-    );
+    const jl = (job.location || "").toLowerCase();
+    if (l === "remote") return jl.includes("remote") || jl.includes("worldwide") || jl.includes("anywhere");
+    return jl.includes(l);
+  };
+
+  // Helper: date filter for free sources (no native date filter)
+  const dateMatch = (job) => {
+    if (!datePosted || datePosted === "all" || datePosted === "month") return true;
+    if (!job._postedDate) return true; // can't filter, include it
+    const now = new Date();
+    const posted = new Date(job._postedDate);
+    const diffDays = (now - posted) / (1000 * 60 * 60 * 24);
+    if (datePosted === "today") return diffDays <= 1;
+    if (datePosted === "3days") return diffDays <= 3;
+    if (datePosted === "week") return diffDays <= 7;
+    return true;
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -56,13 +57,24 @@ export default async function handler(req, res) {
   const rapidKey = process.env.RevoSys_RapidAPI;
   if (rapidKey) {
     try {
+      // JSearch expects a natural language query, not comma-separated
+      const searchQuery = query.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+      const locationQuery = loc ? ` in ${loc}` : "";
+      const titleQuery = titleFilter ? ` ${titleFilter}` : "";
+      const fullQuery = `${searchQuery}${titleQuery}${locationQuery}`;
+
       const params = new URLSearchParams({
         query: fullQuery,
         page: "1",
         num_pages: "2",
         date_posted: datePosted || "month",
-        ...(loc ? { remote_jobs_only: loc.toLowerCase() === "remote" ? "true" : "false" } : {}),
       });
+
+      // Add remote filter if specified
+      if (loc && loc.toLowerCase() === "remote") {
+        params.set("remote_jobs_only", "true");
+      }
+
       const r = await fetch(
         `https://jsearch.p.rapidapi.com/search?${params}`,
         {
@@ -70,12 +82,14 @@ export default async function handler(req, res) {
             "X-RapidAPI-Key": rapidKey,
             "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
           },
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(12000),
         }
       );
+
       if (r.ok) {
         const d = await r.json();
-        for (const job of d.data || []) {
+        const jobs = d.data || [];
+        for (const job of jobs) {
           const j = {
             id: `jsearch_${job.job_id}`,
             title: job.job_title || "",
@@ -92,9 +106,8 @@ export default async function handler(req, res) {
             posted: job.job_posted_at_datetime_utc
               ? new Date(job.job_posted_at_datetime_utc).toLocaleDateString()
               : "Recent",
-            description: (job.job_description || "")
-              .substring(0, 400)
-              .replace(/\n+/g, " "),
+            _postedDate: job.job_posted_at_datetime_utc || null,
+            description: (job.job_description || "").substring(0, 500).replace(/\n+/g, " "),
             tags: [
               job.job_employment_type,
               ...(job.job_required_skills || []),
@@ -110,40 +123,45 @@ export default async function handler(req, res) {
           };
           if (titleMatch(j) && locMatch(j)) allJobs.push(j);
         }
-        activeSources.push(
-          "LinkedIn",
-          "Indeed",
-          "Glassdoor",
-          "ZipRecruiter"
-        );
+        // Track which publishers we actually got results from
+        const publishers = [...new Set(jobs.map(j => j.job_publisher).filter(Boolean))];
+        activeSources.push(...(publishers.length ? publishers : ["LinkedIn", "Indeed", "Glassdoor", "ZipRecruiter"]));
       } else {
-        const err = await r.json().catch(() => ({}));
+        const err = await r.text().catch(() => "");
         errors.push({
           source: "JSearch",
-          error: err.message || `HTTP ${r.status}`,
+          error: `HTTP ${r.status}: ${err.substring(0, 200)}`,
         });
       }
     } catch (e) {
       errors.push({ source: "JSearch", error: e.message });
     }
+  } else {
+    errors.push({ source: "JSearch", error: "RevoSys_RapidAPI key not configured" });
   }
 
   // ═══════════════════════════════════════════════════════════
-  // SOURCE 2: Remotive (free, no key) — remote jobs
+  // SOURCE 2: Remotive (free, no key) — remote tech jobs
   // ═══════════════════════════════════════════════════════════
   try {
+    // Remotive search works best with single keywords, not long phrases
+    // Split user's keywords and search with the most specific ones
     const terms = query
       .split(/[,\s]+/)
-      .filter((t) => t.length > 2)
-      .slice(0, 3);
+      .map(t => t.trim().toLowerCase())
+      .filter(t => t.length > 2)
+      .filter(t => !["and", "the", "for", "with", "from"].includes(t));
+
+    const searchTerms = terms.slice(0, 4);
     const seen = new Set();
-    for (const q of terms.length ? terms : ["crm"]) {
+
+    for (const term of searchTerms.length ? searchTerms : ["crm"]) {
       try {
         const r = await fetch(
-          `https://remotive.com/api/remote-jobs?search=${encodeURIComponent(q)}&limit=15`,
+          `https://remotive.com/api/remote-jobs?search=${encodeURIComponent(term)}&limit=20`,
           {
             headers: { Accept: "application/json" },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(8000),
           }
         );
         if (r.ok) {
@@ -153,30 +171,28 @@ export default async function handler(req, res) {
             seen.add(job.id);
             const j = {
               id: `remotive_${job.id}`,
-              title: job.title,
-              company: job.company_name,
+              title: job.title || "",
+              company: job.company_name || "Unknown",
               companyLogo: job.company_logo || null,
               companyWebsite: null,
               platform: "Remotive",
-              type: job.job_type
-                ? job.job_type.replace(/_/g, " ")
-                : "Full-time",
-              location:
-                job.candidate_required_location || "Remote",
+              type: job.job_type ? job.job_type.replace(/_/g, " ") : "Full-time",
+              location: job.candidate_required_location || "Remote",
               posted: job.publication_date
                 ? new Date(job.publication_date).toLocaleDateString()
                 : "Recent",
+              _postedDate: job.publication_date || null,
               description: (job.description || "")
                 .replace(/<[^>]+>/g, " ")
                 .replace(/\s+/g, " ")
                 .trim()
-                .substring(0, 400),
+                .substring(0, 500),
               tags: job.tags || [],
               salary: job.salary || "Not listed",
-              url: job.url,
+              url: job.url || "",
               source: "remotive.com",
             };
-            if (titleMatch(j) && locMatch(j)) allJobs.push(j);
+            if (titleMatch(j) && locMatch(j) && dateMatch(j)) allJobs.push(j);
           }
         }
       } catch {}
@@ -187,19 +203,23 @@ export default async function handler(req, res) {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // SOURCE 3: Jobicy (free, no key)
+  // SOURCE 3: Jobicy (free, no key) — remote jobs
   // ═══════════════════════════════════════════════════════════
   try {
-    const tag = query
+    // Jobicy uses tag-based search
+    const tags = query
       .split(/[,\s]+/)
-      .filter((t) => t.length > 2)
+      .map(t => t.trim().toLowerCase())
+      .filter(t => t.length > 2)
+      .filter(t => !["and", "the", "for", "with", "from"].includes(t))
       .slice(0, 5)
       .join(",");
+
     const r = await fetch(
-      `https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(tag || "crm,marketing,sales")}`,
+      `https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(tags || "crm,marketing,sales")}`,
       {
         headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
       }
     );
     if (r.ok) {
@@ -217,135 +237,26 @@ export default async function handler(req, res) {
           posted: job.pubDate
             ? new Date(job.pubDate).toLocaleDateString()
             : "Recent",
+          _postedDate: job.pubDate || null,
           description: (job.jobExcerpt || "")
             .replace(/<[^>]+>/g, " ")
             .replace(/\s+/g, " ")
             .trim()
-            .substring(0, 400),
+            .substring(0, 500),
           tags: job.jobIndustry ? [job.jobIndustry] : [],
           salary:
             job.annualSalaryMin && job.annualSalaryMax
               ? `$${(job.annualSalaryMin / 1000).toFixed(0)}k–$${(job.annualSalaryMax / 1000).toFixed(0)}k`
               : "Not listed",
-          url: job.url,
+          url: job.url || "",
           source: "jobicy.com",
         };
-        if (titleMatch(j) && locMatch(j)) allJobs.push(j);
+        if (titleMatch(j) && locMatch(j) && dateMatch(j)) allJobs.push(j);
       }
       activeSources.push("Jobicy");
     }
   } catch (e) {
     errors.push({ source: "Jobicy", error: e.message });
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // SOURCE 4: Arbeitnow (free, no key)
-  // ═══════════════════════════════════════════════════════════
-  try {
-    const r = await fetch(
-      "https://www.arbeitnow.com/api/job-board-api?page=1",
-      {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(6000),
-      }
-    );
-    if (r.ok) {
-      const d = await r.json();
-      const terms = query.split(/[,\s]+/).map((t) => t.toLowerCase().trim()).filter((t) => t.length > 2);
-      for (const job of d.data || []) {
-        const text = (
-          job.title +
-          " " +
-          (job.description || "") +
-          " " +
-          (job.tags || []).join(" ")
-        ).toLowerCase();
-        const kwMatch = terms.some((t) => text.includes(t));
-        if (!kwMatch) continue;
-        const j = {
-          id: `arbeitnow_${job.slug}`,
-          title: job.title,
-          company: job.company_name || "Unknown",
-          companyLogo: null,
-          companyWebsite: null,
-          platform: "Arbeitnow",
-          type: job.remote ? "Remote" : "On-site",
-          location: job.location || "Not specified",
-          posted: job.created_at
-            ? new Date(job.created_at * 1000).toLocaleDateString()
-            : "Recent",
-          description: (job.description || "")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .substring(0, 400),
-          tags: job.tags || [],
-          salary: "Not listed",
-          url: job.url,
-          source: "arbeitnow.com",
-        };
-        if (titleMatch(j) && locMatch(j)) allJobs.push(j);
-      }
-      activeSources.push("Arbeitnow");
-    }
-  } catch (e) {
-    errors.push({ source: "Arbeitnow", error: e.message });
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // SOURCE 5: Himalayas (free, no key)
-  // ═══════════════════════════════════════════════════════════
-  try {
-    const r = await fetch("https://himalayas.app/jobs/api?limit=50", {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (r.ok) {
-      const d = await r.json();
-      const terms = query.split(/[,\s]+/).map((t) => t.toLowerCase().trim()).filter((t) => t.length > 2);
-      for (const job of d.jobs || []) {
-        const text = (
-          job.title +
-          " " +
-          (job.description || "") +
-          " " +
-          (job.categories || []).join(" ")
-        ).toLowerCase();
-        const kwMatch = terms.some((t) => text.includes(t));
-        if (!kwMatch) continue;
-        const j = {
-          id: `himalayas_${job.id}`,
-          title: job.title,
-          company: job.companyName || "Unknown",
-          companyLogo: job.companyLogo || null,
-          companyWebsite: job.companyUrl || null,
-          platform: "Himalayas",
-          type: job.type || "Full-time",
-          location: job.locationRestrictions?.[0] || "Worldwide",
-          posted: job.pubDate
-            ? new Date(job.pubDate).toLocaleDateString()
-            : "Recent",
-          description: (job.description || job.excerpt || "")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .substring(0, 400),
-          tags: job.categories || [],
-          salary:
-            job.minSalary && job.maxSalary
-              ? `$${(job.minSalary / 1000).toFixed(0)}k–$${(job.maxSalary / 1000).toFixed(0)}k`
-              : "Not listed",
-          url:
-            job.applicationUrl ||
-            `https://himalayas.app/jobs/${job.slug}`,
-          source: "himalayas.app",
-        };
-        if (titleMatch(j) && locMatch(j)) allJobs.push(j);
-      }
-      activeSources.push("Himalayas");
-    }
-  } catch (e) {
-    errors.push({ source: "Himalayas", error: e.message });
   }
 
   // Deduplicate by normalized title+company
@@ -357,7 +268,9 @@ export default async function handler(req, res) {
       .replace(/[^a-z0-9]/g, "");
     if (!seenMap.has(key)) {
       seenMap.set(key, true);
-      unique.push(j);
+      // Remove internal fields
+      const { _postedDate, ...clean } = j;
+      unique.push(clean);
     }
   }
 
@@ -367,5 +280,7 @@ export default async function handler(req, res) {
     sources: [...new Set(activeSources)],
     hasRapidAPI: !!rapidKey,
     errors: errors.length > 0 ? errors : undefined,
+    query: query,
+    filters: { location: loc, title: titleFilter, datePosted },
   });
 }
