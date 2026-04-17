@@ -1624,12 +1624,73 @@ const FollowUpAgent=({data,dispatch,user})=>{
 const JOB_SCHEDULE_KEY="rs_job_schedule";
 const JOB_CACHE_KEY="rs_job_cache";
 
+// Chip input: tags are first-class items, not a comma-separated string.
+// Enter / comma / Tab commits a chip. Backspace on empty removes the last.
+const ChipInput=({label,chips,onChange,placeholder,accent="var(--success)"})=>{
+  const[draft,setDraft]=useState("");
+  const commit=(v)=>{
+    const s=(v||draft).trim().replace(/,$/,"").trim();
+    if(!s)return;
+    if(chips.some(c=>c.toLowerCase()===s.toLowerCase())){setDraft("");return;}
+    onChange([...chips,s]);
+    setDraft("");
+  };
+  const remove=(idx)=>onChange(chips.filter((_,i)=>i!==idx));
+  return(<div>
+    {label&&<label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>{label}</label>}
+    <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",padding:"8px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,minHeight:40}}>
+      {chips.map((c,i)=>(
+        <span key={`${c}-${i}`} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 8px 4px 10px",background:`${accent}15`,border:`1px solid ${accent}40`,borderRadius:999,fontFamily:"var(--mono)",fontSize:11,color:accent}}>
+          {c}
+          <button type="button" onClick={()=>remove(i)} style={{background:"none",border:"none",color:accent,cursor:"pointer",padding:0,fontSize:13,lineHeight:1,opacity:0.7}} aria-label={`Remove ${c}`}>×</button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={e=>{const v=e.target.value;if(v.endsWith(","))commit(v.slice(0,-1));else setDraft(v);}}
+        onKeyDown={e=>{
+          if(e.key==="Enter"||e.key==="Tab"){if(draft.trim()){e.preventDefault();commit();}}
+          else if(e.key==="Backspace"&&!draft&&chips.length>0){onChange(chips.slice(0,-1));}
+        }}
+        onBlur={()=>{if(draft.trim())commit();}}
+        placeholder={chips.length===0?(placeholder||"Type and press Enter..."):""}
+        style={{flex:1,minWidth:120,border:"none",outline:"none",background:"transparent",color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)",padding:"4px 2px"}}
+      />
+    </div>
+  </div>);
+};
+
+// Migrate an older string-based filter to an array of chips
+const chipify=(v)=>{
+  if(Array.isArray(v))return v.map(s=>String(s||"").trim()).filter(Boolean);
+  const s=String(v||"").trim();
+  if(!s)return[];
+  return s.includes(",")?s.split(",").map(t=>t.trim()).filter(Boolean):s.split(/\s+/).map(t=>t.trim()).filter(Boolean);
+};
+
 const JobFinderAgent=({data,dispatch,user})=>{
   const[jobs,setJobs]=useState(()=>{try{const c=localStorage.getItem(JOB_CACHE_KEY);return c?JSON.parse(c):[];}catch{return[];}});
   const[topPicks,setTopPicks]=useState(()=>{try{const c=localStorage.getItem("rs_job_top_picks");return c?JSON.parse(c):[];}catch{return[];}});
   const[loading,setLoading]=useState(false);
   const[ranking,setRanking]=useState(false);
-  const[searchForm,setSearchForm]=useState(()=>{try{const s=localStorage.getItem("rs_job_filters");return s?JSON.parse(s):{keywords:"CRM, HubSpot, Salesforce, marketing, operations, consulting, automation",location:"",title:"",datePosted:"month"};}catch{return{keywords:"CRM, HubSpot, Salesforce, marketing, operations, consulting, automation",location:"",title:"",datePosted:"month"};}});
+  const[searchForm,setSearchForm]=useState(()=>{
+    const defaults={keywords:["CRM","HubSpot","Salesforce","marketing operations","revenue operations","automation"],location:"",title:[],datePosted:"month"};
+    try{
+      const s=localStorage.getItem("rs_job_filters");
+      if(!s)return defaults;
+      const parsed=JSON.parse(s);
+      return{
+        keywords:chipify(parsed.keywords),
+        location:parsed.location||"",
+        title:chipify(parsed.title),
+        datePosted:parsed.datePosted||"month",
+      };
+    }catch{return defaults;}
+  });
+  // Sources to ACTUALLY FETCH from (sent to backend). Independent from the
+  // display-exclude list below.
+  const[fetchSources,setFetchSources]=useState(()=>{try{const s=localStorage.getItem("rs_job_fetch_sources");return s?JSON.parse(s):["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];}catch{return["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];}});
+  const toggleFetchSource=(s)=>{const n=fetchSources.includes(s)?fetchSources.filter(x=>x!==s):[...fetchSources,s];setFetchSources(n);try{localStorage.setItem("rs_job_fetch_sources",JSON.stringify(n));}catch{}};
   const[selectedJob,setSelectedJob]=useState(null);
   const[scope,setScope]=useState(null);
   const[asset,setAsset]=useState(null);
@@ -1665,7 +1726,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
     if(!silent){setJobs([]);setSidebarOpen(true);}
     setApiErrors([]);
     try{
-      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords,location:searchForm.location,title:searchForm.title,datePosted:searchForm.datePosted})});
+      const r=await fetch(`${base}/api/search-jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords:searchForm.keywords,location:searchForm.location,title:searchForm.title,datePosted:searchForm.datePosted,sources:fetchSources})});
       const d=await r.json();
       const foundJobs=d.jobs||[];
       setJobs(foundJobs);
@@ -1761,11 +1822,25 @@ const JobFinderAgent=({data,dispatch,user})=>{
     setScrapeLoad(false);
   };
 
+  // AUTO-scrape branding whenever a job is selected (Pomelli-style: pick up
+  // the client's visual identity before we personalize anything).
+  useEffect(()=>{
+    if(!selectedJob)return;
+    const tryUrl=selectedJob.companyWebsite
+      ||(selectedJob.companyLogo?(()=>{try{const u=new URL(selectedJob.companyLogo);return `${u.protocol}//${u.hostname}`;}catch{return null;}})():null);
+    if(tryUrl&&!branding)scrapeCompany(tryUrl);
+  },[selectedJob?.id]);// eslint-disable-line
+
+  // Pull the dominant brand colors we'll thread through scope/asset UI
+  const brandColor=branding?.brand?.primary||branding?.brand?.themeColor||"var(--amber)";
+  const brandAccent=branding?.brand?.accent||branding?.brand?.primary||"var(--violet)";
+
   // Generate scope for selected job
   const generateScope=async(job)=>{
     setLoading(true);setScope(null);setDetailPhase("scope");
-    const brandCtx=branding?`\n\nCompany branding/website info:\nTitle: ${branding.title}\nDescription: ${branding.description}\nContent excerpt: ${branding.text?.substring(0,800)}`:"";
-    const raw=await callAI(`Create a tailored project scope/proposal for this job, written in the consultancy's voice (we, our):\n\nJob: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description}\nTags: ${(job.tags||[]).join(", ")}\nSalary: ${job.salary}${brandCtx}\n\nReturn ONLY valid JSON: {"title":"scope title","executive_summary":"2-3 sentences tailored to this company in our voice","sections":[{"title":"section","content":"detailed content"}],"timeline":"proposed timeline","investment":"proposed rate/budget","differentiators":["why Revo-Sys is the best fit"]}`,"You are Revo-Sys, a boutique GTM/RevOps consultancy. Write in the first-person plural (we, our). Return only valid JSON.");
+    const palette=branding?.brand?`\nBrand palette: primary ${branding.brand.primary||"unknown"}, accent ${branding.brand.accent||"unknown"}, full palette [${(branding.brand.palette||[]).join(", ")}]`:"";
+    const brandCtx=branding?`\n\nCompany branding/website info:\nTitle: ${branding.title}\nDescription: ${branding.description}${palette}\nContent excerpt: ${branding.text?.substring(0,800)}`:"";
+    const raw=await callAI(`Create a tailored project scope/proposal for this job, written in the consultancy's voice (we, our). Reference the client's own language, positioning, and any visual brand cues where it feels natural:\n\nJob: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description}\nTags: ${(job.tags||[]).join(", ")}\nSalary: ${job.salary}${brandCtx}\n\nReturn ONLY valid JSON: {"title":"scope title","executive_summary":"2-3 sentences tailored to this company in our voice","sections":[{"title":"section","content":"detailed content"}],"timeline":"proposed timeline","investment":"proposed rate/budget","differentiators":["why Revo-Sys is the best fit"]}`,"You are Revo-Sys, a boutique GTM/RevOps consultancy. Write in the first-person plural (we, our). Return only valid JSON.");
     try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setScope(p);}
     catch{setScope({title:"Tailored Scope",executive_summary:raw,sections:[{title:"Overview",content:raw}],timeline:"TBD",investment:"TBD",differentiators:["Deep RevOps expertise"]});}
     setLoading(false);
@@ -1774,7 +1849,8 @@ const JobFinderAgent=({data,dispatch,user})=>{
   // Generate work asset
   const generateAsset=async(job)=>{
     setLoading(true);setAsset(null);setDetailPhase("asset");
-    const raw=await callAI(`Create a case study demonstrating Revo-Sys expertise relevant to this job:\n\nJob: ${job.title} at ${job.company}\nDescription: ${job.description}\nTags: ${(job.tags||[]).join(", ")}\n\nReturn ONLY valid JSON: {"title":"case study title","subtitle":"one line","client_type":"anonymized","challenge":"problem","approach":[{"phase":"Phase 1","title":"step","detail":"what was done"}],"results":[{"metric":"40%","label":"improvement"}],"technologies":["tech1"],"testimonial":"quote","relevance":"why this matters for the target job"}`,"You are creating a portfolio case study for Revo-Sys. Return only valid JSON.");
+    const palette=branding?.brand?`\nClient brand palette: ${branding.brand.primary||"?"} (primary), ${branding.brand.accent||"?"} (accent). Subtly reference visual/brand alignment in the relevance field.`:"";
+    const raw=await callAI(`Create a case study demonstrating Revo-Sys expertise relevant to this job:\n\nJob: ${job.title} at ${job.company}\nDescription: ${job.description}\nTags: ${(job.tags||[]).join(", ")}${palette}\n\nReturn ONLY valid JSON: {"title":"case study title","subtitle":"one line","client_type":"anonymized","challenge":"problem","approach":[{"phase":"Phase 1","title":"step","detail":"what was done"}],"results":[{"metric":"40%","label":"improvement"}],"technologies":["tech1"],"testimonial":"quote","relevance":"why this matters for the target job"}`,"You are Revo-Sys, creating a portfolio case study written in first-person plural (we, our). Return only valid JSON.");
     try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setAsset(p);}
     catch{setAsset({title:"Case Study",subtitle:raw,client_type:"B2B SaaS",challenge:raw,approach:[{phase:"Phase 1",title:"Discovery",detail:raw}],results:[{metric:"40%",label:"efficiency gain"}],technologies:["HubSpot"],testimonial:"Excellent work.",relevance:"Directly relevant."});}
     setLoading(false);
@@ -1802,10 +1878,12 @@ const JobFinderAgent=({data,dispatch,user})=>{
     {/* ── Collapsible Config Panel (TOP) ── */}
     {showConfig&&<div style={{padding:24,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16,animation:"fadeUp .2s ease-out"}}>
       <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:14}}>SEARCH CONFIGURATION</div>
-      <Field label="Keywords" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="CRM, HubSpot, Salesforce, revenue operations, GTM..."/>
+      <div style={{marginBottom:12}}>
+        <ChipInput label="KEYWORDS — press Enter to add each tag" chips={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="HubSpot, then Enter..." accent="var(--success)"/>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
         <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, Canada, New York, London..."/>
-        <Field label="Title filter" value={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="Consultant, Manager, Ops..."/>
+        <ChipInput label="TITLE FILTER (ANY match)" chips={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="consultant, manager..." accent="var(--amber)"/>
         <div>
           <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>DATE POSTED</label>
           <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"10px 12px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>
@@ -1822,6 +1900,31 @@ const JobFinderAgent=({data,dispatch,user})=>{
         {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
       </div>
       {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
+
+      {/* FETCH FROM — which providers to actually call when searching */}
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+        <span>FETCH FROM ({fetchSources.length}/7 providers)</span>
+        <span style={{cursor:"pointer",color:"var(--sky)"}} onClick={()=>{const all=["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];setFetchSources(all);try{localStorage.setItem("rs_job_fetch_sources",JSON.stringify(all));}catch{}}}>Select all</span>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(120px, 1fr))",gap:4,marginBottom:4}}>
+        {[
+          {k:"JSearch",label:"JSearch (LI/Indeed)",c:"#0A66C2"},
+          {k:"Upwork",label:"Upwork (RSS+JS)",c:"#14A800"},
+          {k:"Remotive",label:"Remotive",c:"#14A800"},
+          {k:"Jobicy",label:"Jobicy",c:"#7C6FA0"},
+          {k:"Arbeitnow",label:"Arbeitnow",c:"#F76707"},
+          {k:"The Muse",label:"The Muse",c:"#E91E63"},
+          {k:"RemoteOK",label:"RemoteOK",c:"#FF4742"},
+        ].map(s=>{
+          const on=fetchSources.includes(s.k);
+          return(<label key={s.k} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:4,background:on?`${s.c}10`:"var(--ink)",border:`1px solid ${on?`${s.c}30`:"var(--border)"}`,cursor:"pointer"}}>
+            <input type="checkbox" checked={on} onChange={()=>toggleFetchSource(s.k)} style={{accentColor:s.c,cursor:"pointer"}}/>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:on?s.c:"var(--cream-mute)",flex:1}}>{s.label}</span>
+          </label>);
+        })}
+      </div>
+      <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:"4px 0 0"}}>These are queried on each search. Uncheck slow or irrelevant providers.</p>
+
       {/* Sources multi-select (Clay-style) */}
       <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
         <span>SOURCES ({ALL_PLATFORMS.length - excludedSources.size}/{ALL_PLATFORMS.length})</span>
@@ -1907,7 +2010,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
               <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(job.description||"").substring(0,120)}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button onClick={e=>{e.stopPropagation();window.open(job.url,"_blank");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply</button>
+              <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");else alert("No application URL available for this listing.");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply</button>
               <button onClick={e=>{e.stopPropagation();setSelectedJob(job);setDetailPhase("info");setSidebarOpen(true);}} style={{padding:"5px 10px",borderRadius:5,background:"var(--ink-2)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Details</button>
             </div>
           </div>
@@ -1983,11 +2086,18 @@ const JobFinderAgent=({data,dispatch,user})=>{
             {[["Salary",selectedJob.salary],["Type",selectedJob.type],["Location",selectedJob.location],["Source",selectedJob.source]].map(([l,v])=>(<div key={l} style={{padding:"10px 14px",background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:2}}>{l}</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{v||"—"}</div></div>))}
           </div>
           {selectedJob.tags?.length>0&&<div style={{marginBottom:16}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>TAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{selectedJob.tags.map((t,i)=><span key={i} style={{padding:"4px 10px",borderRadius:6,background:"var(--ink-2)",border:"1px solid var(--border)",fontSize:11,color:"var(--cream-dim)"}}>{t}</span>)}</div></div>}
-          {selectedJob.companyWebsite&&<div style={{padding:14,background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",marginBottom:16}}>
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>COMPANY WEBSITE</div>
-            <a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:12,color:"var(--sky)",textDecoration:"none"}}>{selectedJob.companyWebsite}</a>
-            {!branding&&<div style={{marginTop:8}}><Btn size="sm" v="secondary" onClick={()=>scrapeCompany(selectedJob.companyWebsite)} disabled={scrapeLoad}>{scrapeLoad?"Scraping...":"Scrape Branding"}</Btn></div>}
-            {branding&&!branding.error&&<div style={{marginTop:8,fontSize:11,color:"var(--cream-mute)",lineHeight:1.5}}><span style={{color:"var(--success)"}}>✓</span> {branding.title||branding.ogTitle} — {(branding.description||branding.ogDesc||"").substring(0,150)}</div>}
+          {(selectedJob.companyWebsite||branding)&&<div style={{padding:14,background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",marginBottom:16}}>
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>COMPANY BRANDING {scrapeLoad&&<span style={{color:"var(--amber)"}}>— scraping…</span>}</div>
+            {selectedJob.companyWebsite&&<a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:12,color:"var(--sky)",textDecoration:"none"}}>{selectedJob.companyWebsite}</a>}
+            {!branding&&selectedJob.companyWebsite&&!scrapeLoad&&<div style={{marginTop:8}}><Btn size="sm" v="secondary" onClick={()=>scrapeCompany(selectedJob.companyWebsite)} disabled={scrapeLoad}>{scrapeLoad?"Scraping...":"Scrape Branding"}</Btn></div>}
+            {branding&&!branding.error&&<div style={{marginTop:8}}>
+              <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,marginBottom:8}}><span style={{color:"var(--success)"}}>✓</span> {branding.title||branding.ogTitle} — {(branding.description||branding.ogDesc||"").substring(0,150)}</div>
+              {branding.brand?.palette?.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>Palette:</span>
+                {branding.brand.palette.slice(0,6).map((c,i)=>(<div key={i} title={c} style={{width:18,height:18,borderRadius:4,background:c,border:"1px solid var(--border)",cursor:"help"}}/>))}
+                {branding.brand.logo&&<img src={branding.brand.logo} alt="logo" style={{marginLeft:"auto",width:24,height:24,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+              </div>}
+            </div>}
           </div>}
           <div style={{display:"flex",gap:8}}>
             <Btn v="ai" icon="doc" onClick={()=>generateScope(selectedJob)} disabled={loading}>Generate Scope</Btn>
@@ -1998,13 +2108,21 @@ const JobFinderAgent=({data,dispatch,user})=>{
         {detailPhase==="scope"&&<div>
           {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Generating scope for {selectedJob.company}...</p></div>
           :scope&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--amber)",letterSpacing:"0.1em",marginBottom:6}}>TAILORED SCOPE</div>
+            {/* Brand banner — surfaces the client's palette so the scope feels personalized */}
+            {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",marginBottom:12,background:`${brandColor}10`,border:`1px solid ${brandColor}30`,borderRadius:8}}>
+              {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:22,height:22,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:brandColor,letterSpacing:"0.1em"}}>BRAND ALIGNED — {selectedJob.company}</span>
+              <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
+                {(branding.brand.palette||[]).slice(0,4).map((c,i)=>(<div key={i} title={c} style={{width:14,height:14,borderRadius:3,background:c,border:"1px solid var(--border)"}}/>))}
+              </div>
+            </div>}
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:brandColor,letterSpacing:"0.1em",marginBottom:6}}>TAILORED SCOPE</div>
             <h3 style={{fontSize:17,color:"var(--cream)",fontWeight:500,margin:"0 0 6px"}}>{scope.title}</h3>
             <p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,marginBottom:16}}>{scope.executive_summary}</p>
-            {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"12px 14px",marginBottom:6,background:"var(--ink-2)",borderRadius:8,borderLeft:"2px solid var(--amber)"}}><div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",marginBottom:4}}>{s.title}</div><p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{s.content}</p></div>))}
+            {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"12px 14px",marginBottom:6,background:"var(--ink-2)",borderRadius:8,borderLeft:`2px solid ${brandColor}`}}><div style={{fontFamily:"var(--mono)",fontSize:10,color:brandColor,marginBottom:4}}>{s.title}</div><p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{s.content}</p></div>))}
             <div style={{display:"flex",gap:16,marginTop:14,fontSize:12}}>
               <div><span style={{color:"var(--cream-mute)"}}>Investment:</span> <span style={{color:"var(--success)"}}>{scope.investment}</span></div>
-              <div><span style={{color:"var(--cream-mute)"}}>Timeline:</span> <span style={{color:"var(--amber)"}}>{scope.timeline}</span></div>
+              <div><span style={{color:"var(--cream-mute)"}}>Timeline:</span> <span style={{color:brandColor}}>{scope.timeline}</span></div>
             </div>
             <div style={{display:"flex",gap:8,marginTop:16}}>
               <Btn v="ai" icon="star" onClick={()=>generateAsset(selectedJob)}>Create Work Asset</Btn>
@@ -2017,11 +2135,15 @@ const JobFinderAgent=({data,dispatch,user})=>{
         {detailPhase==="asset"&&<div>
           {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Creating case study...</p></div>
           :asset&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--violet)",letterSpacing:"0.1em",marginBottom:6}}>CASE STUDY</div>
+            {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",marginBottom:12,background:`${brandAccent}10`,border:`1px solid ${brandAccent}30`,borderRadius:8}}>
+              {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:22,height:22,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:brandAccent,letterSpacing:"0.1em"}}>STYLED FOR {selectedJob.company.toUpperCase()}</span>
+            </div>}
+            <div style={{fontFamily:"var(--mono)",fontSize:9,color:brandAccent,letterSpacing:"0.1em",marginBottom:6}}>CASE STUDY</div>
             <h3 style={{fontSize:17,color:"var(--cream)",fontWeight:500,margin:"0 0 4px"}}>{asset.title}</h3>
-            <p style={{fontSize:11,color:"var(--violet)",margin:"0 0 12px"}}>{asset.subtitle} · {asset.client_type}</p>
+            <p style={{fontSize:11,color:brandAccent,margin:"0 0 12px"}}>{asset.subtitle} · {asset.client_type}</p>
             <div style={{padding:12,background:"var(--ink-2)",borderRadius:8,marginBottom:12}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",marginBottom:4}}>CHALLENGE</div><p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.6,margin:0}}>{asset.challenge}</p></div>
-            {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:8}}><div style={{width:24,height:24,borderRadius:6,background:"rgba(124,111,160,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:9,color:"var(--violet)",flexShrink:0}}>{i+1}</div><div><div style={{fontSize:12,color:"var(--cream)",fontWeight:500}}>{p.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,margin:0}}>{p.detail}</p></div></div>))}
+            {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:8}}><div style={{width:24,height:24,borderRadius:6,background:`${brandAccent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:9,color:brandAccent,flexShrink:0}}>{i+1}</div><div><div style={{fontSize:12,color:"var(--cream)",fontWeight:500}}>{p.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,margin:0}}>{p.detail}</p></div></div>))}
             <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(asset.results?.length||1,3)},1fr)`,gap:8,marginTop:12}}>
               {asset.results?.map((r,i)=>(<div key={i} style={{textAlign:"center",padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)"}}>{r.metric}</div><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{r.label}</div></div>))}
             </div>
@@ -2043,9 +2165,27 @@ const JobFinderAgent=({data,dispatch,user})=>{
               <div style={{padding:12,background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",letterSpacing:"0.08em",marginBottom:3}}>SCOPE</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{scope?.title||"Not generated"}</div></div>
               <div style={{padding:12,background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--violet)",letterSpacing:"0.08em",marginBottom:3}}>ASSET</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{asset?.title||"Not generated"}</div></div>
             </div>
-            <div style={{display:"flex",gap:10,justifyContent:"center",padding:"16px 0"}}>
-              <Btn onClick={()=>setApprovalStatus("approved")}>Approve & Apply</Btn>
-              <Btn v="danger" onClick={()=>{setApprovalStatus("rejected");setDetailPhase("info");}}>Reject</Btn>
+            <div style={{display:"flex",gap:10,justifyContent:"center",padding:"16px 0",flexDirection:"column",alignItems:"center"}}>
+              <div style={{display:"flex",gap:10}}>
+                <Btn onClick={()=>{
+                  // Actually open the job listing so the founder can apply
+                  const applyUrl=selectedJob.applyUrl||selectedJob.url;
+                  if(applyUrl){
+                    const w=window.open(applyUrl,"_blank","noopener,noreferrer");
+                    if(!w){alert("Pop-up blocked — please allow pop-ups or open the listing manually.");}
+                  }
+                  setApprovalStatus("approved");
+                  // Record that we applied in localStorage (for later syncing to CRM)
+                  try{
+                    const key="rs_job_applications";
+                    const prev=JSON.parse(localStorage.getItem(key)||"[]");
+                    prev.unshift({jobId:selectedJob.id,title:selectedJob.title,company:selectedJob.company,url:applyUrl,platform:selectedJob.platform,appliedAt:new Date().toISOString(),scope:scope?.title,asset:asset?.title});
+                    localStorage.setItem(key,JSON.stringify(prev.slice(0,200)));
+                  }catch{}
+                }}>Approve & Open Application →</Btn>
+                <Btn v="danger" onClick={()=>{setApprovalStatus("rejected");setDetailPhase("info");}}>Reject</Btn>
+              </div>
+              <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:0}}>Opens the original listing in a new tab so you can submit your application with the generated scope & asset.</p>
             </div>
           </div>}
           {approvalStatus==="approved"&&<div style={{textAlign:"center",padding:"24px 0",animation:"fadeUp .3s ease-out"}}>
