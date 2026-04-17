@@ -1554,6 +1554,8 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const[apiSources,setApiSources]=useState([]);
   const[hasRapid,setHasRapid]=useState(false);
   const[apiErrors,setApiErrors]=useState([]);
+  const[diagnostics,setDiagnostics]=useState([]);
+  const[noResultsReason,setNoResultsReason]=useState("");
   const[lastRun,setLastRun]=useState(()=>{try{return localStorage.getItem("rs_job_last_run")||null;}catch{return null;}});
   const[autoRunStatus,setAutoRunStatus]=useState("");
   const autoRanRef=useRef(false);
@@ -1576,6 +1578,8 @@ const JobFinderAgent=({data,dispatch,user})=>{
       setApiSources(d.sources||[]);
       setHasRapid(!!d.hasRapidAPI);
       setApiErrors(d.errors||[]);
+      setDiagnostics(d.diagnostics||[]);
+      setNoResultsReason(d.noResultsReason||"");
       try{localStorage.setItem(JOB_CACHE_KEY,JSON.stringify(foundJobs));}catch{}
       // Update last run timestamp
       const now=new Date().toISOString();
@@ -1699,6 +1703,43 @@ const JobFinderAgent=({data,dispatch,user})=>{
   // MAIN UI — Dashboard-first, config is collapsible
   // ═══════════════════════════════════════════════
   return(<div style={{animation:"fadeUp .3s ease-out"}}>
+    {/* ── Collapsible Config Panel (TOP) ── */}
+    {showConfig&&<div style={{padding:24,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16,animation:"fadeUp .2s ease-out"}}>
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:14}}>SEARCH CONFIGURATION</div>
+      <Field label="Keywords" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="CRM, HubSpot, Salesforce, revenue operations, GTM..."/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
+        <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, Canada, New York, London..."/>
+        <Field label="Title filter" value={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="Consultant, Manager, Ops..."/>
+        <div>
+          <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>DATE POSTED</label>
+          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"10px 12px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>
+            <option value="today">Today</option><option value="3days">Last 3 days</option><option value="week">Last week</option><option value="month">Last month</option><option value="all">All time</option>
+          </select>
+        </div>
+      </div>
+      {/* Schedule config */}
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8,marginTop:8}}>AUTO-RUN SCHEDULE</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+        {["daily","weekly","biweekly","monthly"].map(f=>(
+          <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"6px 14px",borderRadius:6,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+        ))}
+        {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
+      </div>
+      {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
+      {/* Sources status */}
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6}}>ACTIVE SOURCES</div>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+        {(hasRapid?["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Remotive","Jobicy"]:["Remotive","Jobicy"]).map(s=>(
+          <span key={s} style={{padding:"3px 8px",borderRadius:4,background:`${platCol[s]||"var(--cream-mute)"}12`,fontFamily:"var(--mono)",fontSize:9,color:platCol[s]||"var(--cream-mute)"}}>{s}</span>
+        ))}
+        {!hasRapid&&<span style={{padding:"3px 8px",borderRadius:4,background:"rgba(168,91,91,0.08)",fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)"}}>Add RevoSys_RapidAPI for LinkedIn/Indeed</span>}
+      </div>
+      <div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid var(--border)"}}>
+        <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Apply Filters & Search"}</Btn>
+        <button onClick={()=>setShowConfig(false)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Close</button>
+      </div>
+    </div>}
+
     {/* ── Top Picks Dashboard ── */}
     <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -1726,6 +1767,20 @@ const JobFinderAgent=({data,dispatch,user})=>{
       {/* API status warnings */}
       {apiErrors.length>0&&<div style={{padding:"10px 14px",background:"rgba(168,91,91,0.06)",borderRadius:8,border:"1px solid rgba(168,91,91,0.15)",marginBottom:14}}>
         {apiErrors.map((e,i)=><div key={i} style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--danger)",marginBottom:2}}>{e.source}: {e.error}</div>)}
+      </div>}
+
+      {/* No-results reason */}
+      {noResultsReason&&topPicks.length===0&&!loading&&<div style={{padding:"10px 14px",background:"rgba(196,162,101,0.06)",borderRadius:8,border:"1px solid rgba(196,162,101,0.15)",marginBottom:14}}>
+        <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",lineHeight:1.6}}>{noResultsReason}</div>
+      </div>}
+
+      {/* Per-source diagnostics (how many from each, how many dropped by filter) */}
+      {diagnostics.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+        {diagnostics.map((d,i)=>(
+          <div key={i} title={`${d.raw} raw · ${d.kept} kept · dropped: ${d.dropped_location} loc, ${d.dropped_title} title, ${d.dropped_date} date`} style={{padding:"4px 10px",borderRadius:4,background:"var(--ink)",border:"1px solid var(--border)",fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>
+            <span style={{color:"var(--cream-dim)"}}>{d.source}</span> <span style={{color:d.kept>0?"var(--success)":"var(--danger)"}}>{d.kept}</span>/{d.raw}
+          </div>
+        ))}
       </div>}
 
       {/* Top 5 picks — shown as action cards */}
@@ -1757,41 +1812,6 @@ const JobFinderAgent=({data,dispatch,user})=>{
         <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading}>Search Jobs</Btn>
       </div>}
     </div>
-
-    {/* ── Collapsible Config Panel ── */}
-    {showConfig&&<div style={{padding:24,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16,animation:"fadeUp .2s ease-out"}}>
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:14}}>SEARCH CONFIGURATION</div>
-      <Field label="Keywords" value={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="CRM, HubSpot, Salesforce, revenue operations, GTM..."/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
-        <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, New York, London..."/>
-        <Field label="Title filter" value={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="Consultant, Manager, Ops..."/>
-        <div>
-          <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>DATE POSTED</label>
-          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"10px 12px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>
-            <option value="today">Today</option><option value="3days">Last 3 days</option><option value="week">Last week</option><option value="month">Last month</option><option value="all">All time</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Schedule config */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8,marginTop:8}}>AUTO-RUN SCHEDULE</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-        {["daily","weekly","biweekly","monthly"].map(f=>(
-          <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"6px 14px",borderRadius:6,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
-        ))}
-        {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
-      </div>
-      {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
-
-      {/* Sources status */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6}}>ACTIVE SOURCES</div>
-      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-        {(hasRapid?["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Remotive","Jobicy"]:["Remotive","Jobicy"]).map(s=>(
-          <span key={s} style={{padding:"3px 8px",borderRadius:4,background:`${platCol[s]||"var(--cream-mute)"}12`,fontFamily:"var(--mono)",fontSize:9,color:platCol[s]||"var(--cream-mute)"}}>{s}</span>
-        ))}
-        {!hasRapid&&<span style={{padding:"3px 8px",borderRadius:4,background:"rgba(168,91,91,0.08)",fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)"}}>Add RevoSys_RapidAPI for LinkedIn/Indeed</span>}
-      </div>
-    </div>}
 
     {/* ═══════ RESULTS SIDEBAR (slides in from right) ═══════ */}
     {sidebarOpen&&<div style={{position:"fixed",top:0,right:0,bottom:0,width:selectedJob?900:460,zIndex:999,display:"flex",transition:"width .3s ease"}}>
