@@ -260,6 +260,96 @@ body{background:var(--ink);color:var(--cream);font-family:var(--sans);-webkit-fo
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--amber)!important}
 ::selection{background:rgba(196,162,101,0.25);color:var(--cream)}
 .ghost-btn{background:none;border:none;color:var(--cream-mute);cursor:pointer;padding:4px;display:inline-flex;transition:color .15s}.ghost-btn:hover{color:var(--cream)}
+html,body{max-width:100vw;overflow-x:hidden}
+img,svg{max-width:100%;height:auto}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE (≤ 900px tablet, ≤ 640px phone)
+   Attribute selectors override React inline styles via !important.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px){
+  /* Portfolio top nav */
+  nav[style*="padding: 20px 64px"]{padding:14px 20px !important;flex-wrap:wrap !important;gap:12px !important}
+  nav[style*="padding: 20px 64px"] > div:last-child{gap:14px !important;flex-wrap:wrap}
+  nav[style*="padding: 20px 64px"] button{font-size:11px !important;padding:6px 12px !important}
+
+  /* Portfolio sections: slim padding */
+  section[style*="padding: 200px 64px 100px"]{padding:120px 20px 60px !important}
+  section[style*="padding: \"200px 64px 100px\""]{padding:120px 20px 60px !important}
+  section[style*="padding: 120px 64px"]{padding:64px 20px !important}
+  section[style*="padding: 100px 64px"]{padding:60px 20px !important}
+  section[style*="padding: 100px 40px"]{padding:60px 16px !important}
+  footer[style*="padding: 60px 64px"]{padding:32px 20px !important;flex-direction:column !important;gap:12px !important;text-align:center !important}
+
+  /* Collapse 2+ column grids to 1 column on mobile */
+  [style*="grid-template-columns: 1fr auto"]{grid-template-columns:1fr !important;gap:40px !important}
+  [style*="grid-template-columns: 300px 1fr"]{grid-template-columns:1fr !important;gap:28px !important}
+  [style*="grid-template-columns: repeat(4, 1fr)"]{grid-template-columns:repeat(2, 1fr) !important}
+  [style*="grid-template-columns: repeat(2, 1fr)"]{grid-template-columns:1fr !important}
+  [style*="grid-template-columns: 1fr 1fr 1fr"]{grid-template-columns:1fr !important}
+  [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr !important}
+
+  /* Typography scale */
+  h1[style*="font-size"]{font-size:clamp(30px,8vw,44px) !important;line-height:1.12 !important}
+  h2[style*="font-size: 44px"]{font-size:30px !important;line-height:1.15 !important}
+  h2[style*="font-size: 40px"]{font-size:28px !important}
+  h3[style*="font-size: 28px"]{font-size:22px !important}
+
+  /* Hero right panel (funnel) — shrink, center */
+  [style*="width: 420px"]{width:100% !important;max-width:360px !important;margin:0 auto !important}
+
+  /* Hero stats row (6+/4/15+/3x) */
+  [style*="gap: 48px"][style*="marginTop: 72px"]{gap:28px !important;margin-top:40px !important;flex-wrap:wrap !important}
+
+  /* Portal sidebar: narrower on mobile, still collapsible */
+  aside[style*="width: 220px"]{width:56px !important}
+  aside[style*="width: 220px"] + main{padding:24px 20px !important}
+  main[style*="padding: 36px 48px"]{padding:24px 18px !important}
+
+  /* Portfolio marquee — reduce letter-spacing */
+  [style*="letter-spacing: 0.3em"][style*="text-transform: uppercase"]{letter-spacing:0.12em !important}
+
+  /* Case study header row — stack */
+  [style*="grid-template-columns: 50px 1fr auto"]{grid-template-columns:40px 1fr !important;gap:16px !important}
+  [style*="grid-template-columns: 50px 1fr auto"] > div:last-child{grid-column:1 / -1 !important;justify-content:flex-start !important}
+
+  /* Funnel: 6 columns becomes scroll-snap strip */
+  [style*="grid-template-columns: repeat(6, 1fr)"]{grid-template-columns:repeat(6, 78%) !important;overflow-x:auto !important;scroll-snap-type:x mandatory !important;padding-bottom:12px !important}
+  [style*="grid-template-columns: repeat(6, 1fr)"] > *{scroll-snap-align:start !important}
+
+  /* Job Finder specifics — overridden inline via className on redesign */
+  .rs-job-layout{grid-template-columns:1fr !important}
+  .rs-job-filters{position:static !important;width:100% !important;max-height:none !important;border-right:none !important;border-bottom:1px solid var(--border) !important;padding:16px !important;margin-bottom:16px !important}
+  .rs-job-table{font-size:11px !important}
+  .rs-job-table th,.rs-job-table td{padding:8px 10px !important}
+
+  /* Generic large padding / tight containers */
+  [style*="padding: 28px"]{padding:18px !important}
+  [style*="padding: 32px"]{padding:20px !important}
+  [style*="padding: 36px"]{padding:22px !important}
+
+  /* Sidebar slide-in for Job Finder — make it near-fullscreen on mobile */
+  [style*="width: 900px"][style*="position: fixed"]{width:100vw !important;max-width:100vw !important}
+  [style*="width: 460px"][style*="position: fixed"]{width:100vw !important}
+
+  /* Modal — edge-to-edge on mobile */
+  [style*="max-width: 540px"]{max-width:94vw !important}
+  [style*="max-width: 720px"]{max-width:94vw !important}
+}
+@media (max-width: 640px){
+  nav[style*="padding"] > div:first-child{font-size:14px !important}
+  section[style*="padding: 200px 64px 100px"]{padding:100px 16px 40px !important}
+  [style*="font-size: 44px"]{font-size:26px !important}
+  [style*="gap: 80px"]{gap:32px !important}
+  [style*="padding: 60px 64px"]{padding:28px 16px !important}
+  /* Hero CTA buttons — stack */
+  [style*="marginTop: 48px"][style*="gap: 16px"]{flex-direction:column !important;align-items:stretch !important}
+  /* Case study list padding */
+  [style*="padding: 28px 36px"]{padding:18px 20px !important}
+  [style*="padding: 0 36px 36px 86px"]{padding:0 20px 24px !important}
+  /* Disable heavy translate hover on mobile (touch) */
+  [style*="transform: translateY(-3px)"]{transform:none !important}
+}
 `;
 const I={dash:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>,users:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,folder:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,doc:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,target:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,check:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="20 6 9 17 4 12"/></svg>,plus:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,edit:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,trash:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,x:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,back:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,send:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,lock:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,copy:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,upload:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,search:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,activity:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,star:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,settings:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,logout:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,ai:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>,arrow:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>,menu:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="16" y2="16"/></svg>,down:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="6 9 12 15 18 9"/></svg>,play:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>};
 const Icon=({name,size=18})=><span style={{display:"inline-flex",width:size,height:size,flexShrink:0}}>{I[name]}</span>;
@@ -628,7 +718,7 @@ const StackMap = () => {
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--violet)", animation: "flowPulse 2s ease-in-out infinite" }} />
         Recommended Stack Additions
       </div>
-      <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginBottom: 16, lineHeight: 1.6 }}>Tools that would meaningfully upgrade your GTM architecture based on high-impact gaps I commonly find.</p>
+      <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", marginBottom: 16, lineHeight: 1.6 }}>Tools that would meaningfully upgrade your GTM architecture based on high-impact gaps we commonly find.</p>
       <div style={{ display: "grid", gap: 10 }}>
         {suggestedAdditions.map((s, si) => (
           <div key={s.id} style={{ padding: "20px 22px", background: `${s.color}06`, borderRadius: 12, border: `1px solid ${s.color}20`, animation: `slideInUp .4s ease-out ${si * 0.08}s both` }}>
@@ -736,7 +826,7 @@ const PortfolioPage = ({ data, onLogin }) => {
           <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>The Revenue Funnel</h2></div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 280, textAlign: "right", lineHeight: 1.6 }}>FROM RAW SIGNALS TO CLOSED REVENUE</span>
         </div>
-        <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 700, fontWeight: 300, padding: "0 24px" }}>This is the lead architecture I design for every engagement. Each stage has defined automation rules, manual quality gates, and clear handoff criteria between teams.</p>
+        <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 700, fontWeight: 300, padding: "0 24px" }}>This is the lead architecture we design for every engagement. Each stage has defined automation rules, manual quality gates, and clear handoff criteria between teams.</p>
         <div style={{ background: "var(--ink-2)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--sky), var(--violet), var(--amber), var(--sage), var(--rose), var(--success))", opacity: 0.4 }} />
           <LeadFunnel />
@@ -748,7 +838,7 @@ const PortfolioPage = ({ data, onLogin }) => {
           <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive Diagnostics</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>See the Thinking in Action</h2></div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 320, textAlign: "right", lineHeight: 1.6 }}>YOUR NUMBERS / INSTANT INSIGHTS</span>
         </div>
-        <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 800, fontWeight: 300 }}>Plug in your real numbers. Get instant visual diagnostics. No sign-up, no AI fluff. Just the math and frameworks I use with every client.</p>
+        <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 800, fontWeight: 300 }}>Plug in your real numbers. Get instant visual diagnostics. No sign-up, no AI fluff. Just the math and frameworks we use with every client.</p>
         {/* Horizontal tool selector */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
           {[
@@ -799,7 +889,7 @@ const PortfolioPage = ({ data, onLogin }) => {
       {/* Case Studies */}
       <section id="work" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After I Stepped In</h2></div>
+          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After We Stepped In</h2></div>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 32, flexWrap: "wrap" }}>{categories.map(c => (<button key={c} onClick={() => setFilterCat(c)} style={{ padding: "8px 20px", borderRadius: 8, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s", background: filterCat === c ? "rgba(196,162,101,0.1)" : "transparent", border: filterCat === c ? "1px solid rgba(196,162,101,0.25)" : "1px solid var(--border)", color: filterCat === c ? "var(--amber)" : "var(--cream-mute)" }}>{c}</button>))}</div>
         <div style={{ display: "grid", gap: 2 }}>{filteredCases.map((cs, i) => {
@@ -1560,7 +1650,11 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const[autoRunStatus,setAutoRunStatus]=useState("");
   const autoRanRef=useRef(false);
   const base=window.location.hostname==="localhost"?"https://www.revosys.pro":"";
-  const platCol={LinkedIn:"#0A66C2",Indeed:"#2164F3",Glassdoor:"#0CAA41",ZipRecruiter:"#5BA9A0",Remotive:"#14A800",Jobicy:"#7C6FA0","BeBee":"#F5A623","SimplyHired":"#2164F3","Talent.com":"#5BA9A0"};
+  const platCol={LinkedIn:"#0A66C2",Indeed:"#2164F3",Glassdoor:"#0CAA41",ZipRecruiter:"#5BA9A0",Upwork:"#14A800",Remotive:"#14A800",Jobicy:"#7C6FA0",Arbeitnow:"#F76707","The Muse":"#E91E63",RemoteOK:"#FF4742","BeBee":"#F5A623","SimplyHired":"#2164F3","Talent.com":"#5BA9A0"};
+  const ALL_PLATFORMS=["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];
+  const[excludedSources,setExcludedSources]=useState(()=>{try{const s=localStorage.getItem("rs_job_excl_sources");return s?new Set(JSON.parse(s)):new Set();}catch{return new Set();}});
+  const[sortBy,setSortBy]=useState("relevance");
+  const toggleSource=(p)=>{const n=new Set(excludedSources);n.has(p)?n.delete(p):n.add(p);setExcludedSources(n);try{localStorage.setItem("rs_job_excl_sources",JSON.stringify([...n]));}catch{}};
 
   // Persist filters whenever they change
   useEffect(()=>{try{localStorage.setItem("rs_job_filters",JSON.stringify(searchForm));}catch{}},[searchForm]);
@@ -1603,7 +1697,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
     try{
       const summaries=jobList.slice(0,30).map((j,i)=>`${i}: "${j.title}" at ${j.company} (${j.location}) — ${(j.description||"").substring(0,120)}`).join("\n");
       const raw=await callAI(
-        `You are helping Sahil Bahri, founder of Revo-Sys (a GTM/RevOps consultancy), find the best consulting/contract jobs.\n\nHis expertise: CRM implementation (HubSpot, Salesforce), revenue operations, GTM strategy, marketing automation, AI-powered operations, data migration, workflow automation.\n\nFrom these ${jobList.length} jobs, pick the TOP 5 most relevant for consulting/contract work. Consider:\n- Relevance to RevOps/CRM/GTM consulting\n- Likelihood of being a contract/consulting engagement\n- Company size and potential deal value\n- Remote-friendliness\n\nJobs:\n${summaries}\n\nReturn ONLY a JSON array of the indices (0-based): [2, 5, 11, 0, 8]`,
+        `You are helping Revo-Sys (a boutique GTM/RevOps consultancy) find the best consulting/contract engagements.\n\nOur expertise: CRM implementation (HubSpot, Salesforce), revenue operations, GTM strategy, marketing automation, AI-powered operations, data migration, workflow automation.\n\nFrom these ${jobList.length} jobs, pick the TOP 5 most relevant for consulting/contract work. Consider:\n- Relevance to RevOps/CRM/GTM consulting\n- Likelihood of being a contract/consulting engagement\n- Company size and potential deal value\n- Remote-friendliness\n\nJobs:\n${summaries}\n\nReturn ONLY a JSON array of the indices (0-based): [2, 5, 11, 0, 8]`,
         "You are a job-matching AI. Return ONLY a valid JSON array of 5 integers. No explanation."
       );
       try{
@@ -1671,7 +1765,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const generateScope=async(job)=>{
     setLoading(true);setScope(null);setDetailPhase("scope");
     const brandCtx=branding?`\n\nCompany branding/website info:\nTitle: ${branding.title}\nDescription: ${branding.description}\nContent excerpt: ${branding.text?.substring(0,800)}`:"";
-    const raw=await callAI(`Create a tailored project scope/proposal for this job:\n\nJob: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description}\nTags: ${(job.tags||[]).join(", ")}\nSalary: ${job.salary}${brandCtx}\n\nReturn ONLY valid JSON: {"title":"scope title","executive_summary":"2-3 sentences tailored to this company","sections":[{"title":"section","content":"detailed content"}],"timeline":"proposed timeline","investment":"proposed rate/budget","differentiators":["why Revo-Sys is the best fit"]}`,"You are Sahil Bahri, founder of Revo-Sys, a GTM/RevOps consultancy. Create a compelling scope. Return only valid JSON.");
+    const raw=await callAI(`Create a tailored project scope/proposal for this job, written in the consultancy's voice (we, our):\n\nJob: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description}\nTags: ${(job.tags||[]).join(", ")}\nSalary: ${job.salary}${brandCtx}\n\nReturn ONLY valid JSON: {"title":"scope title","executive_summary":"2-3 sentences tailored to this company in our voice","sections":[{"title":"section","content":"detailed content"}],"timeline":"proposed timeline","investment":"proposed rate/budget","differentiators":["why Revo-Sys is the best fit"]}`,"You are Revo-Sys, a boutique GTM/RevOps consultancy. Write in the first-person plural (we, our). Return only valid JSON.");
     try{const p=JSON.parse(raw.replace(/```json?|```/g,"").trim());setScope(p);}
     catch{setScope({title:"Tailored Scope",executive_summary:raw,sections:[{title:"Overview",content:raw}],timeline:"TBD",investment:"TBD",differentiators:["Deep RevOps expertise"]});}
     setLoading(false);
@@ -1696,7 +1790,9 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const getNextRun=(freq)=>{const now=new Date();if(freq==="daily")now.setDate(now.getDate()+1);else if(freq==="weekly")now.setDate(now.getDate()+7);else if(freq==="biweekly")now.setDate(now.getDate()+14);else now.setMonth(now.getMonth()+1);now.setHours(9,0,0,0);return now.toISOString();};
 
   const platforms=[...new Set(jobs.map(j=>j.platform))];
-  const filtered=jobs.filter(j=>filterPlatform==="all"||j.platform===filterPlatform);
+  const platformCounts=ALL_PLATFORMS.reduce((m,p)=>{m[p]=jobs.filter(j=>j.platform===p).length;return m;},{});
+  const sortFn=(a,b)=>{if(sortBy==="newest"){const da=new Date(a.postedAt||0).getTime();const db=new Date(b.postedAt||0).getTime();return db-da;}if(sortBy==="company")return(a.company||"").localeCompare(b.company||"");return 0;};
+  const filtered=jobs.filter(j=>!excludedSources.has(j.platform)&&(filterPlatform==="all"||j.platform===filterPlatform)).slice().sort(sortFn);
   const closeDetail=()=>{setSelectedJob(null);setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setDetailPhase("info");};
 
   // ═══════════════════════════════════════════════
@@ -1726,14 +1822,25 @@ const JobFinderAgent=({data,dispatch,user})=>{
         {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
       </div>
       {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
-      {/* Sources status */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6}}>ACTIVE SOURCES</div>
-      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-        {(hasRapid?["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Remotive","Jobicy"]:["Remotive","Jobicy"]).map(s=>(
-          <span key={s} style={{padding:"3px 8px",borderRadius:4,background:`${platCol[s]||"var(--cream-mute)"}12`,fontFamily:"var(--mono)",fontSize:9,color:platCol[s]||"var(--cream-mute)"}}>{s}</span>
-        ))}
-        {!hasRapid&&<span style={{padding:"3px 8px",borderRadius:4,background:"rgba(168,91,91,0.08)",fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)"}}>Add RevoSys_RapidAPI for LinkedIn/Indeed</span>}
+      {/* Sources multi-select (Clay-style) */}
+      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+        <span>SOURCES ({ALL_PLATFORMS.length - excludedSources.size}/{ALL_PLATFORMS.length})</span>
+        <span style={{cursor:"pointer",color:"var(--sky)"}} onClick={()=>setExcludedSources(new Set())}>Include all</span>
       </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(130px, 1fr))",gap:4}}>
+        {ALL_PLATFORMS.map(s=>{
+          const excluded=excludedSources.has(s);
+          const cnt=platformCounts[s]||0;
+          const rapidReq=["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Upwork"].includes(s);
+          const unavailable=rapidReq&&!hasRapid;
+          return(<label key={s} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:4,background:excluded||unavailable?"var(--ink)":`${platCol[s]||"var(--cream-mute)"}10`,border:`1px solid ${excluded||unavailable?"var(--border)":`${platCol[s]}30`}`,cursor:unavailable?"not-allowed":"pointer",opacity:unavailable?0.4:1}}>
+            <input type="checkbox" checked={!excluded&&!unavailable} disabled={unavailable} onChange={()=>!unavailable&&toggleSource(s)} style={{accentColor:platCol[s]||"var(--cream)",cursor:unavailable?"not-allowed":"pointer"}}/>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:excluded||unavailable?"var(--cream-mute)":platCol[s]||"var(--cream)",flex:1}}>{s}</span>
+            {cnt>0&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"var(--ink-2)",padding:"1px 5px",borderRadius:3}}>{cnt}</span>}
+          </label>);
+        })}
+      </div>
+      {!hasRapid&&<p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",margin:"6px 0 0"}}>Add RevoSys_RapidAPI env var to unlock LinkedIn, Indeed, Glassdoor, ZipRecruiter, Upwork</p>}
       <div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid var(--border)"}}>
         <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Apply Filters & Search"}</Btn>
         <button onClick={()=>setShowConfig(false)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Close</button>
@@ -1825,6 +1932,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
             {apiSources.length>0&&<div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",marginTop:2}}>from {apiSources.join(", ")}</div>}
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"4px 8px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:10,fontFamily:"var(--mono)"}} title="Sort"><option value="relevance">Relevance</option><option value="newest">Newest</option><option value="company">Company A-Z</option></select>
             <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{padding:"4px 8px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:10,fontFamily:"var(--mono)"}}><option value="all">All</option>{platforms.map(p=><option key={p} value={p}>{p}</option>)}</select>
             <button onClick={()=>{setSidebarOpen(false);closeDetail();}} style={{background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",padding:4}}><Icon name="x" size={16}/></button>
           </div>

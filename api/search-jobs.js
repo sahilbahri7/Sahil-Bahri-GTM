@@ -173,7 +173,7 @@ export default async function handler(req, res) {
         const params = new URLSearchParams({
           query: `${sq}${titleBias}`.trim(),
           page: "1",
-          num_pages: "1",
+          num_pages: "2", // pull up to 2 pages per query = more depth
           date_posted: effectiveDate,
         });
 
@@ -334,6 +334,147 @@ export default async function handler(req, res) {
     if (diag.kept > 0) activeSources.push("Jobicy");
   } catch (e) {
     errors.push({ source: "Jobicy", error: e.message });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SOURCE 4: Arbeitnow (free, no key) — EU-centric remote/tech
+  // ═══════════════════════════════════════════════════════════
+  try {
+    const diag = { source: "Arbeitnow", raw: 0, kept: 0, dropped_location: 0, dropped_title: 0, dropped_date: 0 };
+    const r = await fetch(
+      "https://www.arbeitnow.com/api/job-board-api",
+      { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) }
+    );
+    if (r.ok) {
+      const d = await r.json();
+      const kw = terms.map(t => t.toLowerCase());
+      for (const job of (d.data || []).slice(0, 120)) {
+        const hay = `${job.title || ""} ${job.description || ""} ${(job.tags || []).join(" ")}`.toLowerCase();
+        // Arbeitnow is enormous; pre-filter by keyword match before applying shared filters
+        if (!kw.some(k => hay.includes(k))) continue;
+        diag.raw++;
+        const j = {
+          id: `arbeitnow_${job.slug}`,
+          title: job.title || "",
+          company: job.company_name || "Unknown",
+          companyLogo: null,
+          companyWebsite: null,
+          platform: "Arbeitnow",
+          type: (job.job_types && job.job_types[0]) ? job.job_types[0].replace(/_/g, " ") : "Full-time",
+          location: job.remote ? "Remote" : (job.location || "Not specified"),
+          posted: job.created_at ? new Date(job.created_at * 1000).toLocaleDateString() : "Recent",
+          _postedDate: job.created_at ? new Date(job.created_at * 1000).toISOString() : null,
+          description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 600),
+          tags: job.tags || [],
+          salary: "Not listed",
+          url: job.url || "",
+          source: "arbeitnow.com",
+        };
+        if (applyFilters(j, diag)) { allJobs.push(j); diag.kept++; }
+      }
+    }
+    diagnostics.push(diag);
+    if (diag.kept > 0) activeSources.push("Arbeitnow");
+  } catch (e) {
+    errors.push({ source: "Arbeitnow", error: e.message });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SOURCE 5: The Muse (free, no key) — US-centric but broad
+  // ═══════════════════════════════════════════════════════════
+  try {
+    const diag = { source: "The Muse", raw: 0, kept: 0, dropped_location: 0, dropped_title: 0, dropped_date: 0 };
+    // The Muse lets us filter by category but not free-text search; we fetch
+    // a few category pages and filter client-side.
+    const categories = ["Operations","Sales","Marketing","Data Science"];
+    const musePromises = categories.map(async (cat) => {
+      try {
+        const url = `https://www.themuse.com/api/public/jobs?category=${encodeURIComponent(cat)}&page=0&descending=true`;
+        const r = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) });
+        if (r.ok) return (await r.json()).results || [];
+        return [];
+      } catch { return []; }
+    });
+    const museResults = await Promise.all(musePromises);
+    const kw = terms.map(t => t.toLowerCase());
+    const museSeen = new Set();
+    for (const list of museResults) {
+      for (const job of list) {
+        if (museSeen.has(job.id)) continue;
+        museSeen.add(job.id);
+        const hay = `${job.name || ""} ${job.contents || ""}`.toLowerCase();
+        if (!kw.some(k => hay.includes(k))) continue;
+        diag.raw++;
+        const loc = (job.locations || []).map(l => l.name).join(", ") || (job.categories?.[0]?.name === "Remote" ? "Remote" : "Not specified");
+        const j = {
+          id: `muse_${job.id}`,
+          title: job.name || "",
+          company: job.company?.name || "Unknown",
+          companyLogo: null,
+          companyWebsite: null,
+          platform: "The Muse",
+          type: job.type || "Full-time",
+          location: loc,
+          posted: job.publication_date ? new Date(job.publication_date).toLocaleDateString() : "Recent",
+          _postedDate: job.publication_date || null,
+          description: (job.contents || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 600),
+          tags: (job.levels || []).map(l => l.name),
+          salary: "Not listed",
+          url: job.refs?.landing_page || "",
+          source: "themuse.com",
+        };
+        if (applyFilters(j, diag)) { allJobs.push(j); diag.kept++; }
+      }
+    }
+    diagnostics.push(diag);
+    if (diag.kept > 0) activeSources.push("The Muse");
+  } catch (e) {
+    errors.push({ source: "The Muse", error: e.message });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SOURCE 6: RemoteOK (free, no key) — developer/remote-heavy
+  // ═══════════════════════════════════════════════════════════
+  try {
+    const diag = { source: "RemoteOK", raw: 0, kept: 0, dropped_location: 0, dropped_title: 0, dropped_date: 0 };
+    const r = await fetch("https://remoteok.com/api", {
+      headers: { Accept: "application/json", "User-Agent": "Revo-Sys-JobFinder/1.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      const list = Array.isArray(d) ? d.filter(x => x.id) : [];
+      const kw = terms.map(t => t.toLowerCase());
+      for (const job of list.slice(0, 120)) {
+        const hay = `${job.position || ""} ${job.description || ""} ${(job.tags || []).join(" ")}`.toLowerCase();
+        if (!kw.some(k => hay.includes(k))) continue;
+        diag.raw++;
+        const j = {
+          id: `remoteok_${job.id}`,
+          title: job.position || "",
+          company: job.company || "Unknown",
+          companyLogo: job.company_logo || job.logo || null,
+          companyWebsite: null,
+          platform: "RemoteOK",
+          type: "Remote",
+          location: job.location || "Remote",
+          posted: job.date ? new Date(job.date).toLocaleDateString() : "Recent",
+          _postedDate: job.date || null,
+          description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 600),
+          tags: job.tags || [],
+          salary: job.salary_min && job.salary_max
+            ? `$${Math.round(job.salary_min/1000)}k-$${Math.round(job.salary_max/1000)}k`
+            : "Not listed",
+          url: job.url || job.apply_url || "",
+          source: "remoteok.com",
+        };
+        if (applyFilters(j, diag)) { allJobs.push(j); diag.kept++; }
+      }
+    }
+    diagnostics.push(diag);
+    if (diag.kept > 0) activeSources.push("RemoteOK");
+  } catch (e) {
+    errors.push({ source: "RemoteOK", error: e.message });
   }
 
   // Deduplicate by normalized title+company
