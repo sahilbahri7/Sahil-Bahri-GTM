@@ -1875,7 +1875,7 @@ const JobFinderAgent=({data,dispatch,user})=>{
   // ═══════════════════════════════════════════════════════
   // CLAY-STYLE LAYOUT: sticky left filters | inline results
   // ═══════════════════════════════════════════════════════
-  return(<div style={{display:"flex",height:"calc(100vh - 140px)",animation:"fadeUp .3s ease-out",overflow:"hidden",margin:"0 -48px",position:"relative"}}>
+  return(<div style={{display:"flex",height:"calc(100vh - 140px)",animation:"fadeUp .3s ease-out",overflow:"hidden",position:"relative"}}>
     {/* ── LEFT SIDEBAR: Persistent filter panel ── */}
     <aside style={{width:272,flexShrink:0,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
       <div style={{padding:"18px 18px 14px",borderBottom:"1px solid var(--border)"}}>
