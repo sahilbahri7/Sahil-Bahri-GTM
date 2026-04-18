@@ -764,6 +764,7 @@ const PortfolioPage = ({ data, onLogin }) => {
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginLeft:4}}>-Sys</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",letterSpacing:"0.12em",textTransform:"uppercase",marginLeft:14}}>GTM Platform</span></div>
         <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
           {["About", "Funnel", "Diagnostics", "Work"].map(s => (<button key={s} onClick={() => document.getElementById(s === "Diagnostics" ? "workflows" : s.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{s}</button>))}
+          <a href="/blog" style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>Blog</a>
           <button onClick={onLogin} style={{ padding: "8px 20px", background: "transparent", border: "1px solid var(--border-h)", borderRadius: 6, color: "var(--cream-dim)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cream)"; e.currentTarget.style.color = "var(--cream)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-h)"; e.currentTarget.style.color = "var(--cream-dim)"; }}>Client Portal</button>
         </div>
       </nav>
@@ -1871,343 +1872,322 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const filtered=jobs.filter(j=>!excludedSources.has(j.platform)&&(filterPlatform==="all"||j.platform===filterPlatform)).slice().sort(sortFn);
   const closeDetail=()=>{setSelectedJob(null);setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setDetailPhase("info");};
 
-  // ═══════════════════════════════════════════════
-  // MAIN UI — Dashboard-first, config is collapsible
-  // ═══════════════════════════════════════════════
-  return(<div style={{animation:"fadeUp .3s ease-out"}}>
-    {/* ── Collapsible Config Panel (TOP) ── */}
-    {showConfig&&<div style={{padding:24,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16,animation:"fadeUp .2s ease-out"}}>
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:14}}>SEARCH CONFIGURATION</div>
-      <div style={{marginBottom:12}}>
-        <ChipInput label="KEYWORDS — press Enter to add each tag" chips={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="HubSpot, then Enter..." accent="var(--success)"/>
+  // ═══════════════════════════════════════════════════════
+  // CLAY-STYLE LAYOUT: sticky left filters | inline results
+  // ═══════════════════════════════════════════════════════
+  return(<div style={{display:"flex",height:"calc(100vh - 140px)",animation:"fadeUp .3s ease-out",overflow:"hidden",margin:"0 -48px",position:"relative"}}>
+    {/* ── LEFT SIDEBAR: Persistent filter panel ── */}
+    <aside style={{width:272,flexShrink:0,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
+      <div style={{padding:"18px 18px 14px",borderBottom:"1px solid var(--border)"}}>
+        <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.14em",marginBottom:3}}>JOB SEARCH</div>
+        <div style={{fontSize:11,color:"var(--cream-dim)"}}>{lastRun?`Scanned ${new Date(lastRun).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})} at ${new Date(lastRun).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`:schedule?.enabled?"Scheduled run active":"Not yet run"}</div>
+        {autoRunStatus&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}><div style={{width:8,height:8,border:"1.5px solid var(--success)",borderTopColor:"transparent",borderRadius:"50%",animation:"spin .8s linear infinite",flexShrink:0}}/><span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)"}}>{autoRunStatus}</span></div>}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
-        <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, Canada, New York, London..."/>
-        <ChipInput label="TITLE FILTER (ANY match)" chips={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="consultant, manager..." accent="var(--amber)"/>
+
+      <div style={{padding:"16px 18px",flex:1,display:"flex",flexDirection:"column",gap:16,overflowY:"auto"}}>
+
+        {/* Keywords */}
+        <ChipInput label="KEYWORDS" chips={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="HubSpot, then Enter…" accent="var(--success)"/>
+
+        {/* Location */}
+        <div>
+          <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>LOCATION</label>
+          <input value={searchForm.location} onChange={e=>setSearchForm({...searchForm,location:e.target.value})} placeholder="Remote · Canada · New York…" style={{width:"100%",padding:"8px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:7,color:"var(--cream)",fontSize:12,fontFamily:"var(--sans)",boxSizing:"border-box"}}/>
+        </div>
+
+        {/* Title filter */}
+        <ChipInput label="TITLE FILTER (any match)" chips={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="consultant…" accent="var(--amber)"/>
+
+        {/* Date */}
         <div>
           <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>DATE POSTED</label>
-          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"10px 12px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>
+          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"8px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:7,color:"var(--cream)",fontSize:12,fontFamily:"var(--sans)"}}>
             <option value="today">Today</option><option value="3days">Last 3 days</option><option value="week">Last week</option><option value="month">Last month</option><option value="all">All time</option>
           </select>
         </div>
-      </div>
-      {/* Schedule config */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8,marginTop:8}}>AUTO-RUN SCHEDULE</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-        {["daily","weekly","biweekly","monthly"].map(f=>(
-          <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"6px 14px",borderRadius:6,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
-        ))}
-        {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
-      </div>
-      {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
 
-      {/* FETCH FROM — which providers to actually call when searching */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
-        <span>FETCH FROM ({fetchSources.length}/7 providers)</span>
-        <span style={{cursor:"pointer",color:"var(--sky)"}} onClick={()=>{const all=["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];setFetchSources(all);try{localStorage.setItem("rs_job_fetch_sources",JSON.stringify(all));}catch{}}}>Select all</span>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(120px, 1fr))",gap:4,marginBottom:4}}>
-        {[
-          {k:"JSearch",label:"JSearch (LI/Indeed)",c:"#0A66C2"},
-          {k:"Upwork",label:"Upwork (RSS+JS)",c:"#14A800"},
-          {k:"Remotive",label:"Remotive",c:"#14A800"},
-          {k:"Jobicy",label:"Jobicy",c:"#7C6FA0"},
-          {k:"Arbeitnow",label:"Arbeitnow",c:"#F76707"},
-          {k:"The Muse",label:"The Muse",c:"#E91E63"},
-          {k:"RemoteOK",label:"RemoteOK",c:"#FF4742"},
-        ].map(s=>{
-          const on=fetchSources.includes(s.k);
-          return(<label key={s.k} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:4,background:on?`${s.c}10`:"var(--ink)",border:`1px solid ${on?`${s.c}30`:"var(--border)"}`,cursor:"pointer"}}>
-            <input type="checkbox" checked={on} onChange={()=>toggleFetchSource(s.k)} style={{accentColor:s.c,cursor:"pointer"}}/>
-            <span style={{fontFamily:"var(--mono)",fontSize:9,color:on?s.c:"var(--cream-mute)",flex:1}}>{s.label}</span>
-          </label>);
-        })}
-      </div>
-      <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:"4px 0 0"}}>These are queried on each search. Uncheck slow or irrelevant providers.</p>
-
-      {/* Sources multi-select (Clay-style) */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
-        <span>SOURCES ({ALL_PLATFORMS.length - excludedSources.size}/{ALL_PLATFORMS.length})</span>
-        <span style={{cursor:"pointer",color:"var(--sky)"}} onClick={()=>setExcludedSources(new Set())}>Include all</span>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(130px, 1fr))",gap:4}}>
-        {ALL_PLATFORMS.map(s=>{
-          const excluded=excludedSources.has(s);
-          const cnt=platformCounts[s]||0;
-          const rapidReq=["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Upwork"].includes(s);
-          const unavailable=rapidReq&&!hasRapid;
-          return(<label key={s} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:4,background:excluded||unavailable?"var(--ink)":`${platCol[s]||"var(--cream-mute)"}10`,border:`1px solid ${excluded||unavailable?"var(--border)":`${platCol[s]}30`}`,cursor:unavailable?"not-allowed":"pointer",opacity:unavailable?0.4:1}}>
-            <input type="checkbox" checked={!excluded&&!unavailable} disabled={unavailable} onChange={()=>!unavailable&&toggleSource(s)} style={{accentColor:platCol[s]||"var(--cream)",cursor:unavailable?"not-allowed":"pointer"}}/>
-            <span style={{fontFamily:"var(--mono)",fontSize:9,color:excluded||unavailable?"var(--cream-mute)":platCol[s]||"var(--cream)",flex:1}}>{s}</span>
-            {cnt>0&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"var(--ink-2)",padding:"1px 5px",borderRadius:3}}>{cnt}</span>}
-          </label>);
-        })}
-      </div>
-      {!hasRapid&&<p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",margin:"6px 0 0"}}>Add RevoSys_RapidAPI env var to unlock LinkedIn, Indeed, Glassdoor, ZipRecruiter, Upwork</p>}
-      <div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid var(--border)"}}>
-        <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Apply Filters & Search"}</Btn>
-        <button onClick={()=>setShowConfig(false)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Close</button>
-      </div>
-    </div>}
-
-    {/* ── Top Picks Dashboard ── */}
-    <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+        {/* Fetch Sources */}
         <div>
-          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>AUTONOMOUS JOB INTELLIGENCE</div>
-          <h3 style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)",margin:0}}>Today's Top Picks</h3>
-          <p style={{fontSize:12,color:"var(--cream-mute)",marginTop:4}}>
-            {lastRun?`Last scan: ${new Date(lastRun).toLocaleString()}`:"No scans yet"}
-            {schedule?.enabled&&<span style={{color:"var(--success)",marginLeft:8}}>· Auto-runs {schedule.frequency}</span>}
-            {hasRapid&&<span style={{color:"#0A66C2",marginLeft:8}}>· LinkedIn/Indeed active</span>}
-          </p>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em"}}>SOURCES</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--sky)",cursor:"pointer"}} onClick={()=>{const a=["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];setFetchSources(a);try{localStorage.setItem("rs_job_fetch_sources",JSON.stringify(a));}catch{}}}>All</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {[{k:"JSearch",label:"LinkedIn · Indeed · Glassdoor",c:"#0A66C2"},{k:"Upwork",label:"Upwork",c:"#14A800"},{k:"Remotive",label:"Remotive",c:"#14A800"},{k:"Jobicy",label:"Jobicy",c:"#7C6FA0"},{k:"Arbeitnow",label:"Arbeitnow",c:"#F76707"},{k:"The Muse",label:"The Muse",c:"#E91E63"},{k:"RemoteOK",label:"RemoteOK",c:"#FF4742"}].map(s=>{
+              const on=fetchSources.includes(s.k);
+              const cnt=platformCounts[s.k]||0;
+              return(<label key={s.k} style={{display:"flex",alignItems:"center",gap:7,padding:"5px 6px",borderRadius:5,background:on?`${s.c}10`:"transparent",cursor:"pointer"}}>
+                <input type="checkbox" checked={on} onChange={()=>toggleFetchSource(s.k)} style={{accentColor:s.c,flexShrink:0}}/>
+                <span style={{flex:1,fontFamily:"var(--mono)",fontSize:10,color:on?s.c:"var(--cream-mute)"}}>{s.label}</span>
+                {cnt>0&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"var(--ink)",padding:"0 5px",borderRadius:10,lineHeight:"18px"}}>{cnt}</span>}
+              </label>);
+            })}
+          </div>
+          {!hasRapid&&<p style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--danger)",margin:"6px 0 0",lineHeight:1.5}}>Add RevoSys_RapidAPI to unlock LinkedIn/Indeed/Glassdoor</p>}
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setShowConfig(!showConfig)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>{showConfig?"Hide":"Configure"}</button>
-          <Btn icon="search" v="ai" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Run Now"}</Btn>
+
+        {/* Schedule */}
+        <div style={{paddingTop:12,borderTop:"1px solid var(--border)"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8}}>AUTO-RUN SCHEDULE</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+            {["daily","weekly","biweekly","monthly"].map(f=>(
+              <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"5px 0",borderRadius:5,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+            ))}
+          </div>
+          {schedule?.enabled&&<div style={{marginTop:6}}>
+            <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",margin:"0 0 2px"}}>Next: {new Date(schedule.nextRun).toLocaleString()}</p>
+            <button onClick={clearSchedule} style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",background:"none",border:"none",cursor:"pointer",padding:0}}>Disable</button>
+          </div>}
         </div>
-      </div>
 
-      {/* Auto-run status */}
-      {autoRunStatus&&<div style={{padding:"10px 14px",background:"rgba(107,158,111,0.06)",borderRadius:8,border:"1px solid rgba(107,158,111,0.15)",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-        <div style={{width:12,height:12,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-        <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)"}}>{autoRunStatus}</span>
-      </div>}
-
-      {/* API status warnings */}
-      {apiErrors.length>0&&<div style={{padding:"10px 14px",background:"rgba(168,91,91,0.06)",borderRadius:8,border:"1px solid rgba(168,91,91,0.15)",marginBottom:14}}>
-        {apiErrors.map((e,i)=><div key={i} style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--danger)",marginBottom:2}}>{e.source}: {e.error}</div>)}
-      </div>}
-
-      {/* No-results reason */}
-      {noResultsReason&&topPicks.length===0&&!loading&&<div style={{padding:"10px 14px",background:"rgba(196,162,101,0.06)",borderRadius:8,border:"1px solid rgba(196,162,101,0.15)",marginBottom:14}}>
-        <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",lineHeight:1.6}}>{noResultsReason}</div>
-      </div>}
-
-      {/* Per-source diagnostics (how many from each, how many dropped by filter) */}
-      {diagnostics.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-        {diagnostics.map((d,i)=>(
-          <div key={i} title={`${d.raw} raw · ${d.kept} kept · dropped: ${d.dropped_location} loc, ${d.dropped_title} title, ${d.dropped_date} date`} style={{padding:"4px 10px",borderRadius:4,background:"var(--ink)",border:"1px solid var(--border)",fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>
-            <span style={{color:"var(--cream-dim)"}}>{d.source}</span> <span style={{color:d.kept>0?"var(--success)":"var(--danger)"}}>{d.kept}</span>/{d.raw}
-          </div>
-        ))}
-      </div>}
-
-      {/* Top 5 picks — shown as action cards */}
-      {(ranking||loading)&&topPicks.length===0?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>{loading?"Scanning platforms...":"AI is ranking the best matches..."}</p></div>
-      :topPicks.length>0?<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {topPicks.map((job,idx)=>(
-          <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setSidebarOpen(true);}} style={{padding:"16px 20px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",cursor:"pointer",display:"flex",gap:14,alignItems:"flex-start",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="var(--success)"} onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
-            <div style={{width:28,height:28,borderRadius:8,background:"rgba(107,158,111,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--success)",flexShrink:0}}>{idx+1}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",letterSpacing:"0.06em",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"var(--cream-mute)"}15`}}>{job.platform}</span>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:"var(--ink-2)"}}>{job.type}</span>
-                {job.salary!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--success)",padding:"2px 6px",borderRadius:3,background:"rgba(107,158,111,0.08)"}}>{job.salary}</span>}
-              </div>
-              <div style={{fontSize:14,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:2}}>{job.title}</div>
-              <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",marginBottom:4}}>{job.company} · {job.location}</div>
-              <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(job.description||"").substring(0,120)}</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");else alert("No application URL available for this listing.");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply</button>
-              <button onClick={e=>{e.stopPropagation();setSelectedJob(job);setDetailPhase("info");setSidebarOpen(true);}} style={{padding:"5px 10px",borderRadius:5,background:"var(--ink-2)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Details</button>
-            </div>
-          </div>
-        ))}
-        {jobs.length>5&&<button onClick={()=>setSidebarOpen(true)} style={{padding:"10px",borderRadius:8,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer",textAlign:"center"}}>View all {jobs.length} results →</button>}
-      </div>
-      :<div style={{padding:30,textAlign:"center",color:"var(--cream-mute)",fontSize:12}}>
-        <p style={{margin:"0 0 8px"}}>No jobs loaded yet. Click "Run Now" or configure filters below.</p>
-        <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading}>Search Jobs</Btn>
-      </div>}
-    </div>
-
-    {/* ═══════ RESULTS SIDEBAR (slides in from right) ═══════ */}
-    {sidebarOpen&&<div style={{position:"fixed",top:0,right:0,bottom:0,width:selectedJob?900:460,zIndex:999,display:"flex",transition:"width .3s ease"}}>
-      <div onClick={()=>{setSidebarOpen(false);closeDetail();}} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:-1}}/>
-
-      {/* Job list panel */}
-      <div style={{width:selectedJob?440:460,background:"var(--ink-2)",borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
-        <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>
-            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",letterSpacing:"0.1em"}}>{filtered.length} JOBS FOUND</div>
-            {apiSources.length>0&&<div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",marginTop:2}}>from {apiSources.join(", ")}</div>}
-          </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"4px 8px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:10,fontFamily:"var(--mono)"}} title="Sort"><option value="relevance">Relevance</option><option value="newest">Newest</option><option value="company">Company A-Z</option></select>
-            <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{padding:"4px 8px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:10,fontFamily:"var(--mono)"}}><option value="all">All</option>{platforms.map(p=><option key={p} value={p}>{p}</option>)}</select>
-            <button onClick={()=>{setSidebarOpen(false);closeDetail();}} style={{background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",padding:4}}><Icon name="x" size={16}/></button>
-          </div>
-        </div>
-        <div style={{flex:1,overflowY:"auto"}}>
-          {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Scanning platforms...</p></div>
-          :filtered.length===0?<div style={{padding:40,textAlign:"center",color:"var(--cream-mute)",fontSize:12}}>No matching jobs found. Try different keywords.</div>
-          :filtered.map(job=>(
-            <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}} style={{padding:"14px 20px",borderBottom:"1px solid var(--border)",cursor:"pointer",background:selectedJob?.id===job.id?"rgba(107,158,111,0.06)":"transparent",borderLeft:selectedJob?.id===job.id?"3px solid var(--success)":"3px solid transparent",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background=selectedJob?.id===job.id?"rgba(107,158,111,0.06)":"var(--ink-3)"} onMouseLeave={e=>e.currentTarget.style.background=selectedJob?.id===job.id?"rgba(107,158,111,0.06)":"transparent"}>
-              <div style={{display:"flex",gap:6,marginBottom:6}}>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",letterSpacing:"0.06em",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"var(--cream-mute)"}15`}}>{job.platform}</span>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:"var(--ink)"}}>{job.type}</span>
-              </div>
-              <div style={{fontSize:13,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:3}}>{job.title}</div>
-              <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",marginBottom:4}}>{job.company}</div>
-              <div style={{display:"flex",gap:8,fontSize:10,fontFamily:"var(--mono)",color:"var(--cream-mute)"}}>
-                <span>{job.salary}</span><span>·</span><span>{job.location}</span><span>·</span><span>{job.posted}</span>
-              </div>
-              {job.tags?.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:6}}>{job.tags.slice(0,4).map((t,i)=><span key={i} style={{padding:"1px 6px",borderRadius:3,background:"var(--ink)",fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{t}</span>)}</div>}
+        {/* Diagnostics */}
+        {diagnostics.length>0&&<div style={{paddingTop:12,borderTop:"1px solid var(--border)"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:6}}>LAST RUN RESULTS</div>
+          {diagnostics.map((d,i)=>(
+            <div key={i} title={`dropped: ${d.dropped_location} loc · ${d.dropped_title} title · ${d.dropped_date} date`} style={{display:"flex",justifyContent:"space-between",marginBottom:3,cursor:"help"}}>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>{d.source}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:d.kept>0?"var(--success)":"var(--cream-mute)"}}>{d.kept}/{d.raw}</span>
             </div>
           ))}
-        </div>
+          {noResultsReason&&<p style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",margin:"4px 0 0",lineHeight:1.5}}>{noResultsReason}</p>}
+          {apiErrors.length>0&&apiErrors.map((e,i)=><p key={i} style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--danger)",margin:"2px 0 0"}}>{e.source}: {e.error}</p>)}
+        </div>}
       </div>
 
-      {/* Detail panel */}
-      {selectedJob&&<div style={{flex:1,background:"var(--ink)",borderLeft:"1px solid var(--border)",overflowY:"auto",padding:"24px 28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[selectedJob.platform]||"var(--cream-mute)",padding:"2px 8px",borderRadius:4,background:`${platCol[selectedJob.platform]||"var(--cream-mute)"}15`,letterSpacing:"0.06em"}}>{selectedJob.platform}</span>
-              <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 8px",borderRadius:4,background:"var(--ink-2)"}}>{selectedJob.posted}</span>
+      {/* Search button */}
+      <div style={{padding:"14px 18px",borderTop:"1px solid var(--border)",flexShrink:0}}>
+        <button onClick={()=>runAutonomous(true)} disabled={loading||ranking} style={{width:"100%",padding:"11px 0",borderRadius:8,background:loading||ranking?"rgba(107,158,111,0.06)":"rgba(107,158,111,0.12)",border:"1px solid rgba(107,158,111,0.3)",color:loading||ranking?"var(--cream-mute)":"var(--success)",fontSize:12,fontFamily:"var(--mono)",cursor:loading||ranking?"not-allowed":"pointer",letterSpacing:"0.08em",transition:"all .15s"}}>
+          {loading?"◌  Scanning…":ranking?"◌  AI Ranking…":"⌕  Search Jobs"}
+        </button>
+      </div>
+    </aside>
+
+    {/* ── MAIN AREA ── */}
+    <main style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
+
+      {/* ── AI TOP PICKS strip ── */}
+      <section style={{padding:"18px 24px 0",borderBottom:"1px solid var(--border)",paddingBottom:18,flexShrink:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.14em"}}>✦ AI TOP PICKS</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>{lastRun?`· ${new Date(lastRun).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})} ${new Date(lastRun).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`:""}{schedule?.enabled?` · auto ${schedule.frequency}`:""}</span>
+          </div>
+          {topPicks.length>0&&!ranking&&jobs.length>0&&<button onClick={()=>rankJobs(filtered.length?filtered:jobs)} style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"none",border:"1px solid var(--border)",borderRadius:4,padding:"3px 8px",cursor:"pointer"}}>Re-rank</button>}
+        </div>
+
+        {(ranking||(loading&&topPicks.length===0))?
+          <div style={{display:"flex",gap:10}}>{[0,1,2,3,4].map(i=>(<div key={i} style={{minWidth:200,height:108,borderRadius:10,background:"var(--ink-2)",border:"1px solid var(--border)",opacity:0.5+i*0.05}}/>))}</div>
+        :topPicks.length>0?
+          <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
+            {topPicks.map((job,idx)=>(
+              <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}} style={{minWidth:200,maxWidth:216,padding:"12px 14px",background:selectedJob?.id===job.id?"rgba(107,158,111,0.08)":"var(--ink-2)",borderRadius:10,border:`1px solid ${selectedJob?.id===job.id?"rgba(107,158,111,0.45)":"var(--border)"}`,cursor:"pointer",transition:"all .15s",flexShrink:0}} onMouseEnter={e=>{if(selectedJob?.id!==job.id)e.currentTarget.style.borderColor="rgba(107,158,111,0.3)";}} onMouseLeave={e=>{if(selectedJob?.id!==job.id)e.currentTarget.style.borderColor="var(--border)";}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                  <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"#888"}15`}}>{job.platform}</span>
+                  <span style={{fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--success)",lineHeight:1}}>{idx+1}</span>
+                </div>
+                <div style={{fontSize:12,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{job.title}</div>
+                <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.company}</div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  {job.salary&&job.salary!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",flex:1}}>{job.salary}</span>}
+                  <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");}} style={{padding:"4px 8px",borderRadius:4,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:9,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply →</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        :!loading&&<div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",padding:"8px 0"}}>No picks yet — run a search to get AI-ranked suggestions.</div>
+        }
+      </section>
+
+      {/* ── ALL RESULTS table ── */}
+      <section style={{flex:1,padding:"0 24px 24px",minHeight:0}}>
+        {/* Table header */}
+        <div style={{display:"grid",gridTemplateColumns:"3fr 1.4fr 1fr 1fr 80px",gap:12,padding:"10px 0",borderBottom:"1px solid var(--border)",position:"sticky",top:0,background:"var(--ink-2)",zIndex:2}}>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>ROLE</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:loading||ranking?"var(--amber)":"var(--cream-dim)",fontWeight:500}}>{loading||ranking?"":`${filtered.length} results`}</span>
+            {apiSources.length>0&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>from {apiSources.join(" · ")}</span>}
+          </div>
+          <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>COMPANY</span>
+          <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>LOCATION</span>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"3px 6px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:9,fontFamily:"var(--mono)"}}>
+              <option value="relevance">Relevance</option><option value="newest">Newest</option><option value="company">A-Z</option>
+            </select>
+          </div>
+          <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{padding:"3px 6px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:9,fontFamily:"var(--mono)"}}>
+            <option value="all">All</option>{platforms.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        {/* Rows */}
+        {loading?
+          <div>{[0,1,2,3,4,5,6].map(i=>(<div key={i} style={{height:60,borderBottom:"1px solid var(--border)",opacity:0.4+(i*0.04),background:i%2===0?"var(--ink-2)":"transparent"}}/>))}</div>
+        :filtered.length===0&&jobs.length===0?
+          <div style={{padding:"64px 0",textAlign:"center"}}>
+            <div style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream-mute)",marginBottom:12}}>No results yet</div>
+            <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",marginBottom:20}}>Add keywords and click Search Jobs to begin</div>
+            <button onClick={()=>runAutonomous(true)} style={{padding:"10px 20px",borderRadius:8,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.3)",color:"var(--success)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer"}}>Run search →</button>
+          </div>
+        :filtered.length===0?
+          <div style={{padding:"40px 0",textAlign:"center",fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)"}}>No results match current filters. Try adjusting keywords or sources.</div>
+        :filtered.map((job,i)=>{
+          const isSel=selectedJob?.id===job.id;
+          return(
+            <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}} style={{display:"grid",gridTemplateColumns:"3fr 1.4fr 1fr 1fr 80px",gap:12,alignItems:"center",padding:"12px 0",borderBottom:"1px solid var(--border)",cursor:"pointer",borderLeft:isSel?"2px solid var(--success)":"2px solid transparent",paddingLeft:isSel?8:0,background:isSel?"rgba(107,158,111,0.04)":i%2===0?"transparent":"rgba(255,255,255,0.01)",transition:"all .1s"}} onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background="rgba(255,255,255,0.03)";}} onMouseLeave={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"transparent":"rgba(255,255,255,0.01)";}}>
+              <div style={{minWidth:0}}>
+                <div style={{display:"flex",gap:5,marginBottom:3,alignItems:"center"}}>
+                  <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",padding:"1px 5px",borderRadius:2,background:`${platCol[job.platform]||"#888"}18`,whiteSpace:"nowrap"}}>{job.platform}</span>
+                  {job.type&&job.type!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",opacity:0.7}}>{job.type}</span>}
+                </div>
+                <div style={{fontSize:13,color:isSel?"var(--cream)":"var(--cream-dim)",fontWeight:isSel?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.title}</div>
+              </div>
+              <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.company}</div>
+              <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.location}</div>
+              <div style={{fontFamily:"var(--mono)",fontSize:10,color:job.salary&&job.salary!=="Not listed"?"var(--success)":"var(--cream-mute)",whiteSpace:"nowrap"}}>{job.salary&&job.salary!=="Not listed"?job.salary:job.posted}</div>
+              <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Apply</button>
             </div>
-            <h2 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 4px"}}>{selectedJob.title}</h2>
-            <p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",margin:0}}>{selectedJob.company} · {selectedJob.location}</p>
-          </div>
-          {selectedJob.companyLogo&&<img src={selectedJob.companyLogo} alt="" style={{width:48,height:48,borderRadius:10,border:"1px solid var(--border)",objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
-        </div>
+          );
+        })}
+      </section>
+    </main>
 
-        <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid var(--border)"}}>
-          {[{k:"info",l:"Details"},{k:"scope",l:"Scope",d:!scope},{k:"asset",l:"Asset",d:!asset},{k:"approve",l:"Apply",d:!scope||!asset}].map(t=>
-            <button key={t.k} onClick={()=>!t.d&&setDetailPhase(t.k)} style={{padding:"8px 16px",background:"none",border:"none",borderBottom:detailPhase===t.k?"2px solid var(--cream)":"2px solid transparent",color:t.d?"var(--ink-5)":detailPhase===t.k?"var(--cream)":"var(--cream-mute)",fontSize:12,cursor:t.d?"default":"pointer",fontFamily:"var(--sans)",opacity:t.d?0.3:1}}>{t.l}</button>
-          )}
-        </div>
-
-        {detailPhase==="info"&&<div>
-          <div style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,marginBottom:16}}>{selectedJob.description}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-            {[["Salary",selectedJob.salary],["Type",selectedJob.type],["Location",selectedJob.location],["Source",selectedJob.source]].map(([l,v])=>(<div key={l} style={{padding:"10px 14px",background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:2}}>{l}</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{v||"—"}</div></div>))}
+    {/* ── DETAIL PANEL: fixed right overlay ── */}
+    {selectedJob&&<>
+      <div onClick={closeDetail} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:998}}/>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,width:490,background:"var(--ink)",borderLeft:"1px solid var(--border)",zIndex:999,display:"flex",flexDirection:"column",animation:"slideIn .2s ease-out"}}>
+        {/* Header */}
+        <div style={{padding:"18px 22px 14px",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",gap:5,marginBottom:6}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[selectedJob.platform]||"var(--cream-mute)",padding:"2px 7px",borderRadius:3,background:`${platCol[selectedJob.platform]||"#888"}15`}}>{selectedJob.platform}</span>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 7px",borderRadius:3,background:"var(--ink-2)"}}>{selectedJob.posted}</span>
+              </div>
+              <h2 style={{fontFamily:"var(--serif)",fontSize:19,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 4px",lineHeight:1.3}}>{selectedJob.title}</h2>
+              <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",margin:0}}>{selectedJob.company} · {selectedJob.location}</p>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
+              {selectedJob.companyLogo&&<img src={selectedJob.companyLogo} alt="" style={{width:38,height:38,borderRadius:7,border:"1px solid var(--border)",objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+              <button onClick={closeDetail} style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"none",border:"1px solid var(--border)",borderRadius:4,padding:"3px 8px",cursor:"pointer"}}>✕ close</button>
+            </div>
           </div>
-          {selectedJob.tags?.length>0&&<div style={{marginBottom:16}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>TAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{selectedJob.tags.map((t,i)=><span key={i} style={{padding:"4px 10px",borderRadius:6,background:"var(--ink-2)",border:"1px solid var(--border)",fontSize:11,color:"var(--cream-dim)"}}>{t}</span>)}</div></div>}
-          {(selectedJob.companyWebsite||branding)&&<div style={{padding:14,background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",marginBottom:16}}>
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>COMPANY BRANDING {scrapeLoad&&<span style={{color:"var(--amber)"}}>— scraping…</span>}</div>
-            {selectedJob.companyWebsite&&<a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:12,color:"var(--sky)",textDecoration:"none"}}>{selectedJob.companyWebsite}</a>}
-            {!branding&&selectedJob.companyWebsite&&!scrapeLoad&&<div style={{marginTop:8}}><Btn size="sm" v="secondary" onClick={()=>scrapeCompany(selectedJob.companyWebsite)} disabled={scrapeLoad}>{scrapeLoad?"Scraping...":"Scrape Branding"}</Btn></div>}
-            {branding&&!branding.error&&<div style={{marginTop:8}}>
-              <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,marginBottom:8}}><span style={{color:"var(--success)"}}>✓</span> {branding.title||branding.ogTitle} — {(branding.description||branding.ogDesc||"").substring(0,150)}</div>
-              {branding.brand?.palette?.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>Palette:</span>
-                {branding.brand.palette.slice(0,6).map((c,i)=>(<div key={i} title={c} style={{width:18,height:18,borderRadius:4,background:c,border:"1px solid var(--border)",cursor:"help"}}/>))}
-                {branding.brand.logo&&<img src={branding.brand.logo} alt="logo" style={{marginLeft:"auto",width:24,height:24,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+        </div>
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+          {[{k:"info",l:"Details"},{k:"scope",l:"Scope",d:!scope},{k:"asset",l:"Asset",d:!asset},{k:"approve",l:"Apply",d:!scope||!asset}].map(t=>(
+            <button key={t.k} onClick={()=>!t.d&&setDetailPhase(t.k)} style={{flex:1,padding:"9px 4px",background:"none",border:"none",borderBottom:detailPhase===t.k?"2px solid var(--cream)":"2px solid transparent",color:t.d?"var(--ink-4)":detailPhase===t.k?"var(--cream)":"var(--cream-mute)",fontSize:11,cursor:t.d?"default":"pointer",fontFamily:"var(--mono)",opacity:t.d?0.3:1,letterSpacing:"0.05em"}}>{t.l}</button>
+          ))}
+        </div>
+        {/* Content */}
+        <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
+          {detailPhase==="info"&&<div>
+            <div style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,marginBottom:16,whiteSpace:"pre-wrap"}}>{selectedJob.description}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+              {[["Salary",selectedJob.salary],["Type",selectedJob.type],["Location",selectedJob.location],["Source",selectedJob.source]].map(([l,v])=>(<div key={l} style={{padding:"9px 11px",background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:2}}>{l}</div><div style={{fontSize:11,color:"var(--cream-dim)"}}>{v||"—"}</div></div>))}
+            </div>
+            {selectedJob.tags?.length>0&&<div style={{marginBottom:14}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:5}}>TAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{selectedJob.tags.map((t,i)=><span key={i} style={{padding:"3px 8px",borderRadius:4,background:"var(--ink-2)",border:"1px solid var(--border)",fontSize:11,color:"var(--cream-dim)"}}>{t}</span>)}</div></div>}
+            {(selectedJob.companyWebsite||branding)&&<div style={{padding:11,background:"var(--ink-2)",borderRadius:7,border:"1px solid var(--border)",marginBottom:14}}>
+              <div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:5}}>COMPANY BRANDING {scrapeLoad&&<span style={{color:"var(--amber)"}}>— scraping…</span>}</div>
+              {selectedJob.companyWebsite&&<a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:11,color:"var(--sky)",textDecoration:"none",display:"block",marginBottom:6}}>{selectedJob.companyWebsite}</a>}
+              {branding&&!branding.error&&<div>
+                <div style={{fontSize:11,color:"var(--cream-mute)",marginBottom:6}}><span style={{color:"var(--success)"}}>✓ </span>{(branding.title||branding.ogTitle||"").substring(0,60)} — {(branding.description||branding.ogDesc||"").substring(0,100)}</div>
+                {branding.brand?.palette?.length>0&&<div style={{display:"flex",gap:5,alignItems:"center"}}>
+                  {branding.brand.palette.slice(0,5).map((c,i)=>(<div key={i} title={c} style={{width:15,height:15,borderRadius:3,background:c,border:"1px solid var(--border)"}}/>))}
+                  {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{marginLeft:"auto",width:20,height:20,borderRadius:3,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+                </div>}
               </div>}
             </div>}
+            <div style={{display:"flex",gap:8}}>
+              <Btn v="ai" icon="doc" onClick={()=>generateScope(selectedJob)} disabled={loading}>Generate Scope</Btn>
+              <Btn v="secondary" onClick={()=>window.open(selectedJob.applyUrl||selectedJob.url,"_blank")}>View Listing</Btn>
+            </div>
           </div>}
-          <div style={{display:"flex",gap:8}}>
-            <Btn v="ai" icon="doc" onClick={()=>generateScope(selectedJob)} disabled={loading}>Generate Scope</Btn>
-            <Btn v="secondary" onClick={()=>window.open(selectedJob.url,"_blank")}>View Original Listing</Btn>
-          </div>
-        </div>}
 
-        {detailPhase==="scope"&&<div>
-          {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Generating scope for {selectedJob.company}...</p></div>
-          :scope&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            {/* Brand banner — surfaces the client's palette so the scope feels personalized */}
-            {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",marginBottom:12,background:`${brandColor}10`,border:`1px solid ${brandColor}30`,borderRadius:8}}>
-              {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:22,height:22,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
-              <span style={{fontFamily:"var(--mono)",fontSize:9,color:brandColor,letterSpacing:"0.1em"}}>BRAND ALIGNED — {selectedJob.company}</span>
-              <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
-                {(branding.brand.palette||[]).slice(0,4).map((c,i)=>(<div key={i} title={c} style={{width:14,height:14,borderRadius:3,background:c,border:"1px solid var(--border)"}}/>))}
+          {detailPhase==="scope"&&<div>
+            {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:10}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Generating scope for {selectedJob.company}…</p></div>
+            :scope?<div style={{animation:"fadeUp .3s ease-out"}}>
+              {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",marginBottom:10,background:`${brandColor}10`,border:`1px solid ${brandColor}30`,borderRadius:6}}>
+                {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:brandColor}}>BRAND ALIGNED — {selectedJob.company}</span>
+                <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{(branding.brand.palette||[]).slice(0,4).map((c,i)=>(<div key={i} style={{width:11,height:11,borderRadius:2,background:c}}/>))}</div>
+              </div>}
+              <div style={{fontFamily:"var(--mono)",fontSize:8,color:brandColor,letterSpacing:"0.1em",marginBottom:5}}>TAILORED SCOPE</div>
+              <h3 style={{fontSize:15,color:"var(--cream)",fontWeight:500,margin:"0 0 5px"}}>{scope.title}</h3>
+              <p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,marginBottom:12}}>{scope.executive_summary}</p>
+              {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"9px 11px",marginBottom:4,background:"var(--ink-2)",borderRadius:6,borderLeft:`2px solid ${brandColor}`}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:brandColor,marginBottom:3}}>{s.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{s.content}</p></div>))}
+              <div style={{display:"flex",gap:14,marginTop:10,fontSize:11}}>
+                <span><span style={{color:"var(--cream-mute)"}}>Investment: </span><span style={{color:"var(--success)"}}>{scope.investment}</span></span>
+                <span><span style={{color:"var(--cream-mute)"}}>Timeline: </span><span style={{color:brandColor}}>{scope.timeline}</span></span>
               </div>
-            </div>}
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:brandColor,letterSpacing:"0.1em",marginBottom:6}}>TAILORED SCOPE</div>
-            <h3 style={{fontSize:17,color:"var(--cream)",fontWeight:500,margin:"0 0 6px"}}>{scope.title}</h3>
-            <p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,marginBottom:16}}>{scope.executive_summary}</p>
-            {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"12px 14px",marginBottom:6,background:"var(--ink-2)",borderRadius:8,borderLeft:`2px solid ${brandColor}`}}><div style={{fontFamily:"var(--mono)",fontSize:10,color:brandColor,marginBottom:4}}>{s.title}</div><p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{s.content}</p></div>))}
-            <div style={{display:"flex",gap:16,marginTop:14,fontSize:12}}>
-              <div><span style={{color:"var(--cream-mute)"}}>Investment:</span> <span style={{color:"var(--success)"}}>{scope.investment}</span></div>
-              <div><span style={{color:"var(--cream-mute)"}}>Timeline:</span> <span style={{color:brandColor}}>{scope.timeline}</span></div>
-            </div>
-            <div style={{display:"flex",gap:8,marginTop:16}}>
-              <Btn v="ai" icon="star" onClick={()=>generateAsset(selectedJob)}>Create Work Asset</Btn>
-              <Btn v="secondary" size="sm" onClick={()=>{setScope(null);generateScope(selectedJob);}}>Regenerate</Btn>
-              <Btn v="secondary" size="sm" onClick={()=>navigator.clipboard?.writeText(JSON.stringify(scope,null,2))}>Copy</Btn>
-            </div>
+              <div style={{display:"flex",gap:6,marginTop:12}}>
+                <Btn v="ai" icon="star" onClick={()=>generateAsset(selectedJob)} size="sm">Create Asset</Btn>
+                <Btn v="secondary" size="sm" onClick={()=>{setScope(null);generateScope(selectedJob);}}>Regenerate</Btn>
+                <Btn v="secondary" size="sm" onClick={()=>navigator.clipboard?.writeText(JSON.stringify(scope,null,2))}>Copy</Btn>
+              </div>
+            </div>:null}
           </div>}
-        </div>}
 
-        {detailPhase==="asset"&&<div>
-          {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Creating case study...</p></div>
-          :asset&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",marginBottom:12,background:`${brandAccent}10`,border:`1px solid ${brandAccent}30`,borderRadius:8}}>
-              {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:22,height:22,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
-              <span style={{fontFamily:"var(--mono)",fontSize:9,color:brandAccent,letterSpacing:"0.1em"}}>STYLED FOR {selectedJob.company.toUpperCase()}</span>
-            </div>}
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:brandAccent,letterSpacing:"0.1em",marginBottom:6}}>CASE STUDY</div>
-            <h3 style={{fontSize:17,color:"var(--cream)",fontWeight:500,margin:"0 0 4px"}}>{asset.title}</h3>
-            <p style={{fontSize:11,color:brandAccent,margin:"0 0 12px"}}>{asset.subtitle} · {asset.client_type}</p>
-            <div style={{padding:12,background:"var(--ink-2)",borderRadius:8,marginBottom:12}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",marginBottom:4}}>CHALLENGE</div><p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.6,margin:0}}>{asset.challenge}</p></div>
-            {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:8}}><div style={{width:24,height:24,borderRadius:6,background:`${brandAccent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:9,color:brandAccent,flexShrink:0}}>{i+1}</div><div><div style={{fontSize:12,color:"var(--cream)",fontWeight:500}}>{p.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,margin:0}}>{p.detail}</p></div></div>))}
-            <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(asset.results?.length||1,3)},1fr)`,gap:8,marginTop:12}}>
-              {asset.results?.map((r,i)=>(<div key={i} style={{textAlign:"center",padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)"}}>{r.metric}</div><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{r.label}</div></div>))}
-            </div>
-            {asset.testimonial&&<div style={{marginTop:12,padding:10,background:"var(--ink-2)",borderRadius:6,borderLeft:"2px solid var(--amber)"}}><p style={{fontSize:11,color:"var(--cream-dim)",fontStyle:"italic",margin:0}}>"{asset.testimonial}"</p></div>}
-            <div style={{display:"flex",gap:8,marginTop:16}}>
-              <Btn icon="check" onClick={()=>setDetailPhase("approve")}>Submit for Approval</Btn>
-              <Btn v="secondary" size="sm" onClick={()=>{setAsset(null);generateAsset(selectedJob);}}>Regenerate</Btn>
-            </div>
+          {detailPhase==="asset"&&<div>
+            {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:10}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Creating case study…</p></div>
+            :asset?<div style={{animation:"fadeUp .3s ease-out"}}>
+              {branding?.brand?.primary&&<div style={{padding:"7px 10px",marginBottom:10,background:`${brandAccent}10`,border:`1px solid ${brandAccent}30`,borderRadius:6}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:brandAccent}}>STYLED FOR {selectedJob.company.toUpperCase()}</span>
+              </div>}
+              <div style={{fontFamily:"var(--mono)",fontSize:8,color:brandAccent,letterSpacing:"0.1em",marginBottom:5}}>CASE STUDY</div>
+              <h3 style={{fontSize:15,color:"var(--cream)",fontWeight:500,margin:"0 0 3px"}}>{asset.title}</h3>
+              <p style={{fontSize:11,color:brandAccent,margin:"0 0 10px"}}>{asset.subtitle} · {asset.client_type}</p>
+              <div style={{padding:10,background:"var(--ink-2)",borderRadius:6,marginBottom:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--danger)",marginBottom:3}}>CHALLENGE</div><p style={{fontSize:11,color:"var(--cream-dim)",lineHeight:1.6,margin:0}}>{asset.challenge}</p></div>
+              {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:8,marginBottom:7}}><div style={{width:20,height:20,borderRadius:4,background:`${brandAccent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:8,color:brandAccent,flexShrink:0}}>{i+1}</div><div><div style={{fontSize:12,color:"var(--cream)",fontWeight:500}}>{p.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,margin:0}}>{p.detail}</p></div></div>))}
+              <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(asset.results?.length||1,3)},1fr)`,gap:6,marginTop:8}}>
+                {asset.results?.map((r,i)=>(<div key={i} style={{textAlign:"center",padding:8,background:"var(--ink-2)",borderRadius:5}}><div style={{fontFamily:"var(--serif)",fontSize:17,fontStyle:"italic",color:"var(--success)"}}>{r.metric}</div><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{r.label}</div></div>))}
+              </div>
+              {asset.testimonial&&<div style={{marginTop:8,padding:8,background:"var(--ink-2)",borderRadius:5,borderLeft:`2px solid ${brandColor}`}}><p style={{fontSize:11,color:"var(--cream-dim)",fontStyle:"italic",margin:0}}>"{asset.testimonial}"</p></div>}
+              <div style={{display:"flex",gap:6,marginTop:12}}>
+                <Btn icon="check" onClick={()=>setDetailPhase("approve")} size="sm">Submit for Approval</Btn>
+                <Btn v="secondary" size="sm" onClick={()=>{setAsset(null);generateAsset(selectedJob);}}>Regenerate</Btn>
+              </div>
+            </div>:null}
           </div>}
-        </div>}
 
-        {detailPhase==="approve"&&<div>
-          {approvalStatus==="pending"&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-              <div style={{width:40,height:40,borderRadius:10,background:"rgba(196,162,101,0.1)",border:"1px solid rgba(196,162,101,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--amber)"}}>SB</div>
-              <div><div style={{fontSize:14,color:"var(--cream)",fontWeight:500}}>Approval Required</div><p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",margin:0}}>Sahil Bahri · Founder, Revo-Sys</p></div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-              <div style={{padding:12,background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",letterSpacing:"0.08em",marginBottom:3}}>SCOPE</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{scope?.title||"Not generated"}</div></div>
-              <div style={{padding:12,background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--violet)",letterSpacing:"0.08em",marginBottom:3}}>ASSET</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{asset?.title||"Not generated"}</div></div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"center",padding:"16px 0",flexDirection:"column",alignItems:"center"}}>
-              <div style={{display:"flex",gap:10}}>
-                <Btn onClick={()=>{
-                  // Actually open the job listing so the founder can apply
-                  const applyUrl=selectedJob.applyUrl||selectedJob.url;
-                  if(applyUrl){
-                    const w=window.open(applyUrl,"_blank","noopener,noreferrer");
-                    if(!w){alert("Pop-up blocked — please allow pop-ups or open the listing manually.");}
-                  }
-                  setApprovalStatus("approved");
-                  // Record that we applied in localStorage (for later syncing to CRM)
-                  try{
-                    const key="rs_job_applications";
-                    const prev=JSON.parse(localStorage.getItem(key)||"[]");
-                    prev.unshift({jobId:selectedJob.id,title:selectedJob.title,company:selectedJob.company,url:applyUrl,platform:selectedJob.platform,appliedAt:new Date().toISOString(),scope:scope?.title,asset:asset?.title});
-                    localStorage.setItem(key,JSON.stringify(prev.slice(0,200)));
-                  }catch{}
-                }}>Approve & Open Application →</Btn>
+          {detailPhase==="approve"&&<div>
+            {approvalStatus==="pending"&&<div style={{animation:"fadeUp .3s ease-out"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                <div style={{width:34,height:34,borderRadius:8,background:"rgba(196,162,101,0.1)",border:"1px solid rgba(196,162,101,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)"}}>SB</div>
+                <div><div style={{fontSize:13,color:"var(--cream)",fontWeight:500}}>Approval Required</div><p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:0}}>Sahil Bahri · Founder, Revo-Sys</p></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                <div style={{padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",marginBottom:3}}>SCOPE</div><div style={{fontSize:11,color:"var(--cream-dim)"}}>{scope?.title||"Not generated"}</div></div>
+                <div style={{padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--violet)",marginBottom:3}}>ASSET</div><div style={{fontSize:11,color:"var(--cream-dim)"}}>{asset?.title||"Not generated"}</div></div>
+              </div>
+              <div style={{display:"flex",gap:8,flexDirection:"column"}}>
+                <Btn onClick={()=>{const u=selectedJob.applyUrl||selectedJob.url;if(u){const w=window.open(u,"_blank","noopener,noreferrer");if(!w)alert("Pop-up blocked — please allow pop-ups.");}setApprovalStatus("approved");try{const k="rs_job_applications";const p=JSON.parse(localStorage.getItem(k)||"[]");p.unshift({jobId:selectedJob.id,title:selectedJob.title,company:selectedJob.company,url:u,platform:selectedJob.platform,appliedAt:new Date().toISOString(),scope:scope?.title,asset:asset?.title});localStorage.setItem(k,JSON.stringify(p.slice(0,200)));}catch{}}}>Approve & Open Application →</Btn>
                 <Btn v="danger" onClick={()=>{setApprovalStatus("rejected");setDetailPhase("info");}}>Reject</Btn>
               </div>
-              <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:0}}>Opens the original listing in a new tab so you can submit your application with the generated scope & asset.</p>
-            </div>
+              <p style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",margin:"10px 0 0",lineHeight:1.5}}>Opens the listing in a new tab for direct application. Use your generated scope & asset as reference.</p>
+            </div>}
+            {approvalStatus==="approved"&&<div style={{textAlign:"center",padding:"32px 0",animation:"fadeUp .3s ease-out"}}>
+              <div style={{width:48,height:48,borderRadius:"50%",background:"rgba(107,158,111,0.12)",border:"2px solid rgba(107,158,111,0.3)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><Icon name="check" size={20}/></div>
+              <p style={{fontFamily:"var(--serif)",fontSize:17,fontStyle:"italic",color:"var(--success)",margin:"0 0 4px"}}>Application Sent</p>
+              <p style={{fontSize:12,color:"var(--cream-mute)",margin:"0 0 14px"}}>{selectedJob.title} at {selectedJob.company}</p>
+              <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                <Btn v="secondary" size="sm" onClick={()=>window.open(selectedJob.applyUrl||selectedJob.url,"_blank")}>View Listing</Btn>
+                <Btn v="secondary" size="sm" onClick={closeDetail}>Back to Results</Btn>
+              </div>
+            </div>}
           </div>}
-          {approvalStatus==="approved"&&<div style={{textAlign:"center",padding:"24px 0",animation:"fadeUp .3s ease-out"}}>
-            <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(107,158,111,0.12)",border:"2px solid rgba(107,158,111,0.3)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:12}}><Icon name="check" size={24}/></div>
-            <p style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--success)",margin:"0 0 6px"}}>Application Submitted</p>
-            <p style={{fontSize:12,color:"var(--cream-mute)",margin:"0 0 12px"}}>{selectedJob.title} at {selectedJob.company}</p>
-            <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-              <Btn v="secondary" size="sm" onClick={()=>window.open(selectedJob.url,"_blank")}>View Listing</Btn>
-              <Btn v="secondary" size="sm" onClick={closeDetail}>Find More</Btn>
-            </div>
-          </div>}
-        </div>}
-      </div>}
-    </div>}
+        </div>
+      </div>
+    </>}
   </div>);
 };
 
 const JobsPage=({data,dispatch,user})=>(
-  <div>
-    <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Intelligence</span>
-    <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8,marginBottom:12}}>Job Finder</h1>
-    <p style={{fontSize:14,color:"var(--cream-mute)",lineHeight:1.7,marginBottom:32,maxWidth:640}}>Autonomous daily scan across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Remotive and Jobicy — AI-ranked top picks with tailored scope and asset generation, ready to apply on approval.</p>
+  <div style={{margin:"0 -48px",marginTop:-36}}>
+    <div style={{padding:"28px 48px 16px",borderBottom:"1px solid var(--border)",background:"var(--ink-2)"}}>
+      <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Intelligence</span>
+      <h1 style={{fontFamily:"var(--serif)",fontSize:30,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:6,marginBottom:4}}>Job Finder</h1>
+      <p style={{fontSize:13,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>Daily autonomous scan across Upwork, LinkedIn, Indeed, Glassdoor, Remotive and more — AI-ranked top picks with brand-aligned scope &amp; asset generation, ready to apply.</p>
+    </div>
     <JobFinderAgent data={data} dispatch={dispatch} user={user}/>
   </div>
 );

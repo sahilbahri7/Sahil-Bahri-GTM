@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HubSpot Marketing Automation: The Ultimate Setup Guide for 2025</title>
+  <meta name="description" content="Learn how to set up HubSpot marketing automation from scratch — workflows, lead nurturing sequences, lifecycle stages, email automation, and best practices for B2B companies.">
+  <link rel="canonical" href="https://sahilbahri.com/blog/marketing-automation-hubspot">
+  <meta property="og:title" content="HubSpot Marketing Automation: The Ultimate Setup Guide for 2025">
+  <meta property="og:description" content="How to set up HubSpot marketing automation workflows, nurture sequences, and lifecycle stage management for B2B growth.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sahilbahri.com/blog/marketing-automation-hubspot">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "headline": "HubSpot Marketing Automation: The Ultimate Setup Guide for 2025",
+        "description": "A comprehensive guide to setting up HubSpot marketing automation for B2B companies.",
+        "author": { "@type": "Person", "name": "Sahil Bahri", "url": "https://sahilbahri.com" },
+        "datePublished": "2025-04-01",
+        "dateModified": "2025-04-10",
+        "url": "https://sahilbahri.com/blog/marketing-automation-hubspot"
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What can you automate with HubSpot?",
+            "acceptedAnswer": { "@type": "Answer", "text": "HubSpot can automate: lead nurturing email sequences, lifecycle stage updates, lead scoring, contact property management, internal notifications to sales reps, deal creation, meeting follow-ups, and customer onboarding workflows." }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I set up a lead nurturing workflow in HubSpot?",
+            "acceptedAnswer": { "@type": "Answer", "text": "In HubSpot, go to Automation > Workflows, create a Contact-based workflow, set your enrollment trigger (e.g., form submission or lifecycle stage = Lead), then add email actions with time delays between them. Use if/then branches to personalize based on engagement." }
+          },
+          {
+            "@type": "Question",
+            "name": "What HubSpot plan do you need for marketing automation?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Basic workflows are available on Marketing Hub Starter. Full workflow automation with branching, goal-setting, and enrollment triggers requires Marketing Hub Professional ($800/month) or Enterprise ($3,600/month)." }
+          }
+        ]
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sahilbahri.com" },
+          { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://sahilbahri.com/blog" },
+          { "@type": "ListItem", "position": 3, "name": "HubSpot Marketing Automation", "item": "https://sahilbahri.com/blog/marketing-automation-hubspot" }
+        ]
+      }
+    ]
+  }
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0f;color:#e8e8f0;line-height:1.7}
+    a{color:#a78bfa;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:#0d0d15;border-bottom:1px solid #1e1e2e;padding:16px 0}
+    .nav-inner{max-width:780px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:24px}
+    .nav-brand{font-weight:700;color:#fff;font-size:1.1rem}
+    .nav-links{display:flex;gap:20px;margin-left:auto;font-size:.9rem}
+    .hero{background:linear-gradient(135deg,#1a0a10,#0d0d15);padding:64px 24px 48px;text-align:center}
+    .hero-inner{max-width:780px;margin:0 auto}
+    .badge{display:inline-block;background:#1a0a10;border:1px solid #9f1239;color:#fb7185;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:99px;letter-spacing:.06em;margin-bottom:20px}
+    h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;line-height:1.2;color:#fff;margin-bottom:16px}
+    .meta{font-size:.85rem;color:#6b7280}
+    .content{max-width:780px;margin:0 auto;padding:48px 24px 80px}
+    .quick-answer{background:#1a0f12;border:1px solid #9f1239;border-left:4px solid #f43f5e;border-radius:8px;padding:20px 24px;margin-bottom:40px}
+    .quick-answer h2{font-size:.75rem;font-weight:700;color:#f43f5e;letter-spacing:.08em;margin-bottom:8px}
+    .quick-answer p{color:#ffe4e6;font-size:1rem}
+    h2{font-size:1.5rem;font-weight:700;color:#fff;margin:40px 0 16px}
+    h3{font-size:1.1rem;font-weight:600;color:#e8e8f0;margin:28px 0 10px}
+    p{color:#c0c0d0;margin-bottom:16px}
+    ul,ol{color:#c0c0d0;padding-left:24px;margin-bottom:16px}
+    li{margin-bottom:8px}
+    .workflow-card{background:#0d0d1a;border:1px solid #1e1e2e;border-radius:10px;padding:20px 24px;margin-bottom:16px}
+    .workflow-title{font-weight:700;color:#a78bfa;margin-bottom:8px;font-size:1rem}
+    .workflow-trigger{font-size:.8rem;color:#6b7280;margin-bottom:8px}
+    .workflow-trigger span{background:#1a0a2e;color:#a78bfa;padding:2px 8px;border-radius:4px;font-size:.75rem}
+    .workflow-steps{margin:0;padding-left:18px;font-size:.88rem;color:#c0c0d0}
+    .workflow-steps li{margin-bottom:4px}
+    .pro-tip{background:#0d1a0d;border:1px solid #166534;border-left:4px solid #22c55e;border-radius:8px;padding:14px 18px;margin:20px 0}
+    .pro-tip strong{color:#22c55e}
+    .faq{margin-top:48px}
+    .faq-item{border:1px solid #1e1e2e;border-radius:8px;margin-bottom:12px;overflow:hidden}
+    .faq-q{background:#0d0d1a;padding:16px 20px;font-weight:600;color:#fff;font-size:.95rem}
+    .faq-a{padding:16px 20px;color:#c0c0d0;font-size:.9rem}
+    .cta{background:linear-gradient(135deg,#1a0a2e,#0a1020);border:1px solid #6d28d9;border-radius:12px;padding:36px;text-align:center;margin-top:48px}
+    .cta h2{margin-top:0}
+    .cta-btn{display:inline-block;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:8px;font-weight:600;margin-top:16px}
+    .footer{background:#0d0d15;border-top:1px solid #1e1e2e;padding:32px 24px;text-align:center;color:#6b7280;font-size:.85rem}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">Sahil Bahri</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/blog">Blog</a>
+      <a href="/#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badge">HUBSPOT</div>
+    <h1>HubSpot Marketing Automation:<br>The Ultimate Setup Guide for 2025</h1>
+    <p class="meta">By Sahil Bahri &nbsp;·&nbsp; April 10, 2025 &nbsp;·&nbsp; 10 min read</p>
+  </div>
+</header>
+
+<main class="content">
+  <div class="quick-answer">
+    <h2>QUICK ANSWER</h2>
+    <p>HubSpot marketing automation uses Workflows to trigger emails, update properties, notify reps, and move contacts through lifecycle stages — all based on behavior and attributes. The most impactful automations are <strong>lead nurturing sequences, MQL-to-sales handoffs, and re-engagement campaigns</strong>.</p>
+  </div>
+
+  <h2>Why HubSpot for Marketing Automation?</h2>
+  <p>HubSpot's automation is natively connected to its CRM, which means your marketing workflows can directly trigger sales actions — creating tasks, updating deal stages, assigning contacts to reps — without any third-party integration. This closed-loop automation is HubSpot's key advantage over standalone marketing automation tools like Marketo or Mailchimp.</p>
+
+  <h2>HubSpot Workflow Types</h2>
+  <ul>
+    <li><strong>Contact-based workflows:</strong> Most common. Triggered by contact behavior or properties.</li>
+    <li><strong>Company-based workflows:</strong> Update company records, create deals, notify reps based on company attributes.</li>
+    <li><strong>Deal-based workflows:</strong> Automate pipeline progression, create follow-up tasks, send internal alerts.</li>
+    <li><strong>Ticket-based workflows:</strong> For customer service automation — route tickets, set SLAs, escalate issues.</li>
+    <li><strong>Quote-based workflows:</strong> Automate proposals and approval flows.</li>
+  </ul>
+
+  <h2>The 7 HubSpot Workflows Every B2B Company Needs</h2>
+
+  <div class="workflow-card">
+    <div class="workflow-title">1. Lead Nurturing Sequence — Top of Funnel</div>
+    <div class="workflow-trigger">TRIGGER: <span>Form submission (any lead magnet)</span></div>
+    <ol class="workflow-steps">
+      <li>Immediately: Send thank-you email with content download</li>
+      <li>Day 2: Educational email — "The problem most [ICP] teams face"</li>
+      <li>Day 5: Case study email — "How [Customer] achieved [result]"</li>
+      <li>Day 9: Social proof email — testimonials + ROI stats</li>
+      <li>Day 14: Soft CTA — "Ready to see how this works for you?"</li>
+      <li>If demo booked: exit workflow, enroll in sales handoff workflow</li>
+    </ol>
+  </div>
+
+  <div class="workflow-card">
+    <div class="workflow-title">2. MQL → Sales Handoff</div>
+    <div class="workflow-trigger">TRIGGER: <span>Lead score ≥ MQL threshold</span></div>
+    <ol class="workflow-steps">
+      <li>Update lifecycle stage to "Marketing Qualified Lead"</li>
+      <li>Assign contact to sales rep (round-robin or territory-based)</li>
+      <li>Send internal email to assigned rep with contact summary</li>
+      <li>Create a task: "Follow up with [Name] within 24 hours"</li>
+      <li>If rep doesn't log activity in 48 hours: send reminder + notify manager</li>
+    </ol>
+  </div>
+
+  <div class="workflow-card">
+    <div class="workflow-title">3. Demo / Meeting Booked Follow-up</div>
+    <div class="workflow-trigger">TRIGGER: <span>Meeting booked via Meetings link</span></div>
+    <ol class="workflow-steps">
+      <li>Immediately: Send confirmation email with meeting details + prep agenda</li>
+      <li>Day before: Send reminder with "3 things to bring to our conversation"</li>
+      <li>2 hours before: SMS or email reminder</li>
+      <li>After meeting: Send follow-up email with recap + next steps template</li>
+      <li>Update contact lifecycle to "Sales Qualified Lead"</li>
+    </ol>
+  </div>
+
+  <div class="workflow-card">
+    <div class="workflow-title">4. Re-engagement Campaign</div>
+    <div class="workflow-trigger">TRIGGER: <span>No email opens in 90 days + Lead or Subscriber lifecycle</span></div>
+    <ol class="workflow-steps">
+      <li>Day 1: Re-engagement email — "Still interested in [value prop]?"</li>
+      <li>Day 7 (if no open): Different subject line — "Quick question, [First Name]"</li>
+      <li>Day 14 (if still no open): "Removing you from our list" breakup email</li>
+      <li>If no engagement: mark as "Unqualified", suppress from future sends</li>
+      <li>If engages: re-enroll in nurture sequence</li>
+    </ol>
+  </div>
+
+  <div class="workflow-card">
+    <div class="workflow-title">5. Onboarding Automation (Post-Sale)</div>
+    <div class="workflow-trigger">TRIGGER: <span>Deal stage = Closed Won</span></div>
+    <ol class="workflow-steps">
+      <li>Immediately: Send welcome email with onboarding checklist</li>
+      <li>Day 3: "Getting started" video walkthrough</li>
+      <li>Day 7: Check-in email from CS rep</li>
+      <li>Day 14: "Have you tried [key feature]?" activation email</li>
+      <li>Day 30: NPS survey + health check</li>
+    </ol>
+  </div>
+
+  <div class="workflow-card">
+    <div class="workflow-title">6. Pricing Page Visitor Alert</div>
+    <div class="workflow-trigger">TRIGGER: <span>Contact visits /pricing page</span></div>
+    <ol class="workflow-steps">
+      <li>Add contact to "High Intent" list</li>
+      <li>Increase lead score by +20</li>
+      <li>If assigned to sales rep: create task "Hot prospect visited pricing — reach out today"</li>
+      <li>If not yet assigned: enroll in direct CTA email sequence</li>
+    </ol>
+  </div>
+
+  <div class="workflow-card">
+    <div class="workflow-title">7. Data Enrichment &amp; Hygiene</div>
+    <div class="workflow-trigger">TRIGGER: <span>Contact created (any source)</span></div>
+    <ol class="workflow-steps">
+      <li>Attempt enrichment via HubSpot Insights or connected enrichment tool</li>
+      <li>If company name missing: flag for manual review</li>
+      <li>Set lifecycle stage based on source (form → Lead, demo → MQL, etc.)</li>
+      <li>Assign to geographic territory if territory routing is configured</li>
+    </ol>
+  </div>
+
+  <div class="pro-tip">
+    <p><strong>Pro tip:</strong> Always set a goal on your workflows. When a contact achieves the goal (books a meeting, reaches a lifecycle stage), they exit the workflow automatically. This prevents contacts from receiving irrelevant emails after they've already converted.</p>
+  </div>
+
+  <h2>HubSpot Lifecycle Stages — The Foundation</h2>
+  <p>Lifecycle stages are the backbone of HubSpot automation. Every workflow should be designed around moving contacts from one stage to the next. Standard stages: Subscriber → Lead → Marketing Qualified Lead → Sales Qualified Lead → Opportunity → Customer → Evangelist.</p>
+  <p>Map each lifecycle stage to a clear definition, an enrollment trigger, and the workflow that fires at that stage. This turns your CRM into an automated revenue machine.</p>
+
+  <section class="faq">
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-item">
+      <div class="faq-q">What can you automate with HubSpot?</div>
+      <div class="faq-a">HubSpot can automate: lead nurturing emails, lifecycle stage updates, lead scoring, contact property management, internal sales notifications, deal creation, meeting follow-ups, and customer onboarding workflows.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I set up a lead nurturing workflow in HubSpot?</div>
+      <div class="faq-a">Go to Automation > Workflows, create a Contact-based workflow, set your enrollment trigger (e.g., form submission), then add email actions with time delays. Use if/then branches to personalize based on engagement behavior.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What HubSpot plan do you need for marketing automation?</div>
+      <div class="faq-a">Basic workflows are available on Marketing Hub Starter. Full workflow automation with branching and goal-setting requires Marketing Hub Professional (~$800/month) or Enterprise (~$3,600/month).</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How many workflows should a B2B company have in HubSpot?</div>
+      <div class="faq-a">Start with 5–7 core workflows (lead nurture, MQL handoff, demo follow-up, re-engagement, onboarding, data hygiene). Add specialized workflows as you scale — most mature HubSpot portals have 20–50 active workflows.</div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2>Need Help Setting Up HubSpot Automation?</h2>
+    <p>Sahil Bahri is a certified HubSpot Solutions Partner who builds marketing automation systems that actually drive pipeline — not just activity metrics.</p>
+    <a class="cta-btn" href="/#contact">Set Up Your HubSpot Automation →</a>
+  </div>
+</main>
+
+<footer class="footer">
+  <p>© 2025 Sahil Bahri · <a href="/blog">Blog</a> · <a href="/">Home</a></p>
+</footer>
+</body>
+</html>
