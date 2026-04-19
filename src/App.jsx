@@ -753,8 +753,31 @@ const PortfolioPage = ({ data, onLogin }) => {
   const [hov, setHov] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
   const [activeTool, setActiveTool] = useState(0);
+  const [cForm, setCForm] = useState({ name: "", email: "", company: "", message: "", budget: "" });
+  const [cState, setCState] = useState("idle");
+  const [cError, setCError] = useState("");
   const categories = ["all", ...new Set(CASE_STUDIES.map(c => c.category))];
   const filteredCases = filterCat === "all" ? CASE_STUDIES : CASE_STUDIES.filter(c => c.category === filterCat);
+
+  const submitContact = async () => {
+    if (!cForm.name || !cForm.email || !cForm.message) return;
+    setCState("loading");
+    try {
+      const base = window.location.hostname === "localhost" ? "https://revosys.pro" : "";
+      const res = await fetch(`${base}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cForm),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Failed to send");
+      setCState("success");
+      setCForm({ name: "", email: "", company: "", message: "", budget: "" });
+    } catch (err) {
+      setCState("error");
+      setCError(err.message);
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--ink)" }}>
@@ -763,8 +786,9 @@ const PortfolioPage = ({ data, onLogin }) => {
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "20px 64px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(11,11,11,0.88)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginLeft:4}}>-Sys</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",letterSpacing:"0.12em",textTransform:"uppercase",marginLeft:14}}>GTM Platform</span></div>
         <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
-          {["About", "Funnel", "Diagnostics", "Work"].map(s => (<button key={s} onClick={() => document.getElementById(s === "Diagnostics" ? "workflows" : s.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{s}</button>))}
+          {["About", "Funnel", "Work"].map(s => (<button key={s} onClick={() => document.getElementById(s.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{s}</button>))}
           <a href="/blog" style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>Blog</a>
+          <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>Contact</button>
           <button onClick={onLogin} style={{ padding: "8px 20px", background: "transparent", border: "1px solid var(--border-h)", borderRadius: 6, color: "var(--cream-dim)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cream)"; e.currentTarget.style.color = "var(--cream)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-h)"; e.currentTarget.style.color = "var(--cream-dim)"; }}>Client Portal</button>
         </div>
       </nav>
@@ -812,12 +836,28 @@ const PortfolioPage = ({ data, onLogin }) => {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 8, overflow: "hidden" }}>{["HubSpot", "Braze", "Amplitude", "ZoomInfo", "Apollo", "Salesforce", "Make.com", "MindStudio"].map(t => (<div key={t} style={{ padding: "10px 12px", background: "var(--ink-2)", fontFamily: "var(--mono)", fontSize: 13, color: "var(--cream-dim)" }}>{t}</div>))}</div>
           </div>
           <div>
-            <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>Revo-Sys is a boutique revenue operations consultancy building the systems that turn B2B complexity into predictable, scalable growth.</p>
-            <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>We specialize in building the operational backbone of B2B growth. With 6+ years across marketing operations, sales operations, and revenue architecture, Revo-Sys bridges the gap between strategic vision and technical execution for companies scaling their go-to-market motion.</p>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 24, fontWeight: 300 }}>Our approach centers on unified data architectures: connecting CRM, marketing automation, product analytics, and enrichment tools into a single operational framework. We design lead scoring models, automated routing logic, pipeline workflows, and attribution systems that give revenue teams complete visibility from first touch to closed deal.</p>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 32, fontWeight: 300 }}>We also operate at the frontier of AI-powered RevOps: deploying no-code AI agents for prospecting, research automation, and intelligent CRM management using platforms like Make.com and MindStudio. Our systems reduce manual effort by 60%+ while increasing outreach effectiveness and pipeline velocity.</p>
+            <p style={{ fontSize: 20, color: "var(--cream-dim)", lineHeight: 1.65, marginBottom: 40, fontWeight: 300, maxWidth: 680 }}>We build the operational backbone of B2B growth — <em style={{ fontFamily: "var(--serif)", fontStyle: "italic", color: "var(--cream)" }}>from first signal to closed revenue</em>.</p>
+            {/* 4 capability tiles */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 2 }}>
+              {[
+                { icon: "activity", color: "var(--sky)", label: "Revenue Architecture", desc: "Unified data model across CRM, enrichment, and product — one source of truth for every team." },
+                { icon: "target", color: "var(--amber)", label: "GTM Strategy", desc: "ICP, lead scoring, routing logic, and pipeline stage design built to scale with your motion." },
+                { icon: "ai", color: "var(--violet)", label: "AI Automation", desc: "No-code AI agents that cut admin work by 60%+ and accelerate pipeline velocity end-to-end." },
+                { icon: "dash", color: "var(--success)", label: "Lifecycle Marketing", desc: "Behaviour-triggered campaigns from first touch through expansion and retention — zero gaps." },
+              ].map((cap, ci) => (
+                <div key={ci} style={{ padding: "28px 24px", background: "var(--ink-2)", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: `${cap.color}12`, border: `1px solid ${cap.color}28`, display: "flex", alignItems: "center", justifyContent: "center", color: cap.color, flexShrink: 0 }}>
+                      <Icon name={cap.icon} size={16} />
+                    </div>
+                    <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: cap.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{cap.label}</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--cream-mute)", lineHeight: 1.65, margin: 0, fontWeight: 300 }}>{cap.desc}</p>
+                </div>
+              ))}
+            </div>
             {/* Services inline */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden" }}>{ps.services.map((svc, i) => (<div key={svc.id} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginTop: 2 }}>{ps.services.map((svc, i) => (<div key={svc.id} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
           </div>
         </div>
       </section>
@@ -946,9 +986,99 @@ const PortfolioPage = ({ data, onLogin }) => {
           </div>);
         })}</div>
       </section>
+      {/* Contact Section */}
+      <section id="contact" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
+          {/* Left — headline + bullets */}
+          <div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>Get in Touch</div>
+            <h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.12, marginBottom: 28, maxWidth: 480 }}>Let's build your revenue system.</h2>
+            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, fontWeight: 300, marginBottom: 40, maxWidth: 420 }}>Tell us about your GTM challenges. We'll come back with a clear perspective on what's worth fixing and how we'd approach it.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {[
+                { label: "CRM implementation or migration", color: "var(--sky)" },
+                { label: "GTM strategy & ICP definition", color: "var(--amber)" },
+                { label: "Lead scoring & pipeline automation", color: "var(--violet)" },
+                { label: "AI agents & RevOps architecture", color: "var(--success)" },
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: "var(--cream-dim)", fontWeight: 300 }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 48, padding: "20px 24px", border: "1px solid var(--border)", background: "var(--ink-2)", borderRadius: 10 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Response time</div>
+              <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--amber)" }}>Within 1 business day.</div>
+            </div>
+          </div>
+          {/* Right — form */}
+          <div style={{ background: "var(--ink-2)", border: "1px solid var(--border-h)", borderRadius: 16, padding: "40px", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--amber), var(--violet), var(--sky))", opacity: 0.5 }} />
+            {cState === "success" ? (
+              <div style={{ textAlign: "center", padding: "60px 0", animation: "fadeUp .4s ease-out" }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(107,158,111,0.12)", border: "1px solid rgba(107,158,111,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Icon name="check" size={24} /></div>
+                <h3 style={{ fontFamily: "var(--serif)", fontSize: 26, fontStyle: "italic", color: "var(--cream)", marginBottom: 12, fontWeight: 400 }}>Message received.</h3>
+                <p style={{ fontSize: 14, color: "var(--cream-mute)", lineHeight: 1.7, marginBottom: 24 }}>I'll review your message and get back to you within 1 business day.</p>
+                <button onClick={() => setCState("idle")} style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>Send another →</button>
+              </div>
+            ) : (
+              <div>
+                <h3 style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--cream)", marginBottom: 24, fontWeight: 400 }}>Start a conversation</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Name *</label>
+                    <input value={cForm.name} onChange={e => setCForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Email *</label>
+                    <input type="email" value={cForm.email} onChange={e => setCForm(f => ({ ...f, email: e.target.value }))} placeholder="you@company.com" style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)" }} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Company</label>
+                    <input value={cForm.company} onChange={e => setCForm(f => ({ ...f, company: e.target.value }))} placeholder="Company name" style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Budget range</label>
+                    <select value={cForm.budget} onChange={e => setCForm(f => ({ ...f, budget: e.target.value }))} style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: cForm.budget ? "var(--cream)" : "var(--cream-mute)", fontSize: 14, fontFamily: "var(--sans)", appearance: "none" }}>
+                      <option value="">Select range</option>
+                      <option>Under $5,000</option>
+                      <option>$5,000 – $15,000</option>
+                      <option>$15,000 – $40,000</option>
+                      <option>$40,000+</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>What are you working on? *</label>
+                  <textarea value={cForm.message} onChange={e => setCForm(f => ({ ...f, message: e.target.value }))} placeholder="Describe your GTM challenge, current setup, and what outcome you're aiming for..." rows={5} style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)", resize: "vertical", lineHeight: 1.7 }} />
+                </div>
+                {cState === "error" && <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(168,91,91,0.08)", border: "1px solid rgba(168,91,91,0.2)", borderRadius: 6, fontFamily: "var(--mono)", fontSize: 11, color: "var(--danger)" }}>Error: {cError}. Please try again.</div>}
+                <button
+                  onClick={submitContact}
+                  disabled={cState === "loading" || !cForm.name || !cForm.email || !cForm.message}
+                  style={{ width: "100%", padding: "14px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: cState === "loading" ? "wait" : "pointer", fontFamily: "var(--sans)", opacity: (!cForm.name || !cForm.email || !cForm.message) ? 0.4 : 1, transition: "opacity .2s" }}
+                >
+                  {cState === "loading" ? "Sending…" : "Send message →"}
+                </button>
+                <p style={{ fontSize: 11, color: "var(--cream-mute)", marginTop: 12, textAlign: "center", fontFamily: "var(--mono)", letterSpacing: "0.04em" }}>No pitch decks. No sales calls unless you want one.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
       {/* Footer */}
-      <footer style={{ padding: "60px 64px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <footer style={{ padding: "40px 64px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontFamily: "var(--serif)", fontSize: 18, fontStyle: "italic", color: "var(--cream-mute)" }}>Revo-Sys</span>
+        <div style={{ display: "flex", gap: 28 }}>
+          {[["About", "#about"], ["Work", "#work"], ["Blog", "/blog"], ["Contact", "#contact"]].map(([label, href]) => (
+            <a key={label} href={href} style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none", transition: "color .2s" }}
+               onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"}
+               onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{label}</a>
+          ))}
+        </div>
         <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em" }}>&copy; {new Date().getFullYear()} / Revenue Systems</span>
       </footer>
     </div>
