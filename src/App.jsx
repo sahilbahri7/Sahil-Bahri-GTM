@@ -888,24 +888,29 @@ const PortfolioPage = ({ data, onLogin }) => {
           {/* Left: copy */}
           <div>
             <div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40 }}>Revenue Operations / GTM Strategy / AI Automation</div>
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut", delay: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40 }}
+              >Revenue Operations / GTM Strategy / AI Automation</motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}
                 style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 760, marginBottom: 32 }}
               >{ps.headline}</motion.h1>
               <motion.p
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+                transition={{ duration: 0.7, ease: "easeOut", delay: 0.5 }}
                 style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 520, lineHeight: 1.8, fontWeight: 300 }}
               >{ps.subheadline}</motion.p>
             </div>
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.4 }}
+              transition={{ duration: 0.7, ease: "easeOut", delay: 0.7 }}
               style={{ marginTop: 48, display: "flex", gap: 16 }}
             >
               <button onClick={() => document.getElementById("work")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "var(--sans)" }}>View Work</button>
