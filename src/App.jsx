@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from "r
 import { Analytics } from "@vercel/analytics/react";
 import { AnimatePresence, motion } from "framer-motion";
 
+// Disable browser scroll-position restoration so every page load starts at top
+if (typeof window !== "undefined") window.history.scrollRestoration = "manual";
+
 const FONTS = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap";
 
 async function callAI(prompt, sys = "You are an expert GTM/RevOps consultant. Improve the given content for clarity, professionalism, and strategic impact. Return ONLY the improved text.") {
@@ -770,9 +773,9 @@ const StackMap = () => {
 // PORTFOLIO PAGE (Consulting Website)
 // ============================================================
 // ============================================================
-// PARTICLE CANVAS — hero background
+// HERO PARTICLES — GTM stage pill labels drifting behind hero content
 // ============================================================
-const ParticleCanvas = () => {
+const HeroParticles = () => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -780,123 +783,146 @@ const ParticleCanvas = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    const COUNT          = 120;
-    const REPEL_RADIUS   = 120;   // px — influence zone around cursor
-    const MAX_SPEED      = 4;     // px/frame — hard cap so it never looks violent
-    const EASE           = 0.03;  // how quickly particles return to their base drift
-    const AMBER_SHARE    = 0.20;  // 20% amber, 80% cream
+    const REPEL_RADIUS = 130;
+    const MAX_SPEED    = 3.5;
+    const EASE         = 0.025;
+    const PILL_W       = 38;
+    const PILL_H       = 16;
+    const PILL_R       = 8;
+    const FADE_IN      = 1500;  // ms
+    const FADE_OUT     = 1000;  // ms
+
+    // Five GTM stage types — colours match CSS variables
+    const TYPES = [
+      { label: "SIGNAL", color: "rgba(91,143,168,0.55)",  count: 20 },
+      { label: "LEAD",   color: "rgba(124,111,160,0.55)", count: 18 },
+      { label: "MQL",    color: "rgba(196,162,101,0.55)", count: 16 },
+      { label: "SQL",    color: "rgba(107,158,111,0.55)", count: 14 },
+      { label: "OPP",    color: "rgba(232,224,212,0.3)",  count: 12 },
+    ];
 
     let raf;
     let particles = [];
-    const mouse = { x: -9999, y: -9999 }; // off-canvas until first mousemove
+    const mouse = { x: -9999, y: -9999 };
 
-    // ── sizing ─────────────────────────────────────────────────
     const resize = () => {
       canvas.width  = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
     };
 
-    // ── particle factory ────────────────────────────────────────
-    const makeParticle = () => {
+    // Draw a filled rounded rect (cross-browser safe)
+    const pillPath = (x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.arcTo(x + w, y,     x + w, y + r,     r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);
+      ctx.arcTo(x,     y + h, x,     y + h - r, r);
+      ctx.lineTo(x,    y + r);
+      ctx.arcTo(x,     y,     x + r, y,          r);
+      ctx.closePath();
+    };
+
+    const makeParticle = (type) => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 0.08 + Math.random() * 0.17; // 0.08 – 0.25 px/frame
+      const speed = 0.1 + Math.random() * 0.2;   // 0.1 – 0.3 px/frame
       const ox = Math.cos(angle) * speed;
       const oy = Math.sin(angle) * speed;
       return {
-        x:  Math.random() * canvas.width,
-        y:  Math.random() * canvas.height,
-        vx: ox,
-        vy: oy,
-        ox,             // base (home) velocity — never mutated
-        oy,
-        r:  1 + Math.random() * 1.5, // 1 – 2.5 px
+        type,
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: ox, vy: oy, ox, oy,
+        born:     performance.now(),
+        lifetime: (6 + Math.random() * 8) * 1000,  // 6 – 14 s
       };
     };
 
     const initParticles = () => {
-      // Shuffle so amber particles are randomly distributed, not all at front
-      const indices = Array.from({ length: COUNT }, (_, i) => i);
-      const amberSet = new Set(
-        indices.sort(() => Math.random() - 0.5).slice(0, Math.round(COUNT * AMBER_SHARE))
-      );
-      particles = Array.from({ length: COUNT }, (_, i) => ({
-        ...makeParticle(),
-        color: amberSet.has(i)
-          ? "rgba(196,162,101,0.25)"   // --amber
-          : "rgba(232,224,212,0.18)",  // --cream
-      }));
+      particles = [];
+      TYPES.forEach((type) => {
+        for (let i = 0; i < type.count; i++) {
+          const p = makeParticle(type);
+          // Random phase offset so they don't all fade in at once
+          p.born -= Math.random() * 5000;
+          particles.push(p);
+        }
+      });
     };
 
-    // ── main loop ───────────────────────────────────────────────
     const tick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const now = performance.now();
 
       for (const p of particles) {
-        // Vector from cursor to particle
+        const elapsed = now - p.born;
+
+        // ── respawn when lifetime expires ──
+        if (elapsed > p.lifetime) {
+          const t = TYPES[Math.floor(Math.random() * TYPES.length)];
+          const f = makeParticle(t);
+          p.type = f.type; p.x = f.x; p.y = f.y;
+          p.vx = f.vx; p.vy = f.vy; p.ox = f.ox; p.oy = f.oy;
+          p.born = f.born; p.lifetime = f.lifetime;
+          continue;
+        }
+
+        // ── alpha from lifecycle ──
+        let alpha;
+        if (elapsed < FADE_IN) {
+          alpha = elapsed / FADE_IN;
+        } else if (elapsed > p.lifetime - FADE_OUT) {
+          alpha = Math.max(0, (p.lifetime - elapsed) / FADE_OUT);
+        } else {
+          alpha = 1;
+        }
+
+        // ── cursor repulsion ──
         const dx   = p.x - mouse.x;
         const dy   = p.y - mouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // Build the "desired" velocity: base drift + repulsion if close
         let desiredVx = p.ox;
         let desiredVy = p.oy;
-
         if (dist < REPEL_RADIUS && dist > 0) {
-          // Inversely proportional: strongest at centre, zero at edge
-          const force   = (REPEL_RADIUS - dist) / REPEL_RADIUS;
+          const force = (REPEL_RADIUS - dist) / REPEL_RADIUS;
           desiredVx += (dx / dist) * force * MAX_SPEED;
           desiredVy += (dy / dist) * force * MAX_SPEED;
         }
-
-        // Ease current velocity toward desired — this is what makes the
-        // motion feel alive rather than mechanical
         p.vx += (desiredVx - p.vx) * EASE;
         p.vy += (desiredVy - p.vy) * EASE;
-
-        // Hard-cap so nothing ever looks startled
         const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (spd > MAX_SPEED) {
-          p.vx = (p.vx / spd) * MAX_SPEED;
-          p.vy = (p.vy / spd) * MAX_SPEED;
-        }
+        if (spd > MAX_SPEED) { p.vx = (p.vx / spd) * MAX_SPEED; p.vy = (p.vy / spd) * MAX_SPEED; }
 
-        // Move
+        // ── move + edge wrap ──
         p.x += p.vx;
         p.y += p.vy;
+        if (p.x < -PILL_W)                   p.x = canvas.width  + PILL_W;
+        else if (p.x > canvas.width  + PILL_W) p.x = -PILL_W;
+        if (p.y < -PILL_H)                   p.y = canvas.height + PILL_H;
+        else if (p.y > canvas.height + PILL_H) p.y = -PILL_H;
 
-        // Seamless edge wrap
-        if (p.x < -4)              p.x = canvas.width  + 4;
-        else if (p.x > canvas.width  + 4) p.x = -4;
-        if (p.y < -4)              p.y = canvas.height + 4;
-        else if (p.y > canvas.height + 4) p.y = -4;
-
-        // Draw
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
+        // ── draw pill ──
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        pillPath(p.x - PILL_W / 2, p.y - PILL_H / 2, PILL_W, PILL_H, PILL_R);
+        ctx.fillStyle = p.type.color;
         ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.font = "300 7px 'IBM Plex Mono', monospace";
+        ctx.textAlign    = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(p.type.label, p.x, p.y);
+        ctx.restore();
       }
 
       raf = requestAnimationFrame(tick);
     };
 
-    // ── event handlers ──────────────────────────────────────────
-    // Attach to the section (parent) so the repulsion works even when
-    // the cursor is hovering over hero text or the funnel diagram
     const section = canvas.parentElement;
-
-    const onMouseMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
-    };
-
-    const onMouseLeave = () => {
-      // Park the cursor off-canvas — particles drift back on their own
-      mouse.x = -9999;
-      mouse.y = -9999;
-    };
-
+    const onMouseMove  = (e) => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; };
+    const onMouseLeave = () => { mouse.x = -9999; mouse.y = -9999; };
     const onResize = () => {
       resize();
       for (const p of particles) {
@@ -924,15 +950,7 @@ const ParticleCanvas = () => {
   return (
     <canvas
       ref={canvasRef}
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        display: "block",
-        pointerEvents: "none", // hero content stays fully clickable
-        zIndex: 0,
-      }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", pointerEvents: "none", zIndex: 0 }}
     />
   );
 };
@@ -1052,7 +1070,7 @@ const PortfolioPage = ({ data, onLogin }) => {
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, opacity: 0.03, background: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundSize: "128px" }} />
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "20px 64px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(11,11,11,0.88)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginLeft:4}}>-Sys</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",letterSpacing:"0.12em",textTransform:"uppercase",marginLeft:14}}>GTM Platform</span></div>
+        <button onClick={() => { window.location.href = "/"; }} style={{ display: "flex", alignItems: "baseline", gap: 0, background: "none", border: "none", cursor: "pointer", padding: 0 }}><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginLeft:4}}>-Sys</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",letterSpacing:"0.12em",textTransform:"uppercase",marginLeft:14}}>GTM Platform</span></button>
         <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
           {["About", "Funnel", "Work"].map(s => (<button key={s} onClick={() => document.getElementById(s.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{s}</button>))}
           <a href="/blog" style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>Blog</a>
@@ -1062,7 +1080,7 @@ const PortfolioPage = ({ data, onLogin }) => {
       </nav>
       {/* Hero */}
       <section style={{ padding: "200px 64px 100px", maxWidth: 1560, margin: "0 auto", position: "relative", overflow: "hidden" }}>
-        <ParticleCanvas />
+        <HeroParticles />
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 80, alignItems: "center", position: "relative", zIndex: 1 }}>
           {/* Left: copy */}
           <div>
@@ -2785,6 +2803,7 @@ export default function App(){
         }
       });
     }
+    window.scrollTo(0, 0);
     if(!document.querySelector('link[href*="Instrument"]')){const l=document.createElement("link");l.rel="stylesheet";l.href=FONTS;document.head.appendChild(l);}
   },[]);
 
