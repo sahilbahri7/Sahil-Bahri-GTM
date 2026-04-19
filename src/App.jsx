@@ -856,27 +856,35 @@ const StatCounter = ({ value, label }) => {
   const suffix = match[2] || "";
   const [count, setCount] = useState(0);
   const ref = useRef(null);
-  const started = useRef(false);
+  const startedRef = useRef(false);
+  const rafRef = useRef(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const duration = 1500;
-        const startTime = performance.now();
+      if (entry.isIntersecting && !startedRef.current) {
+        startedRef.current = true;
+        const duration = 1800;
+        let startTime = null;
         const tick = (now) => {
+          if (!startTime) startTime = now;
           const elapsed = now - startTime;
           const progress = Math.min(elapsed / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 2); // ease-out quad
+          const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
           setCount(Math.round(eased * target));
-          if (progress < 1) requestAnimationFrame(tick);
+          if (progress < 1) {
+            rafRef.current = requestAnimationFrame(tick);
+          }
         };
-        requestAnimationFrame(tick);
+        rafRef.current = requestAnimationFrame(tick);
       }
-    }, { threshold: 0.3 });
+    }, { threshold: 0 }); // fire as soon as any pixel enters viewport
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      startedRef.current = false; // reset so StrictMode double-mount works
+    };
   }, [target]);
   return (
     <div ref={ref}>
@@ -938,34 +946,22 @@ const PortfolioPage = ({ data, onLogin }) => {
           {/* Left: copy */}
           <div>
             <div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-                style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40 }}
-              >Revenue Operations / GTM Strategy / AI Automation</motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}
-                style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 760, marginBottom: 32 }}
-              >{ps.headline}</motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut", delay: 0.5 }}
-                style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 520, lineHeight: 1.8, fontWeight: 300 }}
-              >{ps.subheadline}</motion.p>
+              <div
+                style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40, animation: "fadeUp 0.7s ease-out 0.1s both" }}
+              >Revenue Operations / GTM Strategy / AI Automation</div>
+              <h1
+                style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 760, marginBottom: 32, animation: "fadeUp 0.7s ease-out 0.3s both" }}
+              >{ps.headline}</h1>
+              <p
+                style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 520, lineHeight: 1.8, fontWeight: 300, animation: "fadeUp 0.7s ease-out 0.5s both" }}
+              >{ps.subheadline}</p>
             </div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.7 }}
-              style={{ marginTop: 48, display: "flex", gap: 16 }}
+            <div
+              style={{ marginTop: 48, display: "flex", gap: 16, animation: "fadeUp 0.7s ease-out 0.7s both" }}
             >
               <button onClick={() => document.getElementById("work")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "var(--sans)" }}>View Work</button>
               <button onClick={() => document.getElementById("workflows")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "transparent", color: "var(--cream-dim)", border: "1px solid var(--border-h)", borderRadius: 8, fontSize: 15, cursor: "pointer", fontFamily: "var(--sans)" }}>Run a Diagnostic</button>
-            </motion.div>
+            </div>
             <div style={{ display: "flex", gap: 48, marginTop: 72, animation: "fadeUp .8s ease-out .4s both" }}>
               {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (
                 <StatCounter key={l} value={v} label={l} />
