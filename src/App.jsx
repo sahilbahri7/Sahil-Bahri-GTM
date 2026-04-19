@@ -758,7 +758,7 @@ const ParticleCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const COUNT = 60;
+    const COUNT = 90;   // was 60, +50%
     let raf;
     let particles = [];
 
@@ -772,11 +772,11 @@ const ParticleCanvas = () => {
       particles = Array.from({ length: COUNT }, () => ({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        // slow drift — max ~0.35 px per frame at 60 fps
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
-        r: Math.random() * 1.4 + 0.6,          // 0.6 – 2 px radius
-        a: Math.random() * 0.18 + 0.04,         // 0.04 – 0.22 opacity — never bright enough to distract
+        // slow drift — speed reduced 30% from 0.35 → 0.245
+        vx: (Math.random() - 0.5) * 0.245,
+        vy: (Math.random() - 0.5) * 0.245,
+        r: Math.random() * 1.4 + 0.6,          // 0.6 – 2 px radius (unchanged)
+        a: Math.random() * 0.12 + 0.23,         // 0.23 – 0.35 opacity — more visible but still subtle
       }));
     };
 
