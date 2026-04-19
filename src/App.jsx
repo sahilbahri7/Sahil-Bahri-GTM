@@ -448,7 +448,13 @@ const HeroFunnel = () => {
         ))}
       </div>
       {stages.map((s, i) => (
-        <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, justifyContent: "flex-start" }}>
+        <motion.div
+          key={s.label}
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut", delay: 0.9 + i * 0.15 }}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, justifyContent: "flex-start" }}
+        >
           <div style={{ width: `${s.w}%`, padding: "8px 14px", background: `${s.color}12`, border: `1px solid ${s.color}35`, borderRadius: 7, display: "flex", justifyContent: "space-between", alignItems: "center", backdropFilter: "blur(4px)" }}>
             <div>
               <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: s.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>{s.label}</div>
@@ -457,9 +463,14 @@ const HeroFunnel = () => {
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, opacity: 0.8, animation: `flowPulse ${1.4 + i * 0.25}s ease-in-out ${i * 0.2}s infinite` }} />
           </div>
           {i < stages.length - 1 && (
-            <div style={{ width: 1, flex: 1, background: `linear-gradient(180deg, ${s.color}50, ${stages[i + 1].color}40)`, animation: `connectorPulse 2s ease-in-out ${i * 0.3}s infinite`, minHeight: 12 }} />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 1.75 }}
+              style={{ width: 1, flex: 1, background: `linear-gradient(180deg, ${s.color}50, ${stages[i + 1].color}40)`, animation: `connectorPulse 2s ease-in-out ${i * 0.3}s infinite`, minHeight: 12 }}
+            />
           )}
-        </div>
+        </motion.div>
       ))}
       <div style={{ position: "absolute", bottom: -24, left: 0, right: 0, textAlign: "center" }}>
         <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Raw Signals → Pipeline</span>
@@ -836,6 +847,45 @@ const ParticleCanvas = () => {
   );
 };
 
+// ============================================================
+// STAT COUNTER — counts up from 0 to target on scroll-into-view
+// ============================================================
+const StatCounter = ({ value, label }) => {
+  const match = value.match(/^(\d+)(.*)$/);
+  const target = parseInt(match[1], 10);
+  const suffix = match[2] || "";
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const duration = 1500;
+        const startTime = performance.now();
+        const tick = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 2); // ease-out quad
+          setCount(Math.round(eased * target));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.3 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target]);
+  return (
+    <div ref={ref}>
+      <span style={{ fontFamily: "var(--serif)", fontSize: 38, fontStyle: "italic", color: "var(--amber)" }}>{count}{suffix}</span>
+      <span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4 }}>{label}</span>
+    </div>
+  );
+};
+
 const PortfolioPage = ({ data, onLogin }) => {
   const ps = data.portfolioSettings;
   const [expandedCase, setExpandedCase] = useState(null);
@@ -917,7 +967,9 @@ const PortfolioPage = ({ data, onLogin }) => {
               <button onClick={() => document.getElementById("workflows")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "transparent", color: "var(--cream-dim)", border: "1px solid var(--border-h)", borderRadius: 8, fontSize: 15, cursor: "pointer", fontFamily: "var(--sans)" }}>Run a Diagnostic</button>
             </motion.div>
             <div style={{ display: "flex", gap: 48, marginTop: 72, animation: "fadeUp .8s ease-out .4s both" }}>
-              {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (<div key={l}><span style={{ fontFamily: "var(--serif)", fontSize: 38, fontStyle: "italic", color: "var(--amber)" }}>{v}</span><span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4 }}>{l}</span></div>))}
+              {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (
+                <StatCounter key={l} value={v} label={l} />
+              ))}
             </div>
           </div>
           {/* Right: animated funnel */}
@@ -2642,58 +2694,67 @@ export default function App(){
   const navItems=user?.role==="client" ? clientNav : adminNav;
 
   if(!user){
-    if(page==="login") return (
-      <div style={{minHeight:"100vh",background:"var(--ink)",display:"flex",fontFamily:"var(--sans)"}}>
+    return (
+      <div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}>
         <style>{CSS}</style>
-        {/* Left: login form */}
-        <div style={{flex:"0 0 480px",display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 64px"}}>
-          <div style={{animation:"fadeUp .5s ease-out"}}>
-            <span style={{display:"block",marginBottom:52}}><span style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:13,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>
+        <AnimatePresence mode="wait">
+          <motion.div key={page} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.35,ease:"easeInOut"}} style={{minHeight:"100vh"}}>
+            {page==="login" ? (
+              <div style={{minHeight:"100vh",background:"var(--ink)",display:"flex"}}>
+                {/* Left: login form */}
+                <div style={{flex:"0 0 480px",display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 64px"}}>
+                  <div style={{animation:"fadeUp .5s ease-out"}}>
+                    <span style={{display:"block",marginBottom:52}}><span style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:13,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>
 
-            {loginStep==="email"&&<>
-              <h1 style={{fontFamily:"var(--serif)",fontSize:38,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:8}}>Sign in</h1>
-              <p style={{color:"var(--cream-mute)",fontSize:14,marginBottom:36,fontWeight:300,lineHeight:1.6}}>Enter your email to receive a secure login link.</p>
-              {loginErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(168,91,91,0.1)",color:"var(--danger)",fontSize:13,marginBottom:20}}>{loginErr}</div>}
-              <Field label="Email Address" value={loginEmail} onChange={v=>setLoginEmail(v)} placeholder="you@company.com"/>
-              <Btn onClick={submitEmail} style={{width:"100%",justifyContent:"center",marginTop:4}} size="lg">Send Login Link</Btn>
-            </>}
+                    {loginStep==="email"&&<>
+                      <h1 style={{fontFamily:"var(--serif)",fontSize:38,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:8}}>Sign in</h1>
+                      <p style={{color:"var(--cream-mute)",fontSize:14,marginBottom:36,fontWeight:300,lineHeight:1.6}}>Enter your email to receive a secure login link.</p>
+                      {loginErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(168,91,91,0.1)",color:"var(--danger)",fontSize:13,marginBottom:20}}>{loginErr}</div>}
+                      <Field label="Email Address" value={loginEmail} onChange={v=>setLoginEmail(v)} placeholder="you@company.com"/>
+                      <Btn onClick={submitEmail} style={{width:"100%",justifyContent:"center",marginTop:4}} size="lg">Send Login Link</Btn>
+                    </>}
 
-            {loginStep==="sent"&&<>
-              <div style={{width:48,height:48,borderRadius:14,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28}}>
-                {loginSending
-                  ? <div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                  : <Icon name="send" size={20}/>}
-              </div>
-              <h1 style={{fontFamily:"var(--serif)",fontSize:32,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:12}}>Check your inbox</h1>
-              <p style={{color:"var(--cream-mute)",fontSize:14,lineHeight:1.8,fontWeight:300}}>If you have an account, you will receive a login link shortly.<br/><br/>Click the link in the email to access your workspace — no password required.</p>
-              <button onClick={()=>{setLoginStep("email");setLoginErr("");}} style={{display:"block",margin:"32px 0 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em",padding:0}}>← TRY A DIFFERENT EMAIL</button>
-            </>}
+                    {loginStep==="sent"&&<>
+                      <div style={{width:48,height:48,borderRadius:14,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28}}>
+                        {loginSending
+                          ? <div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                          : <Icon name="send" size={20}/>}
+                      </div>
+                      <h1 style={{fontFamily:"var(--serif)",fontSize:32,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:12}}>Check your inbox</h1>
+                      <p style={{color:"var(--cream-mute)",fontSize:14,lineHeight:1.8,fontWeight:300}}>If you have an account, you will receive a login link shortly.<br/><br/>Click the link in the email to access your workspace — no password required.</p>
+                      <button onClick={()=>{setLoginStep("email");setLoginErr("");}} style={{display:"block",margin:"32px 0 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em",padding:0}}>← TRY A DIFFERENT EMAIL</button>
+                    </>}
 
-            <button onClick={()=>nav("portfolio")} style={{display:"block",margin:"28px auto 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em"}}>← BACK TO REVOSYS.PRO</button>
-          </div>
-        </div>
-
-        {/* Right: branded panel */}
-        <div style={{flex:1,background:"var(--ink-2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderLeft:"1px solid var(--border)",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:-120,right:-120,width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(196,162,101,0.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
-          <div style={{animation:"fadeIn .8s ease-out .3s both",maxWidth:340,textAlign:"center"}}>
-            <div style={{width:56,height:56,borderRadius:16,background:"rgba(196,162,101,0.06)",border:"1px solid rgba(196,162,101,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 32px",fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--amber)"}}>R</div>
-            <h2 style={{fontFamily:"var(--serif)",fontSize:28,fontWeight:400,fontStyle:"italic",color:"var(--cream)",lineHeight:1.3,marginBottom:16}}>Your project workspace, in one place.</h2>
-            <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",lineHeight:1.9,letterSpacing:"0.03em"}}>Track progress, review proposals, approve scopes, and access deliverables — all within your private workspace.</p>
-            <div style={{marginTop:40,display:"grid",gap:10}}>
-              {[["Projects & Tasks","Live status on every deliverable"],["Proposals & Scopes","Review, approve, and sign off"],["Deliverables","Download files and assets"]].map(([t,s])=>(
-                <div key={t} style={{padding:"14px 18px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",textAlign:"left"}}>
-                  <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.06em",marginBottom:3}}>{t}</div>
-                  <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{s}</div>
+                    <button onClick={()=>nav("portfolio")} style={{display:"block",margin:"28px auto 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em"}}>← BACK TO REVOSYS.PRO</button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      <Analytics />
+
+                {/* Right: branded panel */}
+                <div style={{flex:1,background:"var(--ink-2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderLeft:"1px solid var(--border)",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:-120,right:-120,width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(196,162,101,0.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
+                  <div style={{animation:"fadeIn .8s ease-out .3s both",maxWidth:340,textAlign:"center"}}>
+                    <div style={{width:56,height:56,borderRadius:16,background:"rgba(196,162,101,0.06)",border:"1px solid rgba(196,162,101,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 32px",fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--amber)"}}>R</div>
+                    <h2 style={{fontFamily:"var(--serif)",fontSize:28,fontWeight:400,fontStyle:"italic",color:"var(--cream)",lineHeight:1.3,marginBottom:16}}>Your project workspace, in one place.</h2>
+                    <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",lineHeight:1.9,letterSpacing:"0.03em"}}>Track progress, review proposals, approve scopes, and access deliverables — all within your private workspace.</p>
+                    <div style={{marginTop:40,display:"grid",gap:10}}>
+                      {[["Projects & Tasks","Live status on every deliverable"],["Proposals & Scopes","Review, approve, and sign off"],["Deliverables","Download files and assets"]].map(([t,s])=>(
+                        <div key={t} style={{padding:"14px 18px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",textAlign:"left"}}>
+                          <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.06em",marginBottom:3}}>{t}</div>
+                          <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{s}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <PortfolioPage data={data} onLogin={()=>{window.history.pushState({},"","/portal");setPage("login");}}/>
+            )}
+          </motion.div>
+        </AnimatePresence>
+        <Analytics />
       </div>
     );
-    return(<div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><><PortfolioPage data={data} onLogin={()=>{window.history.pushState({},"","/portal");setPage("login");}}/><Analytics /></></div>);
   }
 
 
