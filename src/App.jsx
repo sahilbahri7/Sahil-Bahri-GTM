@@ -773,7 +773,7 @@ const StackMap = () => {
 // PORTFOLIO PAGE (Consulting Website)
 // ============================================================
 // ============================================================
-// HERO PARTICLES — GTM stage pill labels drifting behind hero content
+// PARTICLE CANVAS — hero background dots with cursor repulsion
 // ============================================================
 const HeroParticles = () => {
   const canvasRef = useRef(null);
@@ -783,23 +783,11 @@ const HeroParticles = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    const REPEL_RADIUS = 130;
-    const MAX_SPEED    = 3.5;
-    const EASE         = 0.025;
-    const PILL_W       = 28;    // Change 2: 38 → 28
-    const PILL_H       = 12;    // Change 2: 16 → 12
-    const PILL_R       = 6;     // Change 2: 8 → 6
-    const FADE_IN      = 2500;  // Change 7: 1500 → 2500 ms
-    const FADE_OUT     = 1000;  // ms
-
-    // Five GTM stage types — colours match CSS variables
-    const TYPES = [
-      { label: "SIGNAL", color: "rgba(91,143,168,0.28)",  count: 10 }, // Change 1 & 3
-      { label: "LEAD",   color: "rgba(124,111,160,0.26)", count: 9  }, // Change 1 & 3
-      { label: "MQL",    color: "rgba(196,162,101,0.30)", count: 8  }, // Change 1 & 3
-      { label: "SQL",    color: "rgba(107,158,111,0.24)", count: 7  }, // Change 1 & 3
-      { label: "OPP",    color: "rgba(232,224,212,0.18)", count: 4  }, // Change 1 & 3
-    ];
+    const COUNT        = 120;
+    const REPEL_RADIUS = 120;
+    const MAX_SPEED    = 4;
+    const EASE         = 0.03;
+    const AMBER_SHARE  = 0.20;
 
     let raf;
     let particles = [];
@@ -810,81 +798,28 @@ const HeroParticles = () => {
       canvas.height = canvas.offsetHeight;
     };
 
-    // Draw a filled rounded rect (cross-browser safe)
-    const pillPath = (x, y, w, h, r) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.arcTo(x + w, y,     x + w, y + r,     r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      ctx.lineTo(x + r, y + h);
-      ctx.arcTo(x,     y + h, x,     y + h - r, r);
-      ctx.lineTo(x,    y + r);
-      ctx.arcTo(x,     y,     x + r, y,          r);
-      ctx.closePath();
-    };
-
-    const makeParticle = (type) => {
+    const makeParticle = () => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 0.04 + Math.random() * 0.08;  // Change 6: 0.1–0.3 → 0.04–0.12 px/frame
+      const speed = 0.08 + Math.random() * 0.17;
       const ox = Math.cos(angle) * speed;
       const oy = Math.sin(angle) * speed;
-      return {
-        type,
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: ox, vy: oy, ox, oy,
-        born:     performance.now(),
-        lifetime: (6 + Math.random() * 8) * 1000,  // 6 – 14 s
-      };
+      return { x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: ox, vy: oy, ox, oy, r: 1 + Math.random() * 1.5 };
     };
 
     const initParticles = () => {
-      particles = [];
-      TYPES.forEach((type) => {
-        for (let i = 0; i < type.count; i++) {
-          const p = makeParticle(type);
-          // Random phase offset so they don't all fade in at once
-          p.born -= Math.random() * 5000;
-          particles.push(p);
-        }
-      });
+      const indices = Array.from({ length: COUNT }, (_, i) => i);
+      const amberSet = new Set(indices.sort(() => Math.random() - 0.5).slice(0, Math.round(COUNT * AMBER_SHARE)));
+      particles = Array.from({ length: COUNT }, (_, i) => ({
+        ...makeParticle(),
+        color: amberSet.has(i) ? "rgba(196,162,101,0.25)" : "rgba(232,224,212,0.18)",
+      }));
     };
 
     const tick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const now = performance.now();
-
       for (const p of particles) {
-        const elapsed = now - p.born;
-
-        // ── respawn when lifetime expires ──
-        if (elapsed > p.lifetime) {
-          const t = TYPES[Math.floor(Math.random() * TYPES.length)];
-          const f = makeParticle(t);
-          p.type = f.type; p.x = f.x; p.y = f.y;
-          p.vx = f.vx; p.vy = f.vy; p.ox = f.ox; p.oy = f.oy;
-          p.born = f.born; p.lifetime = f.lifetime;
-          continue;
-        }
-
-        // ── alpha from lifecycle ──
-        let alpha;
-        if (elapsed < FADE_IN) {
-          alpha = elapsed / FADE_IN;
-        } else if (elapsed > p.lifetime - FADE_OUT) {
-          alpha = Math.max(0, (p.lifetime - elapsed) / FADE_OUT);
-        } else {
-          alpha = 1;
-        }
-
-        // ── cursor repulsion ──
-        const dx   = p.x - mouse.x;
-        const dy   = p.y - mouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        let desiredVx = p.ox;
-        let desiredVy = p.oy;
+        const dx = p.x - mouse.x, dy = p.y - mouse.y, dist = Math.sqrt(dx * dx + dy * dy);
+        let desiredVx = p.ox, desiredVy = p.oy;
         if (dist < REPEL_RADIUS && dist > 0) {
           const force = (REPEL_RADIUS - dist) / REPEL_RADIUS;
           desiredVx += (dx / dist) * force * MAX_SPEED;
@@ -894,56 +829,11 @@ const HeroParticles = () => {
         p.vy += (desiredVy - p.vy) * EASE;
         const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
         if (spd > MAX_SPEED) { p.vx = (p.vx / spd) * MAX_SPEED; p.vy = (p.vy / spd) * MAX_SPEED; }
-
-        // ── exclusion zone bounce (Changes 4 & 5) ──
-        // Zone A: left hero text column — x: 0–55%, y: 5%–85%
-        const zA_x1 = 0,                      zA_x2 = canvas.width  * 0.55;
-        const zA_y1 = canvas.height * 0.05,   zA_y2 = canvas.height * 0.85;
-        // Zone B: right funnel diagram — x: 68%–100%, y: 8%–92%
-        const zB_x1 = canvas.width  * 0.68,   zB_x2 = canvas.width;
-        const zB_y1 = canvas.height * 0.08,   zB_y2 = canvas.height * 0.92;
-
-        const inZone = (px, py, x1, y1, x2, y2) => px > x1 && px < x2 && py > y1 && py < y2;
-
-        if (inZone(p.x, p.y, zA_x1, zA_y1, zA_x2, zA_y2)) {
-          // Steer away from whichever boundary the particle crossed
-          if (p.x < zA_x2 && p.vx < 0) p.vx = Math.abs(p.vx);  // hit left wall — push right
-          if (p.x > zA_x1 && p.vx > 0 && p.x < zA_x2) p.vx = -Math.abs(p.vx); // inside — push toward right edge
-          // Simplest reliable approach: reverse toward nearest horizontal boundary
-          const distLeft  = p.x - zA_x1;
-          const distRight = zA_x2 - p.x;
-          if (distRight < distLeft) { p.vx = Math.abs(p.ox); p.ox = Math.abs(p.ox); }
-          else                      { p.vx = -Math.abs(p.ox); p.ox = -Math.abs(p.ox); }
-        }
-        if (inZone(p.x, p.y, zB_x1, zB_y1, zB_x2, zB_y2)) {
-          const distLeft  = p.x - zB_x1;
-          const distRight = zB_x2 - p.x;
-          if (distLeft < distRight) { p.vx = -Math.abs(p.ox); p.ox = -Math.abs(p.ox); }
-          else                      { p.vx = Math.abs(p.ox); p.ox = Math.abs(p.ox); }
-        }
-
-        // ── move + edge wrap ──
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < -PILL_W)                   p.x = canvas.width  + PILL_W;
-        else if (p.x > canvas.width  + PILL_W) p.x = -PILL_W;
-        if (p.y < -PILL_H)                   p.y = canvas.height + PILL_H;
-        else if (p.y > canvas.height + PILL_H) p.y = -PILL_H;
-
-        // ── draw pill ──
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        pillPath(p.x - PILL_W / 2, p.y - PILL_H / 2, PILL_W, PILL_H, PILL_R);
-        ctx.fillStyle = p.type.color;
-        ctx.fill();
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.font = "300 6px 'IBM Plex Mono', monospace";  // Change 2: 7px → 6px
-        ctx.textAlign    = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(p.type.label, p.x, p.y);
-        ctx.restore();
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < -4) p.x = canvas.width + 4; else if (p.x > canvas.width + 4) p.x = -4;
+        if (p.y < -4) p.y = canvas.height + 4; else if (p.y > canvas.height + 4) p.y = -4;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
       }
-
       raf = requestAnimationFrame(tick);
     };
 
@@ -958,10 +848,7 @@ const HeroParticles = () => {
       }
     };
 
-    resize();
-    initParticles();
-    tick();
-
+    resize(); initParticles(); tick();
     section.addEventListener("mousemove",  onMouseMove);
     section.addEventListener("mouseleave", onMouseLeave);
     window.addEventListener("resize",      onResize);
@@ -975,10 +862,7 @@ const HeroParticles = () => {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", pointerEvents: "none", zIndex: 0 }}
-    />
+    <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", pointerEvents: "none", zIndex: 0 }} />
   );
 };
 
