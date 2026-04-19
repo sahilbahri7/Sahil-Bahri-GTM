@@ -769,65 +769,145 @@ const ParticleCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const COUNT = 90;   // was 60, +50%
+
+    const COUNT          = 120;
+    const REPEL_RADIUS   = 120;   // px — influence zone around cursor
+    const MAX_SPEED      = 4;     // px/frame — hard cap so it never looks violent
+    const EASE           = 0.03;  // how quickly particles return to their base drift
+    const AMBER_SHARE    = 0.20;  // 20% amber, 80% cream
+
     let raf;
     let particles = [];
+    const mouse = { x: -9999, y: -9999 }; // off-canvas until first mousemove
 
+    // ── sizing ─────────────────────────────────────────────────
     const resize = () => {
-      // Use the parent's rendered size, not CSS 100%
-      canvas.width = canvas.offsetWidth;
+      canvas.width  = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
     };
 
+    // ── particle factory ────────────────────────────────────────
+    const makeParticle = () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.08 + Math.random() * 0.17; // 0.08 – 0.25 px/frame
+      const ox = Math.cos(angle) * speed;
+      const oy = Math.sin(angle) * speed;
+      return {
+        x:  Math.random() * canvas.width,
+        y:  Math.random() * canvas.height,
+        vx: ox,
+        vy: oy,
+        ox,             // base (home) velocity — never mutated
+        oy,
+        r:  1 + Math.random() * 1.5, // 1 – 2.5 px
+      };
+    };
+
     const initParticles = () => {
-      particles = Array.from({ length: COUNT }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        // slow drift — speed reduced 30% from 0.35 → 0.245
-        vx: (Math.random() - 0.5) * 0.245,
-        vy: (Math.random() - 0.5) * 0.245,
-        r: Math.random() * 1.4 + 0.6,          // 0.6 – 2 px radius (unchanged)
-        a: Math.random() * 0.12 + 0.23,         // 0.23 – 0.35 opacity — more visible but still subtle
+      // Shuffle so amber particles are randomly distributed, not all at front
+      const indices = Array.from({ length: COUNT }, (_, i) => i);
+      const amberSet = new Set(
+        indices.sort(() => Math.random() - 0.5).slice(0, Math.round(COUNT * AMBER_SHARE))
+      );
+      particles = Array.from({ length: COUNT }, (_, i) => ({
+        ...makeParticle(),
+        color: amberSet.has(i)
+          ? "rgba(196,162,101,0.25)"   // --amber
+          : "rgba(232,224,212,0.18)",  // --cream
       }));
     };
 
+    // ── main loop ───────────────────────────────────────────────
     const tick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       for (const p of particles) {
+        // Vector from cursor to particle
+        const dx   = p.x - mouse.x;
+        const dy   = p.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Build the "desired" velocity: base drift + repulsion if close
+        let desiredVx = p.ox;
+        let desiredVy = p.oy;
+
+        if (dist < REPEL_RADIUS && dist > 0) {
+          // Inversely proportional: strongest at centre, zero at edge
+          const force   = (REPEL_RADIUS - dist) / REPEL_RADIUS;
+          desiredVx += (dx / dist) * force * MAX_SPEED;
+          desiredVy += (dy / dist) * force * MAX_SPEED;
+        }
+
+        // Ease current velocity toward desired — this is what makes the
+        // motion feel alive rather than mechanical
+        p.vx += (desiredVx - p.vx) * EASE;
+        p.vy += (desiredVy - p.vy) * EASE;
+
+        // Hard-cap so nothing ever looks startled
+        const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (spd > MAX_SPEED) {
+          p.vx = (p.vx / spd) * MAX_SPEED;
+          p.vy = (p.vy / spd) * MAX_SPEED;
+        }
+
+        // Move
         p.x += p.vx;
         p.y += p.vy;
-        // Wrap around edges seamlessly
-        if (p.x < -4) p.x = canvas.width + 4;
-        else if (p.x > canvas.width + 4) p.x = -4;
-        if (p.y < -4) p.y = canvas.height + 4;
+
+        // Seamless edge wrap
+        if (p.x < -4)              p.x = canvas.width  + 4;
+        else if (p.x > canvas.width  + 4) p.x = -4;
+        if (p.y < -4)              p.y = canvas.height + 4;
         else if (p.y > canvas.height + 4) p.y = -4;
 
+        // Draw
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        // cream-white tint to stay coherent with the design system
-        ctx.fillStyle = `rgba(232,224,212,${p.a})`;
+        ctx.fillStyle = p.color;
         ctx.fill();
       }
+
       raf = requestAnimationFrame(tick);
+    };
+
+    // ── event handlers ──────────────────────────────────────────
+    // Attach to the section (parent) so the repulsion works even when
+    // the cursor is hovering over hero text or the funnel diagram
+    const section = canvas.parentElement;
+
+    const onMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    };
+
+    const onMouseLeave = () => {
+      // Park the cursor off-canvas — particles drift back on their own
+      mouse.x = -9999;
+      mouse.y = -9999;
+    };
+
+    const onResize = () => {
+      resize();
+      for (const p of particles) {
+        if (p.x > canvas.width)  p.x = Math.random() * canvas.width;
+        if (p.y > canvas.height) p.y = Math.random() * canvas.height;
+      }
     };
 
     resize();
     initParticles();
     tick();
 
-    const onResize = () => {
-      resize();
-      // Redistribute particles so none cluster at old edges
-      for (const p of particles) {
-        if (p.x > canvas.width)  p.x = Math.random() * canvas.width;
-        if (p.y > canvas.height) p.y = Math.random() * canvas.height;
-      }
-    };
-    window.addEventListener("resize", onResize);
+    section.addEventListener("mousemove",  onMouseMove);
+    section.addEventListener("mouseleave", onMouseLeave);
+    window.addEventListener("resize",      onResize);
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
+      section.removeEventListener("mousemove",  onMouseMove);
+      section.removeEventListener("mouseleave", onMouseLeave);
+      window.removeEventListener("resize",      onResize);
     };
   }, []);
 
@@ -840,7 +920,7 @@ const ParticleCanvas = () => {
         width: "100%",
         height: "100%",
         display: "block",
-        pointerEvents: "none",
+        pointerEvents: "none", // hero content stays fully clickable
         zIndex: 0,
       }}
     />
