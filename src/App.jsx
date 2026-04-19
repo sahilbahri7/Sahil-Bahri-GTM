@@ -786,19 +786,19 @@ const HeroParticles = () => {
     const REPEL_RADIUS = 130;
     const MAX_SPEED    = 3.5;
     const EASE         = 0.025;
-    const PILL_W       = 38;
-    const PILL_H       = 16;
-    const PILL_R       = 8;
-    const FADE_IN      = 1500;  // ms
+    const PILL_W       = 28;    // Change 2: 38 → 28
+    const PILL_H       = 12;    // Change 2: 16 → 12
+    const PILL_R       = 6;     // Change 2: 8 → 6
+    const FADE_IN      = 2500;  // Change 7: 1500 → 2500 ms
     const FADE_OUT     = 1000;  // ms
 
     // Five GTM stage types — colours match CSS variables
     const TYPES = [
-      { label: "SIGNAL", color: "rgba(91,143,168,0.55)",  count: 20 },
-      { label: "LEAD",   color: "rgba(124,111,160,0.55)", count: 18 },
-      { label: "MQL",    color: "rgba(196,162,101,0.55)", count: 16 },
-      { label: "SQL",    color: "rgba(107,158,111,0.55)", count: 14 },
-      { label: "OPP",    color: "rgba(232,224,212,0.3)",  count: 12 },
+      { label: "SIGNAL", color: "rgba(91,143,168,0.28)",  count: 10 }, // Change 1 & 3
+      { label: "LEAD",   color: "rgba(124,111,160,0.26)", count: 9  }, // Change 1 & 3
+      { label: "MQL",    color: "rgba(196,162,101,0.30)", count: 8  }, // Change 1 & 3
+      { label: "SQL",    color: "rgba(107,158,111,0.24)", count: 7  }, // Change 1 & 3
+      { label: "OPP",    color: "rgba(232,224,212,0.18)", count: 4  }, // Change 1 & 3
     ];
 
     let raf;
@@ -827,7 +827,7 @@ const HeroParticles = () => {
 
     const makeParticle = (type) => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 0.1 + Math.random() * 0.2;   // 0.1 – 0.3 px/frame
+      const speed = 0.04 + Math.random() * 0.08;  // Change 6: 0.1–0.3 → 0.04–0.12 px/frame
       const ox = Math.cos(angle) * speed;
       const oy = Math.sin(angle) * speed;
       return {
@@ -895,6 +895,33 @@ const HeroParticles = () => {
         const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
         if (spd > MAX_SPEED) { p.vx = (p.vx / spd) * MAX_SPEED; p.vy = (p.vy / spd) * MAX_SPEED; }
 
+        // ── exclusion zone bounce (Changes 4 & 5) ──
+        // Zone A: left hero text column — x: 0–55%, y: 5%–85%
+        const zA_x1 = 0,                      zA_x2 = canvas.width  * 0.55;
+        const zA_y1 = canvas.height * 0.05,   zA_y2 = canvas.height * 0.85;
+        // Zone B: right funnel diagram — x: 68%–100%, y: 8%–92%
+        const zB_x1 = canvas.width  * 0.68,   zB_x2 = canvas.width;
+        const zB_y1 = canvas.height * 0.08,   zB_y2 = canvas.height * 0.92;
+
+        const inZone = (px, py, x1, y1, x2, y2) => px > x1 && px < x2 && py > y1 && py < y2;
+
+        if (inZone(p.x, p.y, zA_x1, zA_y1, zA_x2, zA_y2)) {
+          // Steer away from whichever boundary the particle crossed
+          if (p.x < zA_x2 && p.vx < 0) p.vx = Math.abs(p.vx);  // hit left wall — push right
+          if (p.x > zA_x1 && p.vx > 0 && p.x < zA_x2) p.vx = -Math.abs(p.vx); // inside — push toward right edge
+          // Simplest reliable approach: reverse toward nearest horizontal boundary
+          const distLeft  = p.x - zA_x1;
+          const distRight = zA_x2 - p.x;
+          if (distRight < distLeft) { p.vx = Math.abs(p.ox); p.ox = Math.abs(p.ox); }
+          else                      { p.vx = -Math.abs(p.ox); p.ox = -Math.abs(p.ox); }
+        }
+        if (inZone(p.x, p.y, zB_x1, zB_y1, zB_x2, zB_y2)) {
+          const distLeft  = p.x - zB_x1;
+          const distRight = zB_x2 - p.x;
+          if (distLeft < distRight) { p.vx = -Math.abs(p.ox); p.ox = -Math.abs(p.ox); }
+          else                      { p.vx = Math.abs(p.ox); p.ox = Math.abs(p.ox); }
+        }
+
         // ── move + edge wrap ──
         p.x += p.vx;
         p.y += p.vy;
@@ -910,7 +937,7 @@ const HeroParticles = () => {
         ctx.fillStyle = p.type.color;
         ctx.fill();
         ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.font = "300 7px 'IBM Plex Mono', monospace";
+        ctx.font = "300 6px 'IBM Plex Mono', monospace";  // Change 2: 7px → 6px
         ctx.textAlign    = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(p.type.label, p.x, p.y);
