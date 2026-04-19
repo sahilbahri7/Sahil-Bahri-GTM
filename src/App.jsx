@@ -351,6 +351,20 @@ img,svg{max-width:100%;height:auto}
   /* Disable heavy translate hover on mobile (touch) */
   [style*="transform: translateY(-3px)"]{transform:none !important}
 }
+/* ── Scroll-reveal initial hidden states ──────────────────────────────────
+   The IntersectionObserver fires the CSS animation; these rules keep
+   elements invisible until it does. animation-fill-mode:both then locks
+   the final visible state so elements never re-hide on scroll-up.
+   ──────────────────────────────────────────────────────────────────────── */
+[data-reveal]{opacity:0}
+[data-reveal="fadeUp"]{transform:translateY(24px)}
+[data-reveal="slideInUp"]{transform:translateY(18px)}
+[data-reveal="scaleIn"]{transform:scale(0.7)}
+@media(max-width:767px){
+  [data-reveal="fadeUp"],[data-reveal="slideInUp"]{transform:translateY(12px)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+}
 `;
 const I={dash:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>,users:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,folder:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,doc:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,target:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,check:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="20 6 9 17 4 12"/></svg>,plus:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,edit:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,trash:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,x:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,back:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,send:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,lock:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,copy:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,upload:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,search:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,activity:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,star:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,settings:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,logout:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,ai:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>,arrow:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>,menu:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="16" y2="16"/></svg>,down:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="6 9 12 15 18 9"/></svg>,play:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>};
 const Icon=({name,size=18})=><span style={{display:"inline-flex",width:size,height:size,flexShrink:0}}>{I[name]}</span>;
@@ -383,7 +397,7 @@ const LeadFunnel = () => {
         {stages.map((s, i) => {
           const isActive = active === s.id;
           return (
-            <div key={s.id} style={{ position: "relative" }}>
+            <div key={s.id} data-reveal="slideInUp" data-delay={String((0.1 * i).toFixed(2))} style={{ position: "relative" }}>
               {/* Connector arrow */}
               {i > 0 && <div style={{ position: "absolute", left: -6, top: 52, zIndex: 2 }}><svg width="12" height="16" viewBox="0 0 12 16"><path d="M0 3 L8 8 L0 13" fill="none" stroke={stages[i-1].color} strokeWidth="1.5" opacity="0.4"/></svg></div>}
               <div onClick={() => setActive(isActive ? null : s.id)} style={{
@@ -448,11 +462,10 @@ const HeroFunnel = () => {
         ))}
       </div>
       {stages.map((s, i) => (
-        <motion.div
+        <div
           key={s.label}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut", delay: 0.9 + i * 0.15 }}
+          data-reveal="slideInUp"
+          data-delay={String((0.5 + i * 0.15).toFixed(2))}
           style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, justifyContent: "flex-start" }}
         >
           <div style={{ width: `${s.w}%`, padding: "8px 14px", background: `${s.color}12`, border: `1px solid ${s.color}35`, borderRadius: 7, display: "flex", justifyContent: "space-between", alignItems: "center", backdropFilter: "blur(4px)" }}>
@@ -463,14 +476,11 @@ const HeroFunnel = () => {
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, opacity: 0.8, animation: `flowPulse ${1.4 + i * 0.25}s ease-in-out ${i * 0.2}s infinite` }} />
           </div>
           {i < stages.length - 1 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut", delay: 1.75 }}
+            <div
               style={{ width: 1, flex: 1, background: `linear-gradient(180deg, ${s.color}50, ${stages[i + 1].color}40)`, animation: `connectorPulse 2s ease-in-out ${i * 0.3}s infinite`, minHeight: 12 }}
             />
           )}
-        </motion.div>
+        </div>
       ))}
       <div style={{ position: "absolute", bottom: -24, left: 0, right: 0, textAlign: "center" }}>
         <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Raw Signals → Pipeline</span>
@@ -928,6 +938,29 @@ const ParticleCanvas = () => {
 };
 
 // ============================================================
+// SCROLL REVEAL — wire up IntersectionObserver for every [data-reveal] el
+// ============================================================
+const applyScrollReveal = (root) => {
+  const isMobile = window.innerWidth < 768;
+  const dur = isMobile ? "0.5s" : "0.65s";
+  const observers = [];
+  root.querySelectorAll("[data-reveal]:not([data-revealed])").forEach((el) => {
+    const anim  = el.dataset.reveal;
+    const delay = el.dataset.delay || "0";
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.setAttribute("data-revealed", "");        // lock revealed so it never re-hides
+        el.style.animation = `${anim} ${dur} ease-out ${delay}s both`;
+        obs.disconnect();
+      }
+    }, { threshold: 0.15 });
+    obs.observe(el);
+    observers.push(obs);
+  });
+  return () => observers.forEach(o => o.disconnect());
+};
+
+// ============================================================
 // STAT COUNTER — counts up from 0 to target on scroll-into-view
 // ============================================================
 const StatCounter = ({ value, label }) => {
@@ -986,6 +1019,14 @@ const PortfolioPage = ({ data, onLogin }) => {
   const categories = ["all", ...new Set(CASE_STUDIES.map(c => c.category))];
   const filteredCases = filterCat === "all" ? CASE_STUDIES : CASE_STUDIES.filter(c => c.category === filterCat);
 
+  // Scroll-reveal: re-runs when filter changes so newly mounted case-study
+  // rows also get picked up; data-revealed guards already-animated elements.
+  const revealRef = useRef(null);
+  useEffect(() => {
+    if (!revealRef.current) return;
+    return applyScrollReveal(revealRef.current);
+  }, [filterCat]);
+
   const submitContact = async () => {
     if (!cForm.name || !cForm.email || !cForm.message) return;
     setCState("loading");
@@ -1007,7 +1048,7 @@ const PortfolioPage = ({ data, onLogin }) => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ink)" }}>
+    <div ref={revealRef} style={{ minHeight: "100vh", background: "var(--ink)" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, opacity: 0.03, background: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundSize: "128px" }} />
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "20px 64px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(11,11,11,0.88)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border)" }}>
@@ -1049,7 +1090,7 @@ const PortfolioPage = ({ data, onLogin }) => {
             </div>
           </div>
           {/* Right: animated funnel */}
-          <div style={{ width: 420, animation: "fadeIn 1.2s ease-out .4s both", flexShrink: 0 }}>
+          <div style={{ width: 420, flexShrink: 0 }}>
             <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 1.8s ease-in-out infinite" }} />
               GTM Signal Flow
@@ -1068,7 +1109,7 @@ const PortfolioPage = ({ data, onLogin }) => {
         <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 64 }}>
           <div>
             <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>About</div>
-            <h2 style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.15, marginBottom: 24 }}>The System</h2>
+            <h2 data-reveal="fadeUp" data-delay="0.1" style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.15, marginBottom: 24 }}>The System</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 24 }}>{["HubSpot RevOps", "HubSpot Sales", "Salesforce Admin"].map(c => (<span key={c} style={{ fontFamily: "var(--mono)", fontSize: 11, padding: "5px 12px", borderRadius: 4, border: "1px solid var(--border)", color: "var(--cream-mute)", letterSpacing: "0.05em" }}>{c}</span>))}</div>
             <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Core Stack</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 8, overflow: "hidden" }}>{["HubSpot", "Braze", "Amplitude", "ZoomInfo", "Apollo", "Salesforce", "Make.com", "MindStudio"].map(t => (<div key={t} style={{ padding: "10px 12px", background: "var(--ink-2)", fontFamily: "var(--mono)", fontSize: 13, color: "var(--cream-dim)" }}>{t}</div>))}</div>
@@ -1083,7 +1124,7 @@ const PortfolioPage = ({ data, onLogin }) => {
                 { icon: "ai", color: "var(--violet)", label: "AI Automation", desc: "No-code AI agents that cut admin work by 60%+ and accelerate pipeline velocity end-to-end." },
                 { icon: "dash", color: "var(--success)", label: "Lifecycle Marketing", desc: "Behaviour-triggered campaigns from first touch through expansion and retention — zero gaps." },
               ].map((cap, ci) => (
-                <div key={ci} style={{ padding: "28px 24px", background: "var(--ink-2)", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div key={ci} data-reveal="scaleIn" data-delay={String((0.1 * ci).toFixed(2))} style={{ padding: "28px 24px", background: "var(--ink-2)", display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 8, background: `${cap.color}12`, border: `1px solid ${cap.color}28`, display: "flex", alignItems: "center", justifyContent: "center", color: cap.color, flexShrink: 0 }}>
                       <Icon name={cap.icon} size={16} />
@@ -1095,17 +1136,17 @@ const PortfolioPage = ({ data, onLogin }) => {
               ))}
             </div>
             {/* Services inline */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginTop: 2 }}>{ps.services.map((svc, i) => (<div key={svc.id} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginTop: 2 }}>{ps.services.map((svc, i) => (<div key={svc.id} data-reveal="fadeUp" data-delay={String((0.12 * i).toFixed(2))} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
           </div>
         </div>
       </section>
       {/* Lead Funnel (ENLARGED) */}
       <section id="funnel" style={{ padding: "100px 40px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, padding: "0 24px" }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>The Revenue Funnel</h2></div>
+          <div data-reveal="fadeUp"><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>The Revenue Funnel</h2></div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 280, textAlign: "right", lineHeight: 1.6 }}>FROM RAW SIGNALS TO CLOSED REVENUE</span>
         </div>
-        <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 700, fontWeight: 300, padding: "0 24px" }}>This is the lead architecture we design for every engagement. Each stage has defined automation rules, manual quality gates, and clear handoff criteria between teams.</p>
+        <p data-reveal="fadeUp" data-delay="0.15" style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 700, fontWeight: 300, padding: "0 24px" }}>This is the lead architecture we design for every engagement. Each stage has defined automation rules, manual quality gates, and clear handoff criteria between teams.</p>
         <div style={{ background: "var(--ink-2)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--sky), var(--violet), var(--amber), var(--sage), var(--rose), var(--success))", opacity: 0.4 }} />
           <LeadFunnel />
@@ -1114,7 +1155,7 @@ const PortfolioPage = ({ data, onLogin }) => {
       {/* Interactive Diagnostics */}
       <section id="workflows" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive Diagnostics</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>See the Thinking in Action</h2></div>
+          <div data-reveal="fadeUp"><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive Diagnostics</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>See the Thinking in Action</h2></div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 320, textAlign: "right", lineHeight: 1.6 }}>YOUR NUMBERS / INSTANT INSIGHTS</span>
         </div>
         <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 800, fontWeight: 300 }}>Plug in your real numbers. Get instant visual diagnostics. No sign-up, no AI fluff. Just the math and frameworks we use with every client.</p>
@@ -1126,7 +1167,7 @@ const PortfolioPage = ({ data, onLogin }) => {
             { title: "Automation ROI Calculator", sub: "What automation saves?", color: "var(--success)", icon: "03" },
             { title: "Stack Integration Map", sub: "Automations you're missing?", color: "var(--violet)", icon: "04" },
           ].map((tab, i) => (
-            <div key={i} onClick={() => setActiveTool(i)}
+            <div key={i} data-reveal="scaleIn" data-delay={String((0.12 * i).toFixed(2))} onClick={() => setActiveTool(i)}
               onMouseEnter={e => { if (activeTool !== i) { e.currentTarget.style.borderColor = tab.color + "35"; e.currentTarget.style.background = `${tab.color}06`; }}}
               onMouseLeave={e => { if (activeTool !== i) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--ink)"; }}}
               style={{ padding: "26px 24px", borderRadius: 16, cursor: "pointer", transition: "all .25s", background: activeTool === i ? `linear-gradient(145deg, ${tab.color}14, ${tab.color}06)` : "var(--ink)", border: `1.5px solid ${activeTool === i ? tab.color + "55" : "var(--border)"}`, transform: activeTool === i ? "translateY(-3px)" : "none", boxShadow: activeTool === i ? `0 12px 40px ${tab.color}18` : "none" }}>
@@ -1168,12 +1209,12 @@ const PortfolioPage = ({ data, onLogin }) => {
       {/* Case Studies */}
       <section id="work" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After We Stepped In</h2></div>
+          <div data-reveal="fadeUp"><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After We Stepped In</h2></div>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 32, flexWrap: "wrap" }}>{categories.map(c => (<button key={c} onClick={() => setFilterCat(c)} style={{ padding: "8px 20px", borderRadius: 8, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s", background: filterCat === c ? "rgba(196,162,101,0.1)" : "transparent", border: filterCat === c ? "1px solid rgba(196,162,101,0.25)" : "1px solid var(--border)", color: filterCat === c ? "var(--amber)" : "var(--cream-mute)" }}>{c}</button>))}</div>
         <div style={{ display: "grid", gap: 2 }}>{filteredCases.map((cs, i) => {
           const isExp = expandedCase === cs.id;
-          return (<div key={cs.id} style={{ background: isExp ? "var(--ink-2)" : hov === cs.id ? "var(--ink-2)" : "var(--ink)", transition: "background .3s", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
+          return (<div key={cs.id} data-reveal="fadeUp" data-delay={String((0.1 * i).toFixed(2))} style={{ background: isExp ? "var(--ink-2)" : hov === cs.id ? "var(--ink-2)" : "var(--ink)", transition: "background .3s", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
             <div style={{ padding: "28px 36px", display: "grid", gridTemplateColumns: "50px 1fr auto", gap: 24, alignItems: "center", cursor: "pointer" }} onClick={() => setExpandedCase(isExp ? null : cs.id)} onMouseEnter={() => setHov(cs.id)} onMouseLeave={() => setHov(null)}>
               <span style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, color: isExp ? "var(--amber)" : "var(--ink-4)", fontStyle: "italic", lineHeight: 1, transition: "color .3s" }}>{num(i + 1)}</span>
               <div>
@@ -1229,9 +1270,9 @@ const PortfolioPage = ({ data, onLogin }) => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
           {/* Left — headline + bullets */}
           <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>Get in Touch</div>
-            <h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.12, marginBottom: 28, maxWidth: 480 }}>Let's build your revenue system.</h2>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, fontWeight: 300, marginBottom: 40, maxWidth: 420 }}>Tell us about your GTM challenges. We'll come back with a clear perspective on what's worth fixing and how we'd approach it.</p>
+            <div data-reveal="fadeUp" style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>Get in Touch</div>
+            <h2 data-reveal="fadeUp" data-delay="0.15" style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.12, marginBottom: 28, maxWidth: 480 }}>Let's build your revenue system.</h2>
+            <p data-reveal="fadeUp" data-delay="0.25" style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, fontWeight: 300, marginBottom: 40, maxWidth: 420 }}>Tell us about your GTM challenges. We'll come back with a clear perspective on what's worth fixing and how we'd approach it.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {[
                 { label: "CRM implementation or migration", color: "var(--sky)" },
@@ -1239,7 +1280,7 @@ const PortfolioPage = ({ data, onLogin }) => {
                 { label: "Lead scoring & pipeline automation", color: "var(--violet)" },
                 { label: "AI agents & RevOps architecture", color: "var(--success)" },
               ].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div key={i} data-reveal="scaleIn" data-delay={String((0.08 * i).toFixed(2))} style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
                   <span style={{ fontSize: 14, color: "var(--cream-dim)", fontWeight: 300 }}>{item.label}</span>
                 </div>
@@ -1251,7 +1292,7 @@ const PortfolioPage = ({ data, onLogin }) => {
             </div>
           </div>
           {/* Right — form */}
-          <div style={{ background: "var(--ink-2)", border: "1px solid var(--border-h)", borderRadius: 16, padding: "40px", position: "relative", overflow: "hidden" }}>
+          <div data-reveal="fadeUp" data-delay="0.3" style={{ background: "var(--ink-2)", border: "1px solid var(--border-h)", borderRadius: 16, padding: "40px", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--amber), var(--violet), var(--sky))", opacity: 0.5 }} />
             {cState === "success" ? (
               <div style={{ textAlign: "center", padding: "60px 0", animation: "fadeUp .4s ease-out" }}>
