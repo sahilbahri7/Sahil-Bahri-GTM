@@ -382,62 +382,203 @@ const Tabs=({tabs,active,onChange})=>(<div style={{display:"flex",gap:0,marginBo
 const AIButton=({label="Enhance with AI",onConfirm,content})=>{const[st,setSt]=useState("idle");const[prompt,setPrompt]=useState("Improve for clarity and strategic impact.");const[result,setResult]=useState("");const run=async()=>{setSt("loading");const r=await callAI(`${prompt}\n\nContent:\n${content}`);setResult(r);setSt("preview");};if(st==="idle")return <div style={{marginTop:8}}><Btn v="ai" size="sm" icon="ai" onClick={()=>setSt("editing")}>{label}</Btn></div>;if(st==="loading")return <div style={{padding:24,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block"}}/></div>;if(st==="editing")return(<div style={{marginTop:12,padding:16,background:"rgba(124,111,160,0.06)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:10}}><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} rows={2} style={{width:"100%",padding:10,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:6,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)",resize:"none"}}/><div style={{display:"flex",gap:8,marginTop:10}}><Btn v="ai" size="sm" onClick={run}>Run</Btn><Btn v="ghost" size="sm" onClick={()=>setSt("idle")}>Cancel</Btn></div></div>);return(<div style={{marginTop:12,padding:16,background:"rgba(107,158,111,0.06)",border:"1px solid rgba(107,158,111,0.15)",borderRadius:10}}><div style={{padding:14,background:"rgba(0,0,0,0.3)",borderRadius:6,color:"var(--cream-dim)",fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{result}</div><div style={{display:"flex",gap:8,marginTop:12}}><Btn size="sm" icon="check" onClick={()=>{onConfirm(result);setSt("idle");setResult("");}}>Accept</Btn><Btn v="ai" size="sm" onClick={run}>Retry</Btn><Btn v="ghost" size="sm" onClick={()=>{setSt("idle");setResult("");}}>Discard</Btn></div></div>);};
 
 // ============================================================
-// LEAD FUNNEL (ENLARGED, HOLISTIC)
+// REVENUE FUNNEL — cinematic accordion (desktop) / stacked (mobile)
 // ============================================================
 const LeadFunnel = () => {
-  const [active, setActive] = useState(null);
-  const stages = [
-    { id: "signals", label: "Raw Signals", sub: "Intent data, web behavior, third-party sources, referral networks", count: "10,000+", color: "#5B8FA8", pct: 100, details: ["Website visitor behavior tracking", "Third-party intent signal monitoring", "Content engagement and research activity", "Event and conference lead capture", "Syndicated content interaction data", "Referral and partner network inputs"] },
-    { id: "enriched", label: "Enriched Data", sub: "Verified contacts, firmographic profiles, ICP scoring", count: "4,200", color: "#7C6FA0", pct: 72, details: ["Contact verification and deduplication", "Company firmographic enrichment", "Technology stack identification", "Organizational structure mapping", "Email and phone verification", "ICP fit scoring and segmentation"] },
-    { id: "leads", label: "Actioning Leads", sub: "Pipeline entry, sequence enrollment, outreach activation", count: "1,800", color: "#C4A265", pct: 52, details: ["Lead enters active pipeline", "Auto-assignment via territory rules", "Quality review and acceptance gate", "Enrolled in structured outreach sequence", "AI-personalized messaging generated", "Multi-channel touchpoints scheduled"] },
-    { id: "mql", label: "MQLs", sub: "Score-qualified, marketing-validated, sales-ready", count: "680", color: "#7B8F7E", pct: 36, details: ["Behavioral score threshold crossed", "Lifecycle stage updated to qualified", "Deal record auto-created for tracking", "Territory-based ownership assigned", "Outreach status moves to active", "Marketing classification applied"] },
-    { id: "sql", label: "SQLs", sub: "Sales-accepted, discovery completed, budget confirmed", count: "240", color: "#A8726F", pct: 22, details: ["Prospect engaged via reply or call", "Discovery conversation completed", "Qualification framework applied", "Business case and pain validated", "Deal formally created with value", "Multi-stakeholder engagement begins"] },
-    { id: "opp", label: "Opportunities", sub: "Active pipeline, deal management, forecasting", count: "85", color: "#6B9E6F", pct: 12, details: ["Deal linked to full account record", "Qualification fields completed", "Close timeline and value assigned", "Pipeline managed in deal board", "Stakeholder research ongoing", "Revenue forecasting activated"] },
+  const STAGES = [
+    { id:"signals",  label:"Raw Signals",      desc:"Intent data, web behavior, third-party sources, referral networks",    count:"10,000+", pct:100,  color:"#5B8FA8",               bullets:["Intent signal captured","Source attributed","Deduplication check"] },
+    { id:"enriched", label:"Enriched Data",     desc:"Verified contacts, firmographic profiles, ICP scoring",               count:"4,200",   pct:42,   color:"#7C6FA0",               bullets:["ICP fit scored","Firmographic enriched","Contact verified"] },
+    { id:"leads",    label:"Actioning Leads",   desc:"Pipeline entry, sequence enrollment, outreach activation",            count:"1,800",   pct:18,   color:"#C4A265",               bullets:["Sequence enrolled","Rep assigned","SLA clock started"] },
+    { id:"mql",      label:"MQLs",              desc:"Score-qualified, marketing-validated, sales-ready",                  count:"680",     pct:6.8,  color:"rgba(196,162,101,0.78)",bullets:["Score threshold passed","Marketing approved","Handoff triggered"] },
+    { id:"sql",      label:"SQLs",              desc:"Sales-accepted, discovery completed, budget confirmed",              count:"240",     pct:2.4,  color:"#6B9E6F",               bullets:["Discovery call booked","Budget confirmed","Sales accepted"] },
+    { id:"opp",      label:"Opportunities",     desc:"Active pipeline, deal management, forecasting",                      count:"85",      pct:0.85, color:"#E8E0D4",               bullets:["Deal created","Forecast category set","Close plan active"] },
   ];
-  return (
-    <div style={{ padding: "12px 0" }}>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${stages.length}, 1fr)`, gap: 8 }}>
-        {stages.map((s, i) => {
-          const isActive = active === s.id;
+
+  const [activeStage,    setActiveStage]    = useState(0);
+  const [userTookControl,setUserTookControl] = useState(false);
+  const [isMobile,       setIsMobile]       = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const [mobileExpanded, setMobileExpanded] = useState(0);
+  const sectionRef  = useRef(null);
+  const timerRef    = useRef(null);
+
+  // Responsive check
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Auto-advance: fires every 5s after section enters view; stops on first manual click
+  useEffect(() => {
+    if (userTookControl || isMobile) return;
+    const el = sectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        obs.disconnect();
+        timerRef.current = setInterval(() => setActiveStage(p => (p + 1) % STAGES.length), 5000);
+      }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => { obs.disconnect(); clearInterval(timerRef.current); };
+  }, [userTookControl, isMobile]);
+
+  const goTo = (idx) => {
+    setActiveStage(idx);
+    setUserTookControl(true);
+    clearInterval(timerRef.current);
+  };
+
+  /* ── MOBILE: stacked expandable rows ── */
+  if (isMobile) {
+    return (
+      <div style={{ padding: "0 20px" }}>
+        {STAGES.map((s, i) => {
+          const open = mobileExpanded === i;
           return (
-            <div key={s.id} data-reveal="slideInUp" data-delay={String((0.1 * i).toFixed(2))} style={{ position: "relative" }}>
-              {/* Connector arrow */}
-              {i > 0 && <div style={{ position: "absolute", left: -6, top: 52, zIndex: 2 }}><svg width="12" height="16" viewBox="0 0 12 16"><path d="M0 3 L8 8 L0 13" fill="none" stroke={stages[i-1].color} strokeWidth="1.5" opacity="0.4"/></svg></div>}
-              <div onClick={() => setActive(isActive ? null : s.id)} style={{
-                padding: "24px 18px", borderRadius: 14, cursor: "pointer", transition: "all .3s", minHeight: isActive ? "auto" : 200,
-                background: isActive ? `${s.color}12` : "var(--ink)", border: `1px solid ${isActive ? s.color + "40" : "var(--border)"}`,
-                animation: isActive ? "nodeGlow 2.5s ease-in-out infinite" : "none",
-              }}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = s.color + "30"; e.currentTarget.style.background = `${s.color}08`; }}}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--ink)"; }}}>
-                <div style={{ height: 3, background: "var(--border)", borderRadius: 2, marginBottom: 18, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${s.pct}%`, background: s.color, borderRadius: 2, transition: "width 1s" }} />
+            <div key={s.id} style={{ borderBottom: "1px solid var(--border)" }}>
+              <div onClick={() => setMobileExpanded(open ? -1 : i)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 0", cursor:"pointer" }}>
+                <div style={{ display:"flex", gap:14, alignItems:"center" }}>
+                  <span style={{ fontFamily:"var(--mono)", fontSize:10, color:s.color, letterSpacing:"0.12em" }}>{num(i+1)}</span>
+                  <span style={{ fontFamily:"var(--serif)", fontSize:18, fontStyle:"italic", color:"var(--cream)" }}>{s.label}</span>
                 </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: s.color, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>Stage {num(i + 1)}</div>
-                <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--cream)", marginBottom: 8, lineHeight: 1.2 }}>{s.label}</div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", lineHeight: 1.6, marginBottom: 14 }}>{s.sub}</div>
-                <div style={{ fontFamily: "var(--serif)", fontSize: 42, fontStyle: "italic", color: s.color, lineHeight: 1 }}>{s.count}</div>
-                {isActive && (
-                  <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${s.color}20`, animation: "fadeUp .3s ease-out" }}>
-                    {s.details.map((d, di) => (
-                      <div key={di} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 7 }}>
-                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: s.color, marginTop: 6, flexShrink: 0, opacity: 0.7 }} />
-                        <span style={{ fontSize: 12, color: "var(--cream-dim)", lineHeight: 1.5 }}>{d}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <span style={{ fontFamily:"var(--mono)", fontSize:12, color:s.color }}>{s.count}</span>
+              </div>
+              <div style={{ maxHeight: open ? 300 : 0, overflow:"hidden", transition:"max-height 0.4s ease-out" }}>
+                <div style={{ padding:"0 0 20px" }}>
+                  <p style={{ fontSize:14, color:"var(--cream-mute)", lineHeight:1.7, marginBottom:14 }}>{s.desc}</p>
+                  {s.bullets.map((b, bi) => (
+                    <div key={bi} style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8 }}>
+                      <div style={{ width:4, height:4, borderRadius:"50%", background:"var(--amber)", flexShrink:0 }} />
+                      <span style={{ fontSize:13, color:"var(--cream-dim)" }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, padding: "12px 4px" }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Click any stage to expand</span>
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 2s ease-in-out infinite" }} />
-          <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.1em" }}>LIVE SIGNAL FLOW</span>
-        </div>
+    );
+  }
+
+  /* ── DESKTOP: cinematic accordion ── */
+  const s = STAGES[activeStage];
+  return (
+    <div ref={sectionRef}>
+      {/* Accordion strip */}
+      <div style={{ display:"flex", height:"clamp(480px, calc(100vh - 300px), 680px)", borderTop:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }}>
+        {STAGES.map((stage, i) => {
+          const isActive = activeStage === i;
+          return (
+            <div
+              key={stage.id}
+              onClick={() => !isActive && goTo(i)}
+              style={{
+                flexGrow: isActive ? 6 : 0.8,
+                flexShrink: 0,
+                flexBasis: 0,
+                transition: "flex-grow 350ms cubic-bezier(0.25,0.46,0.45,0.94), background 300ms",
+                borderLeft: i === 0 ? "none" : `1px solid ${stage.color}${isActive ? "28" : "18"}`,
+                background: isActive ? `${stage.color}07` : "transparent",
+                cursor: isActive ? "default" : "pointer",
+                overflow: "hidden",
+                position: "relative",
+              }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = `${stage.color}05`; e.currentTarget.style.borderColor = stage.color + "35"; }}}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = stage.color + "18"; }}}
+            >
+              {isActive ? (
+                /* Active panel content — key on activeStage forces remount → re-runs animations */
+                <div key={`panel-${activeStage}`} style={{ padding:"48px 52px", height:"100%", boxSizing:"border-box", display:"flex", flexDirection:"column", justifyContent:"space-between", minWidth:0 }}>
+                  {/* Top: label + heading + rule + desc */}
+                  <div>
+                    <div style={{ fontFamily:"var(--mono)", fontSize:11, color:stage.color, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:18, animation:"fadeUp 0.3s ease-out both" }}>
+                      STAGE {num(i + 1)}
+                    </div>
+                    <h2 style={{ fontFamily:"var(--serif)", fontSize:"clamp(36px,3.5vw,56px)", fontWeight:400, fontStyle:"italic", color:"var(--cream)", lineHeight:1.05, margin:"0 0 22px", animation:"fadeUp 0.32s ease-out 0.05s both" }}>
+                      {stage.label}
+                    </h2>
+                    <div style={{ height:1, background:stage.color, opacity:0.3, marginBottom:22, animation:"fadeIn 0.3s ease-out 0.1s both" }} />
+                    <p style={{ fontSize:16, color:"var(--cream-dim)", lineHeight:1.7, maxWidth:480, margin:0, fontWeight:300, animation:"fadeUp 0.3s ease-out 0.14s both" }}>
+                      {stage.desc}
+                    </p>
+                  </div>
+                  {/* Bottom: volume + bar + bullets */}
+                  <div>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:18, marginBottom:20, animation:"fadeUp 0.3s ease-out 0.18s both" }}>
+                      <span style={{ fontFamily:"var(--serif)", fontSize:"clamp(52px,5vw,80px)", fontStyle:"italic", color:stage.color, lineHeight:1 }}>
+                        {stage.count}
+                      </span>
+                      <span style={{ fontFamily:"var(--mono)", fontSize:9, color:"var(--cream-mute)", letterSpacing:"0.12em", textTransform:"uppercase", lineHeight:1.6 }}>
+                        RECORDS<br/>AT THIS<br/>STAGE
+                      </span>
+                    </div>
+                    {/* Progress bar */}
+                    <div style={{ marginBottom:28, animation:"fadeIn 0.3s ease-out 0.2s both" }}>
+                      <div style={{ height:2, background:"rgba(232,224,212,0.07)", borderRadius:2, overflow:"hidden", marginBottom:6 }}>
+                        <div style={{ height:"100%", background:stage.color, borderRadius:2, "--bar-w":`${Math.max(stage.pct, 1)}%`, animation:"barGrow 0.8s ease-out 0.62s both" }} />
+                      </div>
+                      <span style={{ fontFamily:"var(--mono)", fontSize:9, color:"var(--cream-mute)", letterSpacing:"0.1em" }}>
+                        {stage.pct >= 1 ? `${stage.pct}%` : "<1%"} OF TOTAL SIGNAL VOLUME
+                      </span>
+                    </div>
+                    {/* Bullets */}
+                    <div style={{ display:"flex", gap:24, flexWrap:"wrap" }}>
+                      {stage.bullets.map((b, bi) => (
+                        <div key={bi} style={{ display:"flex", gap:8, alignItems:"center", animation:`fadeUp 0.3s ease-out ${0.22 + bi * 0.04}s both` }}>
+                          <div style={{ width:5, height:5, borderRadius:"50%", background:"var(--amber)", flexShrink:0 }} />
+                          <span style={{ fontFamily:"var(--mono)", fontSize:11, color:"var(--cream-dim)", letterSpacing:"0.04em" }}>{b}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Collapsed panel */
+                <div style={{ height:"100%", display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center", padding:"32px 0" }}>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, writingMode:"vertical-rl", transform:"rotate(180deg)" }}>
+                    <span style={{ fontFamily:"var(--mono)", fontSize:10, color:stage.color, letterSpacing:"0.15em" }}>{num(i+1)}</span>
+                    <span style={{ fontFamily:"var(--sans)", fontSize:12, color:"var(--cream-mute)", whiteSpace:"nowrap" }}>{stage.label}</span>
+                  </div>
+                  <span style={{ fontFamily:"var(--mono)", fontSize:11, color:stage.color, writingMode:"vertical-rl", transform:"rotate(180deg)" }}>{stage.count}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Timeline dot nav */}
+      <div style={{ display:"flex", alignItems:"center", padding:"20px 52px" }}>
+        {STAGES.flatMap((stage, i) => {
+          const dot = (
+            <button
+              key={`dot-${i}`}
+              onClick={() => goTo(i)}
+              title={stage.label}
+              style={{
+                width: activeStage === i ? 10 : 8,
+                height: activeStage === i ? 10 : 8,
+                borderRadius:"50%",
+                background: activeStage === i ? "var(--amber)" : i < activeStage ? "var(--cream-mute)" : "transparent",
+                border: activeStage === i ? "none" : `1px solid ${i < activeStage ? "var(--cream-mute)" : "rgba(232,224,212,0.25)"}`,
+                cursor:"pointer",
+                padding:0,
+                flexShrink:0,
+                transition:"all 0.3s",
+                boxShadow: activeStage === i ? "0 0 8px rgba(196,162,101,0.5)" : "none",
+              }}
+            />
+          );
+          const line = i < STAGES.length - 1 ? (
+            <div
+              key={`line-${i}`}
+              style={{ flex:1, height:1, background: i < activeStage ? "rgba(232,224,212,0.25)" : "rgba(232,224,212,0.08)", transition:"background 0.3s" }}
+            />
+          ) : null;
+          return line ? [dot, line] : [dot];
+        })}
       </div>
     </div>
   );
@@ -1069,15 +1210,20 @@ const PortfolioPage = ({ data, onLogin }) => {
           </div>
         </div>
       </section>
-      {/* Lead Funnel (ENLARGED) */}
-      <section id="funnel" style={{ padding: "100px 40px", maxWidth: 1560, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, padding: "0 24px" }}>
-          <div data-reveal="fadeUp"><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>The Revenue Funnel</h2></div>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 280, textAlign: "right", lineHeight: 1.6 }}>FROM RAW SIGNALS TO CLOSED REVENUE</span>
+      {/* Revenue Funnel — cinematic full-width accordion */}
+      <section id="funnel" style={{ background: "var(--ink)", minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {/* Section header */}
+        <div style={{ padding: "80px 64px 40px", maxWidth: 1560, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+          <div data-reveal="fadeUp" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: 10 }}>Interactive</span>
+              <h2 style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", margin: 0 }}>The Revenue Funnel</h2>
+            </div>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase" }}>FROM RAW SIGNALS TO CLOSED REVENUE</span>
+          </div>
         </div>
-        <p data-reveal="fadeUp" data-delay="0.15" style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 700, fontWeight: 300, padding: "0 24px" }}>This is the lead architecture we design for every engagement. Each stage has defined automation rules, manual quality gates, and clear handoff criteria between teams.</p>
-        <div style={{ background: "var(--ink-2)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--sky), var(--violet), var(--amber), var(--sage), var(--rose), var(--success))", opacity: 0.4 }} />
+        {/* Full-width accordion */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <LeadFunnel />
         </div>
       </section>
