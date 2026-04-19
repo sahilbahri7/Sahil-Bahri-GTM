@@ -747,6 +747,94 @@ const StackMap = () => {
 // ============================================================
 // PORTFOLIO PAGE (Consulting Website)
 // ============================================================
+// ============================================================
+// PARTICLE CANVAS — hero background
+// ============================================================
+const ParticleCanvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const COUNT = 60;
+    let raf;
+    let particles = [];
+
+    const resize = () => {
+      // Use the parent's rendered size, not CSS 100%
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+
+    const initParticles = () => {
+      particles = Array.from({ length: COUNT }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        // slow drift — max ~0.35 px per frame at 60 fps
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r: Math.random() * 1.4 + 0.6,          // 0.6 – 2 px radius
+        a: Math.random() * 0.18 + 0.04,         // 0.04 – 0.22 opacity — never bright enough to distract
+      }));
+    };
+
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        // Wrap around edges seamlessly
+        if (p.x < -4) p.x = canvas.width + 4;
+        else if (p.x > canvas.width + 4) p.x = -4;
+        if (p.y < -4) p.y = canvas.height + 4;
+        else if (p.y > canvas.height + 4) p.y = -4;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        // cream-white tint to stay coherent with the design system
+        ctx.fillStyle = `rgba(232,224,212,${p.a})`;
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    resize();
+    initParticles();
+    tick();
+
+    const onResize = () => {
+      resize();
+      // Redistribute particles so none cluster at old edges
+      for (const p of particles) {
+        if (p.x > canvas.width)  p.x = Math.random() * canvas.width;
+        if (p.y > canvas.height) p.y = Math.random() * canvas.height;
+      }
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        display: "block",
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    />
+  );
+};
+
 const PortfolioPage = ({ data, onLogin }) => {
   const ps = data.portfolioSettings;
   const [expandedCase, setExpandedCase] = useState(null);
@@ -793,8 +881,9 @@ const PortfolioPage = ({ data, onLogin }) => {
         </div>
       </nav>
       {/* Hero */}
-      <section style={{ padding: "200px 64px 100px", maxWidth: 1560, margin: "0 auto", position: "relative" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 80, alignItems: "center" }}>
+      <section style={{ padding: "200px 64px 100px", maxWidth: 1560, margin: "0 auto", position: "relative", overflow: "hidden" }}>
+        <ParticleCanvas />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 80, alignItems: "center", position: "relative", zIndex: 1 }}>
           {/* Left: copy */}
           <div>
             <div style={{ animation: "fadeUp .8s ease-out" }}>
