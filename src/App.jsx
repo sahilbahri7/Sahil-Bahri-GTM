@@ -382,203 +382,166 @@ const Tabs=({tabs,active,onChange})=>(<div style={{display:"flex",gap:0,marginBo
 const AIButton=({label="Enhance with AI",onConfirm,content})=>{const[st,setSt]=useState("idle");const[prompt,setPrompt]=useState("Improve for clarity and strategic impact.");const[result,setResult]=useState("");const run=async()=>{setSt("loading");const r=await callAI(`${prompt}\n\nContent:\n${content}`);setResult(r);setSt("preview");};if(st==="idle")return <div style={{marginTop:8}}><Btn v="ai" size="sm" icon="ai" onClick={()=>setSt("editing")}>{label}</Btn></div>;if(st==="loading")return <div style={{padding:24,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block"}}/></div>;if(st==="editing")return(<div style={{marginTop:12,padding:16,background:"rgba(124,111,160,0.06)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:10}}><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} rows={2} style={{width:"100%",padding:10,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:6,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)",resize:"none"}}/><div style={{display:"flex",gap:8,marginTop:10}}><Btn v="ai" size="sm" onClick={run}>Run</Btn><Btn v="ghost" size="sm" onClick={()=>setSt("idle")}>Cancel</Btn></div></div>);return(<div style={{marginTop:12,padding:16,background:"rgba(107,158,111,0.06)",border:"1px solid rgba(107,158,111,0.15)",borderRadius:10}}><div style={{padding:14,background:"rgba(0,0,0,0.3)",borderRadius:6,color:"var(--cream-dim)",fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{result}</div><div style={{display:"flex",gap:8,marginTop:12}}><Btn size="sm" icon="check" onClick={()=>{onConfirm(result);setSt("idle");setResult("");}}>Accept</Btn><Btn v="ai" size="sm" onClick={run}>Retry</Btn><Btn v="ghost" size="sm" onClick={()=>{setSt("idle");setResult("");}}>Discard</Btn></div></div>);};
 
 // ============================================================
-// REVENUE FUNNEL — cinematic accordion (desktop) / stacked (mobile)
+// REVENUE FUNNEL — true funnel geometry, click-to-expand bands
 // ============================================================
 const LeadFunnel = () => {
   const STAGES = [
-    { id:"signals",  label:"Raw Signals",      desc:"Intent data, web behavior, third-party sources, referral networks",    count:"10,000+", pct:100,  color:"#5B8FA8",               bullets:["Intent signal captured","Source attributed","Deduplication check"] },
-    { id:"enriched", label:"Enriched Data",     desc:"Verified contacts, firmographic profiles, ICP scoring",               count:"4,200",   pct:42,   color:"#7C6FA0",               bullets:["ICP fit scored","Firmographic enriched","Contact verified"] },
-    { id:"leads",    label:"Actioning Leads",   desc:"Pipeline entry, sequence enrollment, outreach activation",            count:"1,800",   pct:18,   color:"#C4A265",               bullets:["Sequence enrolled","Rep assigned","SLA clock started"] },
-    { id:"mql",      label:"MQLs",              desc:"Score-qualified, marketing-validated, sales-ready",                  count:"680",     pct:6.8,  color:"rgba(196,162,101,0.78)",bullets:["Score threshold passed","Marketing approved","Handoff triggered"] },
-    { id:"sql",      label:"SQLs",              desc:"Sales-accepted, discovery completed, budget confirmed",              count:"240",     pct:2.4,  color:"#6B9E6F",               bullets:["Discovery call booked","Budget confirmed","Sales accepted"] },
-    { id:"opp",      label:"Opportunities",     desc:"Active pipeline, deal management, forecasting",                      count:"85",      pct:0.85, color:"#E8E0D4",               bullets:["Deal created","Forecast category set","Close plan active"] },
+    {
+      id:"signals",  widthPct:100, bg:"rgba(196,162,101,0.06)", color:"#5B8FA8",
+      stageNum:"01", collapsedLabel:"RAW SIGNALS",    collapsedSub:"Where revenue starts",
+      headline:"Capture every buying signal before your competitors do",
+      body:"We connect intent data platforms, web behaviour tracking, CRM activity, and third-party enrichment sources into a single signal layer. No lead goes undetected. No signal goes unattributed.",
+      pills:["Intent data connected","Source attribution live","Zero signal leakage"],
+      steps:["Signal detected","Source tagged","CRM record created"],
+      // clip-path tapers from 100% wide at top to 88% wide at bottom (stage 2 width)
+      clip:"polygon(0% 0%, 100% 0%, 94% 100%, 6% 100%)",
+    },
+    {
+      id:"enriched", widthPct:88,  bg:"rgba(196,162,101,0.09)", color:"#7C6FA0",
+      stageNum:"02", collapsedLabel:"ENRICHMENT",     collapsedSub:"Know who matters",
+      headline:"Turn anonymous signals into sales-ready intelligence",
+      body:"Every contact is automatically enriched with firmographic data, ICP scoring, and behavioural history. Your reps arrive at every conversation already knowing the account — company size, tech stack, intent topic, and fit score.",
+      pills:["ICP score on every contact","Firmographic data auto-filled","Tech stack identified"],
+      steps:["Contact matched","Data enriched","ICP score assigned"],
+      // tapers from 88% to 74%: (0.13-0.06)/0.88 = 8%, right = 92%
+      clip:"polygon(0% 0%, 100% 0%, 92% 100%, 8% 100%)",
+    },
+    {
+      id:"routing",  widthPct:74,  bg:"rgba(196,162,101,0.12)", color:"#C4A265",
+      stageNum:"03", collapsedLabel:"ROUTING",        collapsedSub:"Right rep, right now",
+      headline:"Eliminate the 47-hour lead response problem",
+      body:"Speed-to-lead kills deals. We build automated routing logic that assigns every inbound lead to the right rep in under 90 seconds — based on territory, segment, deal size, and capacity. SLA timers start the moment a lead is created.",
+      pills:["Sub-90s lead assignment","Territory logic automated","SLA breach alerts live"],
+      steps:["Lead created","Rep assigned","Sequence enrolled"],
+      // tapers from 74% to 60%: (0.20-0.13)/0.74 ≈ 9.5%, right = 90.5%
+      clip:"polygon(0% 0%, 100% 0%, 90.5% 100%, 9.5% 100%)",
+    },
+    {
+      id:"mql",      widthPct:60,  bg:"rgba(196,162,101,0.15)", color:"#C4A265",
+      stageNum:"04", collapsedLabel:"MQL GATE",       collapsedSub:"Only real buyers pass",
+      headline:"Stop sending bad leads to sales and killing their trust",
+      body:"We build behavioural lead scoring models that combine fit data and engagement signals to produce a single quality score. Only leads crossing the threshold are promoted to MQL — automatically, consistently, without human guesswork.",
+      pills:["Scoring model built and live","Marketing-to-sales SLA defined","False MQL rate reduced"],
+      steps:["Score calculated","Threshold checked","MQL promoted"],
+      // tapers from 60% to 46%: (0.27-0.20)/0.60 ≈ 11.7%, right = 88.3%
+      clip:"polygon(0% 0%, 100% 0%, 88.3% 100%, 11.7% 100%)",
+    },
+    {
+      id:"sql",      widthPct:46,  bg:"rgba(196,162,101,0.18)", color:"#6B9E6F",
+      stageNum:"05", collapsedLabel:"SQL CONVERSION", collapsedSub:"Sales takes over clean",
+      headline:"Give your sales team a pipeline they can actually trust",
+      body:"SQLs enter the pipeline with full context — enriched data, engagement history, intent signals, and a complete activity timeline already populated in CRM. No manual data entry. No he-said-she-said between marketing and sales. Just clean pipeline.",
+      pills:["Full context in CRM on handoff","Discovery call auto-booked","Pipeline hygiene enforced"],
+      steps:["Handoff triggered","Context delivered","Deal created"],
+      // tapers from 46% to 32%: (0.34-0.27)/0.46 ≈ 15.2%, right = 84.8%
+      clip:"polygon(0% 0%, 100% 0%, 84.8% 100%, 15.2% 100%)",
+    },
+    {
+      id:"opp",      widthPct:32,  bg:"rgba(196,162,101,0.22)", color:"#E8E0D4",
+      stageNum:"06", collapsedLabel:"CLOSED REVENUE", collapsedSub:"The only metric that matters",
+      headline:"Close faster with a revenue engine that runs itself",
+      body:"With the right architecture in place, deals close faster because nothing falls through the cracks. Forecasting is accurate. Reps are focused on selling, not admin. And every closed deal feeds data back into the top of the funnel to sharpen the next cycle.",
+      pills:["Forecast accuracy above 85%","Rep admin time cut by 60%+","Full-funnel attribution live"],
+      steps:["Deal closed","Attribution logged","Loop feeds back"],
+      clip:null, // last band — rectangular bottom
+    },
   ];
 
-  const [activeStage,    setActiveStage]    = useState(0);
-  const [userTookControl,setUserTookControl] = useState(false);
-  const [isMobile,       setIsMobile]       = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
-  const [mobileExpanded, setMobileExpanded] = useState(0);
-  const sectionRef  = useRef(null);
-  const timerRef    = useRef(null);
+  const [active,   setActive]   = useState(0);
+  const [versions, setVersions] = useState({ 0: 1 });
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
 
-  // Responsive check
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Auto-advance: fires every 5s after section enters view; stops on first manual click
-  useEffect(() => {
-    if (userTookControl || isMobile) return;
-    const el = sectionRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        obs.disconnect();
-        timerRef.current = setInterval(() => setActiveStage(p => (p + 1) % STAGES.length), 5000);
-      }
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => { obs.disconnect(); clearInterval(timerRef.current); };
-  }, [userTookControl, isMobile]);
-
-  const goTo = (idx) => {
-    setActiveStage(idx);
-    setUserTookControl(true);
-    clearInterval(timerRef.current);
+  const toggle = (i) => {
+    const next = active === i ? -1 : i;
+    setActive(next);
+    if (next !== -1) setVersions(v => ({ ...v, [next]: (v[next] || 0) + 1 }));
   };
 
-  /* ── MOBILE: stacked expandable rows ── */
-  if (isMobile) {
-    return (
-      <div style={{ padding: "0 20px" }}>
-        {STAGES.map((s, i) => {
-          const open = mobileExpanded === i;
-          return (
-            <div key={s.id} style={{ borderBottom: "1px solid var(--border)" }}>
-              <div onClick={() => setMobileExpanded(open ? -1 : i)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 0", cursor:"pointer" }}>
-                <div style={{ display:"flex", gap:14, alignItems:"center" }}>
-                  <span style={{ fontFamily:"var(--mono)", fontSize:10, color:s.color, letterSpacing:"0.12em" }}>{num(i+1)}</span>
-                  <span style={{ fontFamily:"var(--serif)", fontSize:18, fontStyle:"italic", color:"var(--cream)" }}>{s.label}</span>
-                </div>
-                <span style={{ fontFamily:"var(--mono)", fontSize:12, color:s.color }}>{s.count}</span>
-              </div>
-              <div style={{ maxHeight: open ? 300 : 0, overflow:"hidden", transition:"max-height 0.4s ease-out" }}>
-                <div style={{ padding:"0 0 20px" }}>
-                  <p style={{ fontSize:14, color:"var(--cream-mute)", lineHeight:1.7, marginBottom:14 }}>{s.desc}</p>
-                  {s.bullets.map((b, bi) => (
-                    <div key={bi} style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8 }}>
-                      <div style={{ width:4, height:4, borderRadius:"50%", background:"var(--amber)", flexShrink:0 }} />
-                      <span style={{ fontSize:13, color:"var(--cream-dim)" }}>{b}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
+  const collapsedH = isMobile ? 56 : 72;
 
-  /* ── DESKTOP: cinematic accordion ── */
-  const s = STAGES[activeStage];
   return (
-    <div ref={sectionRef}>
-      {/* Accordion strip */}
-      <div style={{ display:"flex", height:"clamp(480px, calc(100vh - 300px), 680px)", borderTop:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }}>
-        {STAGES.map((stage, i) => {
-          const isActive = activeStage === i;
-          return (
-            <div
-              key={stage.id}
-              onClick={() => !isActive && goTo(i)}
-              style={{
-                flexGrow: isActive ? 6 : 0.8,
-                flexShrink: 0,
-                flexBasis: 0,
-                transition: "flex-grow 350ms cubic-bezier(0.25,0.46,0.45,0.94), background 300ms",
-                borderLeft: i === 0 ? "none" : `1px solid ${stage.color}${isActive ? "28" : "18"}`,
-                background: isActive ? `${stage.color}07` : "transparent",
-                cursor: isActive ? "default" : "pointer",
-                overflow: "hidden",
-                position: "relative",
-              }}
-              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = `${stage.color}05`; e.currentTarget.style.borderColor = stage.color + "35"; }}}
-              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = stage.color + "18"; }}}
-            >
-              {isActive ? (
-                /* Active panel content — key on activeStage forces remount → re-runs animations */
-                <div key={`panel-${activeStage}`} style={{ padding:"48px 52px", height:"100%", boxSizing:"border-box", display:"flex", flexDirection:"column", justifyContent:"space-between", minWidth:0 }}>
-                  {/* Top: label + heading + rule + desc */}
-                  <div>
-                    <div style={{ fontFamily:"var(--mono)", fontSize:11, color:stage.color, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:18, animation:"fadeUp 0.3s ease-out both" }}>
-                      STAGE {num(i + 1)}
-                    </div>
-                    <h2 style={{ fontFamily:"var(--serif)", fontSize:"clamp(36px,3.5vw,56px)", fontWeight:400, fontStyle:"italic", color:"var(--cream)", lineHeight:1.05, margin:"0 0 22px", animation:"fadeUp 0.32s ease-out 0.05s both" }}>
-                      {stage.label}
-                    </h2>
-                    <div style={{ height:1, background:stage.color, opacity:0.3, marginBottom:22, animation:"fadeIn 0.3s ease-out 0.1s both" }} />
-                    <p style={{ fontSize:16, color:"var(--cream-dim)", lineHeight:1.7, maxWidth:480, margin:0, fontWeight:300, animation:"fadeUp 0.3s ease-out 0.14s both" }}>
-                      {stage.desc}
-                    </p>
-                  </div>
-                  {/* Bottom: volume + bar + bullets */}
-                  <div>
-                    <div style={{ display:"flex", alignItems:"baseline", gap:18, marginBottom:20, animation:"fadeUp 0.3s ease-out 0.18s both" }}>
-                      <span style={{ fontFamily:"var(--serif)", fontSize:"clamp(52px,5vw,80px)", fontStyle:"italic", color:stage.color, lineHeight:1 }}>
-                        {stage.count}
-                      </span>
-                      <span style={{ fontFamily:"var(--mono)", fontSize:9, color:"var(--cream-mute)", letterSpacing:"0.12em", textTransform:"uppercase", lineHeight:1.6 }}>
-                        RECORDS<br/>AT THIS<br/>STAGE
-                      </span>
-                    </div>
-                    {/* Progress bar */}
-                    <div style={{ marginBottom:28, animation:"fadeIn 0.3s ease-out 0.2s both" }}>
-                      <div style={{ height:2, background:"rgba(232,224,212,0.07)", borderRadius:2, overflow:"hidden", marginBottom:6 }}>
-                        <div style={{ height:"100%", background:stage.color, borderRadius:2, "--bar-w":`${Math.max(stage.pct, 1)}%`, animation:"barGrow 0.8s ease-out 0.62s both" }} />
-                      </div>
-                      <span style={{ fontFamily:"var(--mono)", fontSize:9, color:"var(--cream-mute)", letterSpacing:"0.1em" }}>
-                        {stage.pct >= 1 ? `${stage.pct}%` : "<1%"} OF TOTAL SIGNAL VOLUME
-                      </span>
-                    </div>
-                    {/* Bullets */}
-                    <div style={{ display:"flex", gap:24, flexWrap:"wrap" }}>
-                      {stage.bullets.map((b, bi) => (
-                        <div key={bi} style={{ display:"flex", gap:8, alignItems:"center", animation:`fadeUp 0.3s ease-out ${0.22 + bi * 0.04}s both` }}>
-                          <div style={{ width:5, height:5, borderRadius:"50%", background:"var(--amber)", flexShrink:0 }} />
-                          <span style={{ fontFamily:"var(--mono)", fontSize:11, color:"var(--cream-dim)", letterSpacing:"0.04em" }}>{b}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Collapsed panel */
-                <div style={{ height:"100%", display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center", padding:"32px 0" }}>
-                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, writingMode:"vertical-rl", transform:"rotate(180deg)" }}>
-                    <span style={{ fontFamily:"var(--mono)", fontSize:10, color:stage.color, letterSpacing:"0.15em" }}>{num(i+1)}</span>
-                    <span style={{ fontFamily:"var(--sans)", fontSize:12, color:"var(--cream-mute)", whiteSpace:"nowrap" }}>{stage.label}</span>
-                  </div>
-                  <span style={{ fontFamily:"var(--mono)", fontSize:11, color:stage.color, writingMode:"vertical-rl", transform:"rotate(180deg)" }}>{stage.count}</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+    <div>
+      {STAGES.map((s, i) => {
+        const isOpen = active === i;
+        // Desktop: center each band at its percentage width; mobile: full width
+        const bandW  = isMobile ? "100%" : `${s.widthPct}%`;
+        // Clip-path for trapezoid sides — applied to the background layer only
+        const bgClip = (!isMobile && s.clip) ? s.clip : "none";
 
-      {/* Timeline dot nav */}
-      <div style={{ display:"flex", alignItems:"center", padding:"20px 52px" }}>
-        {STAGES.flatMap((stage, i) => {
-          const dot = (
-            <button
-              key={`dot-${i}`}
-              onClick={() => goTo(i)}
-              title={stage.label}
-              style={{
-                width: activeStage === i ? 10 : 8,
-                height: activeStage === i ? 10 : 8,
-                borderRadius:"50%",
-                background: activeStage === i ? "var(--amber)" : i < activeStage ? "var(--cream-mute)" : "transparent",
-                border: activeStage === i ? "none" : `1px solid ${i < activeStage ? "var(--cream-mute)" : "rgba(232,224,212,0.25)"}`,
-                cursor:"pointer",
-                padding:0,
-                flexShrink:0,
-                transition:"all 0.3s",
-                boxShadow: activeStage === i ? "0 0 8px rgba(196,162,101,0.5)" : "none",
-              }}
-            />
-          );
-          const line = i < STAGES.length - 1 ? (
+        return (
+          <div key={s.id} style={{ width: bandW, margin: "0 auto", position: "relative", overflow: "hidden", transition: "border-color 0.3s" }}>
+            {/* Background trapezoid layer — clipped, non-interactive */}
+            <div style={{ position:"absolute", inset:0, background:s.bg, clipPath:bgClip, borderBottom:"1px solid rgba(196,162,101,0.12)", borderLeft: isOpen ? `2px solid ${s.color}` : "2px solid transparent", pointerEvents:"none", transition:"border-color 0.3s" }} />
+
+            {/* ── Collapsed header — always visible ── */}
             <div
-              key={`line-${i}`}
-              style={{ flex:1, height:1, background: i < activeStage ? "rgba(232,224,212,0.25)" : "rgba(232,224,212,0.08)", transition:"background 0.3s" }}
-            />
-          ) : null;
-          return line ? [dot, line] : [dot];
-        })}
+              onClick={() => toggle(i)}
+              style={{ position:"relative", zIndex:1, height:collapsedH, display:"flex", alignItems:"center", justifyContent:"space-between", padding: isMobile ? "0 20px" : "0 32px", cursor:"pointer" }}
+            >
+              <div style={{ display:"flex", alignItems:"center", gap:16, minWidth:0 }}>
+                <span style={{ fontFamily:"var(--mono)", fontSize:10, color:"var(--cream-mute)", letterSpacing:"0.1em", flexShrink:0 }}>{s.stageNum}</span>
+                <span style={{ fontFamily:"var(--sans)", fontSize:13, fontWeight:500, color:"var(--cream)", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{s.collapsedLabel}</span>
+                {!isMobile && <span style={{ fontFamily:"var(--sans)", fontSize:11, color:"var(--cream-mute)", whiteSpace:"nowrap" }}>{s.collapsedSub}</span>}
+              </div>
+              <div style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition:"transform 0.3s", color:"var(--cream-mute)", display:"flex", flexShrink:0 }}>
+                <Icon name="down" size={16} />
+              </div>
+            </div>
+
+            {/* ── Expandable content ── */}
+            <div style={{ maxHeight: isOpen ? 420 : 0, overflow:"hidden", transition:"max-height 0.55s cubic-bezier(0.25,0.46,0.45,0.94)", position:"relative", zIndex:1 }}>
+              <div
+                key={versions[i] || 0}
+                style={{ padding: isMobile ? "4px 20px 28px" : "8px 32px 36px", display:"grid", gridTemplateColumns: isMobile ? "1fr" : "60% 1fr", gap: isMobile ? 20 : 48, animation:"fadeIn 0.4s ease-out 0.3s both" }}
+              >
+                {/* Left: headline, body, pills */}
+                <div>
+                  <h3 style={{ fontFamily:"var(--serif)", fontSize:26, fontWeight:400, fontStyle:"italic", color:"var(--cream)", margin:"0 0 12px", lineHeight:1.2 }}>{s.headline}</h3>
+                  <p style={{ fontSize:14, color:"var(--cream-dim)", lineHeight:1.7, margin:"0 0 20px", fontWeight:300 }}>{s.body}</p>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    {s.pills.map((pill, pi) => (
+                      <span key={pi} style={{ fontFamily:"var(--mono)", fontSize:11, color:s.color, background:s.color+"1E", border:`1px solid ${s.color}4D`, borderRadius:20, padding:"4px 12px" }}>{pill}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right: numbered process steps */}
+                {!isMobile && (
+                  <div style={{ display:"flex", flexDirection:"column", paddingTop:4 }}>
+                    {s.steps.map((step, si) => (
+                      <div key={si} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                          <div style={{ width:26, height:26, borderRadius:"50%", background:s.color+"18", border:`1px solid ${s.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--mono)", fontSize:11, color:s.color }}>{si+1}</div>
+                          {si < s.steps.length - 1 && <div style={{ width:1, height:28, background:s.color+"28" }} />}
+                        </div>
+                        <span style={{ fontFamily:"var(--mono)", fontSize:12, color:"var(--cream-dim)", paddingTop:5, letterSpacing:"0.02em" }}>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Footer line + CTA */}
+      <div style={{ textAlign:"center", marginTop:36, padding:"0 20px" }}>
+        <p style={{ fontFamily:"var(--sans)", fontSize:14, color:"var(--cream-mute)", margin:"0 0 20px", lineHeight:1.7 }}>
+          Every stage is automated, measured, and optimised — this is the architecture we build for you.
+        </p>
+        <button
+          onClick={() => document.getElementById("work")?.scrollIntoView({ behavior:"smooth" })}
+          style={{ padding:"10px 24px", background:"transparent", border:"1px solid var(--amber)", borderRadius:4, color:"var(--amber)", fontFamily:"var(--sans)", fontSize:14, cursor:"pointer", transition:"all 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.background="var(--amber)"; e.currentTarget.style.color="var(--ink)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="var(--amber)"; }}
+        >See how we build this →</button>
       </div>
     </div>
   );
@@ -1210,22 +1173,16 @@ const PortfolioPage = ({ data, onLogin }) => {
           </div>
         </div>
       </section>
-      {/* Revenue Funnel — cinematic full-width accordion */}
-      <section id="funnel" style={{ background: "var(--ink)", minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        {/* Section header */}
-        <div style={{ padding: "80px 64px 40px", maxWidth: 1560, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-          <div data-reveal="fadeUp" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 16 }}>
-            <div>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: 10 }}>Interactive</span>
-              <h2 style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", margin: 0 }}>The Revenue Funnel</h2>
-            </div>
-            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase" }}>FROM RAW SIGNALS TO CLOSED REVENUE</span>
+      {/* Revenue Funnel — true funnel geometry */}
+      <section id="funnel" style={{ background: "var(--ink)", padding: "100px 0 80px" }}>
+        <div data-reveal="fadeUp" style={{ padding: "0 64px", maxWidth: 1560, margin: "0 auto 52px", boxSizing: "border-box", display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: 10 }}>Interactive</span>
+            <h2 style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", margin: 0 }}>The Revenue Funnel</h2>
           </div>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", maxWidth: 340, textAlign: "right", lineHeight: 1.7 }}>HOW WE ENGINEER YOUR GTM<br/>FROM SIGNAL TO CLOSED REVENUE</span>
         </div>
-        {/* Full-width accordion */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <LeadFunnel />
-        </div>
+        <LeadFunnel />
       </section>
       {/* Interactive Diagnostics */}
       <section id="workflows" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
