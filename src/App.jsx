@@ -382,24 +382,69 @@ const Tabs=({tabs,active,onChange})=>(<div style={{display:"flex",gap:0,marginBo
 const AIButton=({label="Enhance with AI",onConfirm,content})=>{const[st,setSt]=useState("idle");const[prompt,setPrompt]=useState("Improve for clarity and strategic impact.");const[result,setResult]=useState("");const run=async()=>{setSt("loading");const r=await callAI(`${prompt}\n\nContent:\n${content}`);setResult(r);setSt("preview");};if(st==="idle")return <div style={{marginTop:8}}><Btn v="ai" size="sm" icon="ai" onClick={()=>setSt("editing")}>{label}</Btn></div>;if(st==="loading")return <div style={{padding:24,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block"}}/></div>;if(st==="editing")return(<div style={{marginTop:12,padding:16,background:"rgba(124,111,160,0.06)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:10}}><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} rows={2} style={{width:"100%",padding:10,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:6,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)",resize:"none"}}/><div style={{display:"flex",gap:8,marginTop:10}}><Btn v="ai" size="sm" onClick={run}>Run</Btn><Btn v="ghost" size="sm" onClick={()=>setSt("idle")}>Cancel</Btn></div></div>);return(<div style={{marginTop:12,padding:16,background:"rgba(107,158,111,0.06)",border:"1px solid rgba(107,158,111,0.15)",borderRadius:10}}><div style={{padding:14,background:"rgba(0,0,0,0.3)",borderRadius:6,color:"var(--cream-dim)",fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{result}</div><div style={{display:"flex",gap:8,marginTop:12}}><Btn size="sm" icon="check" onClick={()=>{onConfirm(result);setSt("idle");setResult("");}}>Accept</Btn><Btn v="ai" size="sm" onClick={run}>Retry</Btn><Btn v="ghost" size="sm" onClick={()=>{setSt("idle");setResult("");}}>Discard</Btn></div></div>);};
 
 // ============================================================
-// REVENUE FUNNEL — horizontal trapezoid accordion
+// REVENUE FUNNEL — true funnel geometry, click-to-expand bands
 // ============================================================
 const LeadFunnel = () => {
   const STAGES = [
-    { id:"s1", num:"01", name:"Raw Signals",    sub:"Where revenue starts",         color:"#5B8FA8", bg:"rgba(91,143,168,0.07)",    inset:0,  headline:"Most revenue starts as a signal your team never sees",                pills:["Every channel feeding one source","Buying intent identified early","No lead falls through the cracks"],       steps:["Signal detected","Source tagged","CRM record created"]     },
-    { id:"s2", num:"02", name:"Enrichment",     sub:"Know who matters",             color:"#7C6FA0", bg:"rgba(124,111,160,0.09)",   inset:14, headline:"Your reps shouldn't need to research a prospect before every call",   pills:["ICP fit scored on entry","Company and role data filled in","Bad-fit contacts filtered out early"],          steps:["Contact matched","Profile enriched","ICP score assigned"]  },
-    { id:"s3", num:"03", name:"Routing",        sub:"Right rep, right now",         color:"#C4A265", bg:"rgba(196,162,101,0.11)",   inset:28, headline:"Every hour you wait to follow up, the chance of connecting drops",   pills:["Leads assigned the moment they qualify","Territory and round-robin rules built in","Every SLA tracked"],     steps:["Lead created","Rep notified","Sequence triggered"]         },
-    { id:"s4", num:"04", name:"MQL Gate",       sub:"Only real buyers pass",        color:"#C4A265", bg:"rgba(196,162,101,0.14)",   inset:42, headline:"If sales doesn't trust marketing's leads, your whole funnel breaks",  pills:["Scoring threshold agreed with sales","Low-intent leads recycled, not abandoned","Handoff criteria documented"], steps:["Score calculated","Threshold checked","Promoted or recycled"] },
-    { id:"s5", num:"05", name:"SQL Conversion", sub:"Sales takes over clean",       color:"#6B9E6F", bg:"rgba(107,158,111,0.16)",   inset:56, headline:"Reps close more when they're not figuring out who they're talking to", pills:["Full context in CRM at the moment of handoff","Next step agreed before the call is booked","Stale deals surfaced and actioned"], steps:["Handoff triggered","Context delivered","Opportunity created"] },
-    { id:"s6", num:"06", name:"Closed Revenue", sub:"The only metric that matters", color:"#E8E0D4", bg:"rgba(232,224,212,0.14)",   inset:70, headline:"Revenue without attribution is just luck — we make it repeatable",   pills:["Every closed deal traced back to its source","Win and loss patterns identified","Insights loop back to top of funnel"], steps:["Deal closed","Source attributed","Insights loop back"], dark:true },
+    {
+      id:"signals",  widthPct:100, bg:"rgba(196,162,101,0.06)", color:"#5B8FA8",
+      stageNum:"01", collapsedLabel:"RAW SIGNALS",    collapsedSub:"Where revenue starts",
+      headline:"Most revenue starts as a signal your team never sees",
+      body:"We connect intent platforms, web behaviour tracking, CRM activity, and enrichment sources into one signal layer. Every channel has a source tag. No lead goes undetected and no signal goes unattributed.",
+      pills:["Every channel feeding one source","Buying intent identified early","No lead falls through the cracks"],
+      steps:["Signal detected","Source tagged","CRM record created"],
+      clip:"polygon(0% 0%, 100% 0%, 94% 100%, 6% 100%)",
+    },
+    {
+      id:"enriched", widthPct:88,  bg:"rgba(196,162,101,0.09)", color:"#7C6FA0",
+      stageNum:"02", collapsedLabel:"ENRICHMENT",     collapsedSub:"Know who matters",
+      headline:"Your reps shouldn't need to research a prospect before every call",
+      body:"Every contact is automatically enriched with firmographic data, ICP scoring, and engagement history. Your reps arrive at every conversation already knowing the account — company size, tech stack, intent topic, and fit score.",
+      pills:["ICP fit scored on entry","Company and role data filled in","Bad-fit contacts filtered out early"],
+      steps:["Contact matched","Profile enriched","ICP score assigned"],
+      clip:"polygon(0% 0%, 100% 0%, 92% 100%, 8% 100%)",
+    },
+    {
+      id:"routing",  widthPct:74,  bg:"rgba(196,162,101,0.12)", color:"#C4A265",
+      stageNum:"03", collapsedLabel:"ROUTING",        collapsedSub:"Right rep, right now",
+      headline:"Every hour you wait to follow up, the chance of connecting drops",
+      body:"We build automated routing logic that assigns every inbound lead to the right rep immediately — based on territory, segment, and capacity. SLA timers start the moment a lead is created. No more leads sitting in a queue.",
+      pills:["Leads assigned the moment they qualify","Territory and round-robin rules built in","Every SLA tracked"],
+      steps:["Lead created","Rep notified","Sequence triggered"],
+      clip:"polygon(0% 0%, 100% 0%, 90.5% 100%, 9.5% 100%)",
+    },
+    {
+      id:"mql",      widthPct:60,  bg:"rgba(196,162,101,0.15)", color:"#C4A265",
+      stageNum:"04", collapsedLabel:"MQL GATE",       collapsedSub:"Only real buyers pass",
+      headline:"If sales doesn't trust marketing's leads, your whole funnel breaks",
+      body:"We build lead scoring models that combine fit and engagement signals into a single quality score. Only leads crossing the agreed threshold are promoted to MQL — automatically, consistently, without human guesswork. Low-intent leads are recycled, not discarded.",
+      pills:["Scoring threshold agreed with sales","Low-intent leads recycled, not abandoned","Handoff criteria documented"],
+      steps:["Score calculated","Threshold checked","Promoted or recycled"],
+      clip:"polygon(0% 0%, 100% 0%, 88.3% 100%, 11.7% 100%)",
+    },
+    {
+      id:"sql",      widthPct:46,  bg:"rgba(196,162,101,0.18)", color:"#6B9E6F",
+      stageNum:"05", collapsedLabel:"SQL CONVERSION", collapsedSub:"Sales takes over clean",
+      headline:"Reps close more when they're not figuring out who they're talking to",
+      body:"SQLs enter the pipeline with full context — enriched data, intent signals, and a complete activity timeline already in CRM. No manual data entry. No ambiguity about what happened before the handoff. Just clean pipeline and a clear next step.",
+      pills:["Full context in CRM at the moment of handoff","Next step agreed before the call is booked","Stale deals surfaced and actioned"],
+      steps:["Handoff triggered","Context delivered","Opportunity created"],
+      clip:"polygon(0% 0%, 100% 0%, 84.8% 100%, 15.2% 100%)",
+    },
+    {
+      id:"opp",      widthPct:32,  bg:"rgba(196,162,101,0.22)", color:"#E8E0D4",
+      stageNum:"06", collapsedLabel:"CLOSED REVENUE", collapsedSub:"The only metric that matters",
+      headline:"Revenue without attribution is just luck — we make it repeatable",
+      body:"With the right architecture in place, deals close faster because nothing falls through the cracks. And every closed deal feeds data back into the top of the funnel — so each cycle is sharper than the last.",
+      pills:["Every closed deal traced back to its source","Win and loss patterns identified","Insights loop back to top of funnel"],
+      steps:["Deal closed","Source attributed","Insights loop back"],
+      clip:null,
+    },
   ];
 
-  const [active,    setActive]   = useState(0);
-  const [isMobile,  setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
-  const [mobOpen,   setMobOpen]  = useState(0);
-  const sectionRef  = useRef(null);
-  const timerRef    = useRef(null);
-  const interacted  = useRef(false);
+  const [active,   setActive]   = useState(0);
+  const [versions, setVersions] = useState({ 0: 1 });
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -407,140 +452,89 @@ const LeadFunnel = () => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Auto-advance every 4s on scroll-into-view; cancels permanently on first click
-  useEffect(() => {
-    if (isMobile) return;
-    const el = sectionRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        obs.disconnect();
-        timerRef.current = setInterval(() => {
-          if (!interacted.current) setActive(p => (p + 1) % STAGES.length);
-        }, 4000);
-      }
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => { obs.disconnect(); clearInterval(timerRef.current); };
-  }, [isMobile]);
-
-  const goTo = (i) => {
-    interacted.current = true;
-    clearInterval(timerRef.current);
-    setActive(i);
+  const toggle = (i) => {
+    const next = active === i ? -1 : i;
+    setActive(next);
+    if (next !== -1) setVersions(v => ({ ...v, [next]: (v[next] || 0) + 1 }));
   };
 
-  const clipPath = (inset) => inset === 0
-    ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
-    : `polygon(${inset}px 0%, calc(100% - ${inset}px) 0%, 100% 100%, 0% 100%)`;
+  const collapsedH = isMobile ? 56 : 72;
 
-  /* ── MOBILE: vertical accordion ── */
-  if (isMobile) {
-    return (
-      <div>
-        {STAGES.map((s, i) => {
-          const open = mobOpen === i;
-          const mClip = `polygon(0% 0%, 100% 0%, 100% 100%, ${i * 8}px 100%)`;
-          return (
-            <div key={s.id} style={{ background: s.bg, clipPath: mClip, marginBottom: 2 }}>
-              <div onClick={() => setMobOpen(open ? -1 : i)} style={{ height: 64, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", cursor:"pointer" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <span style={{ fontFamily:"var(--mono)", fontSize:10, color:s.color, letterSpacing:"0.12em" }}>{s.num}</span>
-                  <span style={{ fontFamily:"var(--sans)", fontSize:13, fontWeight:500, color:"var(--cream)" }}>{s.name}</span>
-                  <span style={{ fontFamily:"var(--sans)", fontSize:11, color:"var(--cream-mute)" }}>{s.sub}</span>
-                </div>
-                <div style={{ transform: open ? "rotate(0)" : "rotate(-90deg)", transition:"transform 0.3s", color:"var(--cream-mute)", display:"flex" }}><Icon name="down" size={16}/></div>
+  return (
+    <div>
+      {STAGES.map((s, i) => {
+        const isOpen = active === i;
+        const bandW  = isMobile ? "100%" : `${s.widthPct}%`;
+        const bgClip = (!isMobile && s.clip) ? s.clip : "none";
+
+        return (
+          <div key={s.id} style={{ width: bandW, margin: "0 auto", position: "relative", overflow: "hidden", transition: "border-color 0.3s" }}>
+            {/* Background trapezoid layer */}
+            <div style={{ position:"absolute", inset:0, background:s.bg, clipPath:bgClip, borderBottom:"1px solid rgba(196,162,101,0.12)", borderLeft: isOpen ? `2px solid ${s.color}` : "2px solid transparent", pointerEvents:"none", transition:"border-color 0.3s" }} />
+
+            {/* Collapsed header — always visible */}
+            <div
+              onClick={() => toggle(i)}
+              style={{ position:"relative", zIndex:1, height:collapsedH, display:"flex", alignItems:"center", justifyContent:"space-between", padding: isMobile ? "0 20px" : "0 32px", cursor:"pointer" }}
+            >
+              <div style={{ display:"flex", alignItems:"center", gap:16, minWidth:0 }}>
+                <span style={{ fontFamily:"var(--mono)", fontSize:10, color:"var(--cream-mute)", letterSpacing:"0.1em", flexShrink:0 }}>{s.stageNum}</span>
+                <span style={{ fontFamily:"var(--sans)", fontSize:13, fontWeight:500, color:"var(--cream)", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{s.collapsedLabel}</span>
+                {!isMobile && <span style={{ fontFamily:"var(--sans)", fontSize:11, color:"var(--cream-mute)", whiteSpace:"nowrap" }}>{s.collapsedSub}</span>}
               </div>
-              <div style={{ maxHeight: open ? 400 : 0, overflow:"hidden", transition:"max-height 0.4s ease-out" }}>
-                <div style={{ padding:"0 24px 24px" }}>
-                  <p style={{ fontSize:15, color:"var(--cream-dim)", lineHeight:1.6, margin:"0 0 16px", fontWeight:300 }}>{s.headline}</p>
-                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                    {s.pills.map((p, pi) => <span key={pi} style={{ fontFamily:"var(--mono)", fontSize:10, color:s.dark?"#0B0B0B":s.color, background:s.color+"1E", border:`1px solid ${s.color}4D`, borderRadius:20, padding:"4px 12px" }}>{p}</span>)}
-                  </div>
-                </div>
+              <div style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition:"transform 0.3s", color:"var(--cream-mute)", display:"flex", flexShrink:0 }}>
+                <Icon name="down" size={16} />
               </div>
             </div>
-          );
-        })}
-        <div style={{ textAlign:"center", marginTop:28, padding:"0 24px" }}>
-          <p style={{ fontFamily:"var(--sans)", fontSize:13, color:"var(--cream-mute)", margin:"0 0 16px" }}>Every stage is automated, measured, and optimised — this is the architecture we build for you.</p>
-          <button onClick={() => document.getElementById("work")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"10px 28px", background:"transparent", border:"1px solid #C4A265", borderRadius:4, color:"#C4A265", fontFamily:"var(--sans)", fontSize:13, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.background="#C4A265";e.currentTarget.style.color="#0B0B0B";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#C4A265";}}>See how we build this →</button>
-        </div>
-      </div>
-    );
-  }
 
-  /* ── DESKTOP: horizontal trapezoid accordion ── */
-  return (
-    <div ref={sectionRef}>
-      {/* Funnel track */}
-      <div style={{ display:"flex", height:280, width:"100%", overflow:"hidden" }}>
-        {STAGES.map((s, i) => {
-          const isActive = active === i;
-          return (
-            <div
-              key={s.id}
-              onClick={() => !isActive && goTo(i)}
-              style={{
-                flex: isActive ? 1 : "0 0 72px",
-                transition: "flex 0.45s cubic-bezier(0.25,0.46,0.45,0.94)",
-                clipPath: clipPath(s.inset),
-                background: s.bg,
-                position: "relative",
-                overflow: "hidden",
-                cursor: isActive ? "default" : "pointer",
-              }}
-            >
-              {/* Accent left border (not clipped by outer clip-path since it's inside) */}
-              <div style={{ position:"absolute", left:0, top:0, bottom:0, width:2, background:isActive ? s.color : "transparent", transition:"background 0.3s", zIndex:2, pointerEvents:"none" }} />
-
-              {/* Active: 2-column content */}
-              {isActive && (
-                <div key={active} style={{ height:"100%", boxSizing:"border-box", padding:"28px 32px 28px 36px", display:"grid", gridTemplateColumns:"55% 1fr", gap:32, animation:"fadeIn 0.3s ease-out 0.2s both" }}>
-                  {/* Left column */}
-                  <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", minWidth:0 }}>
-                    <span style={{ fontFamily:"var(--mono)", fontSize:10, color:s.color, letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:6 }}>{s.num}</span>
-                    <h3 style={{ fontFamily:"var(--serif)", fontSize:32, fontWeight:400, fontStyle:"italic", color:"var(--cream)", margin:0, lineHeight:1.1 }}>{s.name}</h3>
-                    <div style={{ height:1, background:s.color, opacity:0.25, margin:"16px 0" }} />
-                    <p style={{ fontFamily:"var(--sans)", fontSize:16, color:"var(--cream)", lineHeight:1.6, margin:"0 0 16px", fontWeight:300 }}>{s.headline}</p>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      {s.pills.map((p, pi) => (
-                        <span key={pi} style={{ fontFamily:"var(--mono)", fontSize:10, color:s.dark?"#0B0B0B":s.color, background:s.color+"1E", border:`1px solid ${s.color}4D`, borderRadius:20, padding:"4px 12px" }}>{p}</span>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Right column: process steps */}
-                  <div style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
-                    {s.steps.map((step, si) => (
-                      <div key={si} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
-                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
-                          <div style={{ width:24, height:24, borderRadius:"50%", background:s.color+"18", border:`1px solid ${s.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--mono)", fontSize:11, color:s.color }}>{si+1}</div>
-                          {si < s.steps.length-1 && <div style={{ width:1, height:26, background:s.color+"33" }} />}
-                        </div>
-                        <span style={{ fontFamily:"var(--sans)", fontSize:12, color:"var(--cream-dim)", paddingTop:4, lineHeight:1.4 }}>{step}</span>
-                      </div>
+            {/* Expandable content */}
+            <div style={{ maxHeight: isOpen ? 420 : 0, overflow:"hidden", transition:"max-height 0.55s cubic-bezier(0.25,0.46,0.45,0.94)", position:"relative", zIndex:1 }}>
+              <div
+                key={versions[i] || 0}
+                style={{ padding: isMobile ? "4px 20px 28px" : "8px 32px 36px", display:"grid", gridTemplateColumns: isMobile ? "1fr" : "60% 1fr", gap: isMobile ? 20 : 48, animation:"fadeIn 0.4s ease-out 0.3s both" }}
+              >
+                {/* Left: headline, body, pills */}
+                <div>
+                  <h3 style={{ fontFamily:"var(--serif)", fontSize:26, fontWeight:400, fontStyle:"italic", color:"var(--cream)", margin:"0 0 12px", lineHeight:1.2 }}>{s.headline}</h3>
+                  <p style={{ fontSize:14, color:"var(--cream-dim)", lineHeight:1.7, margin:"0 0 20px", fontWeight:300 }}>{s.body}</p>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    {s.pills.map((pill, pi) => (
+                      <span key={pi} style={{ fontFamily:"var(--mono)", fontSize:11, color:s.color, background:s.color+"1E", border:`1px solid ${s.color}4D`, borderRadius:20, padding:"4px 12px" }}>{pill}</span>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Collapsed: rotated vertical labels, bottom-aligned */}
-              {!isActive && (
-                <div style={{ height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-start", writingMode:"vertical-rl", transform:"rotate(180deg)", padding:"16px 0" }}>
-                  <span style={{ fontFamily:"var(--mono)", fontSize:9, color:s.color, letterSpacing:"0.1em", marginBottom:6 }}>{s.num}</span>
-                  <span style={{ fontFamily:"var(--sans)", fontSize:11, fontWeight:500, color:"var(--cream)", marginBottom:4, whiteSpace:"nowrap" }}>{s.name}</span>
-                  <span style={{ fontFamily:"var(--mono)", fontSize:9, color:"var(--cream-mute)", whiteSpace:"nowrap" }}>{s.sub}</span>
-                </div>
-              )}
+                {/* Right: numbered process steps */}
+                {!isMobile && (
+                  <div style={{ display:"flex", flexDirection:"column", paddingTop:4 }}>
+                    {s.steps.map((step, si) => (
+                      <div key={si} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                          <div style={{ width:26, height:26, borderRadius:"50%", background:s.color+"18", border:`1px solid ${s.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--mono)", fontSize:11, color:s.color }}>{si+1}</div>
+                          {si < s.steps.length - 1 && <div style={{ width:1, height:28, background:s.color+"28" }} />}
+                        </div>
+                        <span style={{ fontFamily:"var(--mono)", fontSize:12, color:"var(--cream-dim)", paddingTop:5, letterSpacing:"0.02em" }}>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
 
-      {/* Footer */}
-      <div style={{ textAlign:"center", marginTop:28, padding:"0 64px" }}>
-        <p style={{ fontFamily:"var(--sans)", fontSize:13, color:"var(--cream-mute)", margin:"0 0 16px" }}>Every stage is automated, measured, and optimised — this is the architecture we build for you.</p>
-        <button onClick={() => document.getElementById("work")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"10px 28px", background:"transparent", border:"1px solid #C4A265", borderRadius:4, color:"#C4A265", fontFamily:"var(--sans)", fontSize:13, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.background="#C4A265";e.currentTarget.style.color="#0B0B0B";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#C4A265";}}>See how we build this →</button>
+      {/* Footer line + CTA */}
+      <div style={{ textAlign:"center", marginTop:36, padding:"0 20px" }}>
+        <p style={{ fontFamily:"var(--sans)", fontSize:14, color:"var(--cream-mute)", margin:"0 0 20px", lineHeight:1.7 }}>
+          Every stage is automated, measured, and optimised — this is the architecture we build for you.
+        </p>
+        <button
+          onClick={() => document.getElementById("work")?.scrollIntoView({ behavior:"smooth" })}
+          style={{ padding:"10px 24px", background:"transparent", border:"1px solid var(--amber)", borderRadius:4, color:"var(--amber)", fontFamily:"var(--sans)", fontSize:14, cursor:"pointer", transition:"all 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.background="var(--amber)"; e.currentTarget.style.color="var(--ink)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="var(--amber)"; }}
+        >See how we build this →</button>
       </div>
     </div>
   );
@@ -1172,12 +1166,12 @@ const PortfolioPage = ({ data, onLogin }) => {
           </div>
         </div>
       </section>
-      {/* Revenue Funnel — horizontal trapezoid accordion */}
-      <section id="funnel" style={{ background: "#0B0B0B", padding: "80px 64px" }}>
-        <div data-reveal="fadeUp" style={{ maxWidth: 1560, margin: "0 auto 52px", display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 16 }}>
+      {/* Revenue Funnel — true funnel geometry */}
+      <section id="funnel" style={{ background: "var(--ink)", padding: "100px 0 80px" }}>
+        <div data-reveal="fadeUp" style={{ padding: "0 64px", maxWidth: 1560, margin: "0 auto 52px", boxSizing: "border-box", display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 16 }}>
           <div>
             <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: 10 }}>Interactive</span>
-            <h2 style={{ fontFamily: "var(--serif)", fontSize: 36, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", margin: 0 }}>The Revenue Funnel</h2>
+            <h2 style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", margin: 0 }}>The Revenue Funnel</h2>
           </div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", maxWidth: 340, textAlign: "right", lineHeight: 1.7 }}>HOW WE ENGINEER YOUR GTM<br/>FROM SIGNAL TO CLOSED REVENUE</span>
         </div>
