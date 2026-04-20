@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Scoring: The Complete B2B Guide to Prioritizing Your Best Leads (2025)</title>
+  <meta name="description" content="Build a B2B lead scoring model from scratch — demographic scoring, behavioral scoring, and AI-powered scoring. With real point values, a scoring matrix, and calibration advice.">
+  <link rel="canonical" href="https://revosys.pro/blog/lead-scoring-guide">
+  <meta property="og:title" content="Lead Scoring: The Complete B2B Guide to Prioritizing Your Best Leads (2025)">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Lead Scoring: The Complete B2B Guide to Prioritizing Your Best Leads (2025)","author":{"@type":"Organization","name":"Revo-Sys","url":"https://revosys.pro"},"datePublished":"2025-04-10","url":"https://revosys.pro/blog/lead-scoring-guide"},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is lead scoring?","acceptedAnswer":{"@type":"Answer","text":"Lead scoring is a methodology for ranking prospects using a numerical score based on their demographic fit (job title, company size, industry) and behavioral engagement (page views, email opens, demo requests)."}},{"@type":"Question","name":"How do you build a lead scoring model?","acceptedAnswer":{"@type":"Answer","text":"Analyze your closed-won deals for common attributes, assign point values to positive and negative signals, set an MQL threshold, implement in your CRM, then calibrate based on actual conversion data over 90 days."}},{"@type":"Question","name":"What is the difference between lead scoring and lead grading?","acceptedAnswer":{"@type":"Answer","text":"Lead scoring measures behavioral engagement (how active is this lead?). Lead grading measures demographic fit (how well do they match the ICP?). Best programs use both dimensions to route leads appropriately."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://revosys.pro"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://revosys.pro/blog"},{"@type":"ListItem","position":3,"name":"Lead Scoring Guide","item":"https://revosys.pro/blog/lead-scoring-guide"}]}]}</script>
+  <style>
+    :root{--ink:#0B0B0B;--ink-2:#111111;--ink-3:#1A1A1A;--cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#7A756D;--amber:#C4A265;--sky:#5B8FA8;--violet:#7C6FA0;--success:#6B9E6F;--danger:#A85B5B;--border:rgba(232,224,212,0.08);--border-h:rgba(232,224,212,0.15);--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+    *{box-sizing:border-box;margin:0;padding:0}html{-webkit-font-smoothing:antialiased}body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.7}a{color:var(--amber);text-decoration:none}a:hover{text-decoration:underline}
+    .nav{position:fixed;top:0;left:0;right:0;width:100%;z-index:100;padding:20px 64px;display:flex;justify-content:space-between;align-items:center;background:rgba(11,11,11,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}.nav-brand{display:flex;align-items:baseline;text-decoration:none}.nav-revo{font-family:var(--serif);font-size:22px;font-style:italic;color:var(--cream)}.nav-sys{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.15em;text-transform:uppercase;margin-left:3px}.nav-links{display:flex;gap:28px;align-items:center}.nav-link{color:var(--cream-mute);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:color .2s}.nav-link:hover{color:var(--cream)}.nav-portal{padding:8px 20px;background:transparent;border:1px solid var(--border-h);border-radius:6px;color:var(--cream-dim);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:all .2s}.nav-portal:hover{border-color:var(--cream);color:var(--cream)}
+    .hero{padding:100px 64px 60px;border-bottom:1px solid var(--border)}.hero-inner{max-width:760px}.breadcrumb{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;display:flex;gap:8px;align-items:center}.breadcrumb a{color:var(--cream-mute);text-decoration:none}.breadcrumb a:hover{color:var(--amber)}.breadcrumb span{opacity:.4}
+    .hero-tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:2px;background:rgba(107,158,111,0.08);color:var(--success);border:1px solid rgba(107,158,111,0.2);margin-bottom:20px}
+    .hero h1{font-family:var(--serif);font-size:clamp(32px,5vw,54px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.12;margin-bottom:20px}.hero-meta{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em}
+    .content{max-width:760px;margin:0 auto;padding:64px 64px 100px}
+    .quick-answer{padding:20px 24px;border:1px solid rgba(196,162,101,0.2);border-left:3px solid var(--amber);background:rgba(196,162,101,0.04);margin-bottom:48px}.qa-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}.qa-text{font-size:15px;color:var(--cream-dim);line-height:1.7}
+    h2{font-family:var(--serif);font-size:28px;font-weight:400;font-style:italic;color:var(--cream);margin:48px 0 16px;line-height:1.2}h3{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-dim);margin:32px 0 12px}p{color:var(--cream-mute);margin-bottom:16px;font-size:15px}ul,ol{color:var(--cream-mute);padding-left:20px;margin-bottom:16px;font-size:15px}li{margin-bottom:8px}strong{color:var(--cream-dim);font-weight:500}
+    .score-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}.score-table th{background:var(--ink-3);color:var(--cream-dim);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border-h);font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:400}.score-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--cream-mute);vertical-align:top}.score-table tr:hover td{background:var(--ink-2)}.pos{color:var(--success);font-weight:500}.neg{color:var(--danger);font-weight:500}
+    .matrix{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin:24px 0}
+    .matrix-cell{background:var(--ink-2);padding:20px;text-align:center}.matrix-label{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}.matrix-desc{font-size:12px;color:var(--cream-mute)}.matrix-cell.hot .matrix-label{color:var(--amber)}.matrix-cell.nurture .matrix-label{color:var(--sky)}.matrix-cell.qualify .matrix-label{color:var(--success)}.matrix-cell.pass .matrix-label{color:var(--cream-mute)}
+    .divider{border:none;border-top:1px solid var(--border);margin:48px 0}
+    .faq-item{border-bottom:1px solid var(--border);padding:20px 0}.faq-q{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--cream-dim);margin-bottom:10px;font-weight:500}.faq-a{font-size:14px;color:var(--cream-mute);line-height:1.7}
+    .cta-block{margin-top:64px;padding:48px;background:var(--ink-2);border:1px solid var(--border-h);text-align:center}.cta-block h2{font-family:var(--serif);font-size:32px;font-weight:400;font-style:italic;color:var(--cream);margin:0 0 12px}.cta-block p{font-size:14px;color:var(--cream-mute);margin-bottom:24px;font-weight:300}.cta-btn{display:inline-block;padding:13px 32px;background:var(--cream);color:var(--ink);border-radius:7px;font-size:14px;font-weight:600;font-family:var(--sans);text-decoration:none}
+    .footer{border-top:1px solid var(--border);padding:32px 64px;display:flex;justify-content:space-between;align-items:center}.footer-brand{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.08em}.footer-links{display:flex;gap:20px}.footer-links a{font-family:var(--mono);font-size:10px;color:var(--cream-mute);text-decoration:none}.footer-links a:hover{color:var(--cream)}
+    @media(max-width:768px){.nav{padding:16px 24px}.hero{padding:72px 24px 40px}.content{padding:48px 24px 64px}.footer{padding:24px;flex-direction:column;gap:12px}.matrix{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<nav class="nav"><a class="nav-brand" href="/"><span class="nav-revo">Revo</span><span class="nav-sys">-Sys</span></a><div class="nav-links"><a href="/" class="nav-link">Home</a><a href="/blog" class="nav-link">Blog</a><a href="/#contact" class="nav-link">Contact</a><a href="/portal" class="nav-portal">Client Portal</a></div></nav>
+<header class="hero"><div class="hero-inner">
+  <div class="breadcrumb"><a href="/">Home</a><span>/</span><a href="/blog">Blog</a><span>/</span>Lead Management</div>
+  <div class="hero-tag">Lead Management</div>
+  <h1>Lead Scoring: The Complete B2B Guide<br>to Prioritising Your Best Leads</h1>
+  <div class="hero-meta">REVO-SYS · APRIL 2025 · 8 MIN READ</div>
+</div></header>
+<main class="content">
+  <div class="quick-answer"><div class="qa-label">Quick Answer</div><p class="qa-text"><strong>Lead scoring</strong> assigns a numerical score to each prospect based on their demographic fit (job title, company size, industry) and behavioural engagement (page views, email opens, form fills). High-scoring leads get prioritised for sales outreach; low-scoring leads stay in nurture flows.</p></div>
+
+  <h2>The Two Dimensions of Lead Scoring</h2>
+  <h3>Dimension 1: Fit Score (Demographic)</h3>
+  <p>The fit score measures how well a lead matches your Ideal Customer Profile. This is profile-based — about who they are, not what they do.</p>
+  <table class="score-table">
+    <thead><tr><th>Attribute</th><th>Points</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Job title: VP, Director, Head of</td><td class="pos">+20</td><td>Decision-maker or strong influencer</td></tr>
+      <tr><td>Job title: Manager, Lead</td><td class="pos">+10</td><td>Influencer, may not control budget</td></tr>
+      <tr><td>Job title: Intern, Student, Admin</td><td class="neg">-20</td><td>Very unlikely buyer</td></tr>
+      <tr><td>Company size: 50–500 employees</td><td class="pos">+15</td><td>Core ICP range</td></tr>
+      <tr><td>Company size: &lt;10 employees</td><td class="neg">-15</td><td>Too small for enterprise product</td></tr>
+      <tr><td>Industry: target verticals</td><td class="pos">+15</td><td>Configure based on your ICP</td></tr>
+      <tr><td>Personal email (gmail, yahoo)</td><td class="neg">-15</td><td>Unlikely to be a business buyer</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dimension 2: Engagement Score (Behavioural)</h3>
+  <p>The engagement score measures how interested a lead appears based on their actions. High engagement signals buying intent.</p>
+  <table class="score-table">
+    <thead><tr><th>Behaviour</th><th>Points</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Requested a demo / booked a meeting</td><td class="pos">+40</td><td>Highest intent signal</td></tr>
+      <tr><td>Visited pricing page</td><td class="pos">+20</td><td>Strong purchase consideration</td></tr>
+      <tr><td>Downloaded a case study</td><td class="pos">+15</td><td>Late-funnel content interest</td></tr>
+      <tr><td>Opened 3+ emails in a sequence</td><td class="pos">+10</td><td>Sustained engagement</td></tr>
+      <tr><td>Visited site 5+ times in 7 days</td><td class="pos">+15</td><td>High purchase intent</td></tr>
+      <tr><td>Unsubscribed from email</td><td class="neg">-30</td><td>Clear disengagement signal</td></tr>
+      <tr><td>No activity in 90 days</td><td class="neg">-20</td><td>Score decay for cold leads</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The Lead Scoring Matrix</h2>
+  <p>Use both dimensions together to make routing decisions:</p>
+  <div class="matrix">
+    <div class="matrix-cell hot"><div class="matrix-label">Hot Lead — Route to Sales Now</div><div class="matrix-desc">High fit + High engagement. Assign and follow up within 24 hours.</div></div>
+    <div class="matrix-cell nurture"><div class="matrix-label">Nurture — Stay in Marketing</div><div class="matrix-desc">Low fit + High engagement. Continue marketing, monitor closely.</div></div>
+    <div class="matrix-cell qualify"><div class="matrix-label">Qualify — Targeted Outbound</div><div class="matrix-desc">High fit + Low engagement. Proactive, personalised outbound touch.</div></div>
+    <div class="matrix-cell pass"><div class="matrix-label">Pass — Low Touch</div><div class="matrix-desc">Low fit + Low engagement. Low-touch nurture or discard.</div></div>
+  </div>
+
+  <h2>Score Decay: Keeping Your Model Fresh</h2>
+  <p>Lead scores should decay over time. A lead who visited your pricing page 6 months ago and has done nothing since is not the same as one who did it yesterday. Build score decay rules: reduce behavioural scores by 50% every 30 days of inactivity, and reset to zero after 90 days of no engagement.</p>
+
+  <h2>AI-Powered Lead Scoring</h2>
+  <p>Modern CRMs (HubSpot Enterprise, Salesforce Einstein) offer AI-powered predictive scoring that trains machine learning models on your actual conversion data. Instead of manually assigning point values, the AI identifies which attribute combinations statistically predict conversion — and weights them accordingly. AI scoring typically outperforms manual scoring by 15–25% after 3–6 months of training data.</p>
+
+  <hr class="divider">
+  <h2>Frequently Asked Questions</h2>
+  <div class="faq-item"><div class="faq-q">What is lead scoring?</div><div class="faq-a">Lead scoring is a methodology for ranking prospects using a numerical score based on demographic fit (job title, company size, industry) and behavioural engagement (page views, email opens, demo requests).</div></div>
+  <div class="faq-item"><div class="faq-q">How do you build a lead scoring model?</div><div class="faq-a">Analyse your closed-won deals for common attributes, assign point values to positive and negative signals, set an MQL threshold, implement in your CRM, then calibrate based on actual conversion data over 90 days.</div></div>
+  <div class="faq-item"><div class="faq-q">What is the difference between lead scoring and lead grading?</div><div class="faq-a">Lead scoring measures behavioural engagement. Lead grading measures demographic fit. Best programs use both dimensions to route leads appropriately.</div></div>
+  <div class="faq-item"><div class="faq-q">How often should you update your lead scoring model?</div><div class="faq-a">Review your model quarterly. Compare the scores of leads who converted vs. those who didn't and adjust weights accordingly.</div></div>
+
+  <div class="cta-block">
+    <h2>Want a lead scoring model built for your ICP?</h2>
+    <p>Revo-Sys designs and implements lead scoring systems in HubSpot and Salesforce — including AI-powered predictive models calibrated to your actual conversion data.</p>
+    <a class="cta-btn" href="/#contact">Build your lead scoring system →</a>
+  </div>
+</main>
+<footer class="footer"><span class="footer-brand">© 2025 REVO-SYS · GTM PLATFORM</span><div class="footer-links"><a href="/blog">Blog</a><a href="/">Home</a><a href="/#contact">Contact</a></div></footer>
+</body>
+</html>

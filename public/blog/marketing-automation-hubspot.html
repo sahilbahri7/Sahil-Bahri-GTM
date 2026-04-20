@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HubSpot Marketing Automation: The Ultimate Setup Guide for 2025</title>
+  <meta name="description" content="How to set up HubSpot marketing automation from scratch — workflows, lead nurturing sequences, lifecycle stages, and best practices for B2B companies.">
+  <link rel="canonical" href="https://revosys.pro/blog/marketing-automation-hubspot">
+  <meta property="og:title" content="HubSpot Marketing Automation: The Ultimate Setup Guide for 2025">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"HubSpot Marketing Automation: The Ultimate Setup Guide for 2025","author":{"@type":"Organization","name":"Revo-Sys","url":"https://revosys.pro"},"datePublished":"2025-04-10","url":"https://revosys.pro/blog/marketing-automation-hubspot"},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What can you automate with HubSpot?","acceptedAnswer":{"@type":"Answer","text":"HubSpot can automate: lead nurturing emails, lifecycle stage updates, lead scoring, contact property management, internal sales notifications, deal creation, meeting follow-ups, and customer onboarding workflows."}},{"@type":"Question","name":"How do I set up a lead nurturing workflow in HubSpot?","acceptedAnswer":{"@type":"Answer","text":"Go to Automation > Workflows, create a Contact-based workflow, set your enrollment trigger (e.g., form submission), then add email actions with time delays. Use if/then branches to personalise based on engagement."}},{"@type":"Question","name":"What HubSpot plan do you need for marketing automation?","acceptedAnswer":{"@type":"Answer","text":"Basic workflows are available on Marketing Hub Starter. Full workflow automation with branching and goal-setting requires Marketing Hub Professional (~$800/month) or Enterprise (~$3,600/month)."}}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://revosys.pro"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://revosys.pro/blog"},{"@type":"ListItem","position":3,"name":"HubSpot Marketing Automation","item":"https://revosys.pro/blog/marketing-automation-hubspot"}]}]}</script>
+  <style>
+    :root{--ink:#0B0B0B;--ink-2:#111111;--ink-3:#1A1A1A;--cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#7A756D;--amber:#C4A265;--sky:#5B8FA8;--violet:#7C6FA0;--success:#6B9E6F;--danger:#A85B5B;--border:rgba(232,224,212,0.08);--border-h:rgba(232,224,212,0.15);--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+    *{box-sizing:border-box;margin:0;padding:0}html{-webkit-font-smoothing:antialiased}body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.7}a{color:var(--amber);text-decoration:none}a:hover{text-decoration:underline}
+    .nav{position:fixed;top:0;left:0;right:0;width:100%;z-index:100;padding:20px 64px;display:flex;justify-content:space-between;align-items:center;background:rgba(11,11,11,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}.nav-brand{display:flex;align-items:baseline;text-decoration:none}.nav-revo{font-family:var(--serif);font-size:22px;font-style:italic;color:var(--cream)}.nav-sys{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.15em;text-transform:uppercase;margin-left:3px}.nav-links{display:flex;gap:28px;align-items:center}.nav-link{color:var(--cream-mute);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:color .2s}.nav-link:hover{color:var(--cream)}.nav-portal{padding:8px 20px;background:transparent;border:1px solid var(--border-h);border-radius:6px;color:var(--cream-dim);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:all .2s}.nav-portal:hover{border-color:var(--cream);color:var(--cream)}
+    .hero{padding:100px 64px 60px;border-bottom:1px solid var(--border)}.hero-inner{max-width:760px}.breadcrumb{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;display:flex;gap:8px;align-items:center}.breadcrumb a{color:var(--cream-mute);text-decoration:none}.breadcrumb a:hover{color:var(--amber)}.breadcrumb span{opacity:.4}
+    .hero-tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:2px;background:rgba(124,111,160,0.08);color:var(--violet);border:1px solid rgba(124,111,160,0.2);margin-bottom:20px}
+    .hero h1{font-family:var(--serif);font-size:clamp(32px,5vw,54px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.12;margin-bottom:20px}.hero-meta{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em}
+    .content{max-width:760px;margin:0 auto;padding:64px 64px 100px}
+    .quick-answer{padding:20px 24px;border:1px solid rgba(196,162,101,0.2);border-left:3px solid var(--amber);background:rgba(196,162,101,0.04);margin-bottom:48px}.qa-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}.qa-text{font-size:15px;color:var(--cream-dim);line-height:1.7}
+    h2{font-family:var(--serif);font-size:28px;font-weight:400;font-style:italic;color:var(--cream);margin:48px 0 16px;line-height:1.2}h3{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-dim);margin:32px 0 12px}p{color:var(--cream-mute);margin-bottom:16px;font-size:15px}ul,ol{color:var(--cream-mute);padding-left:20px;margin-bottom:16px;font-size:15px}li{margin-bottom:8px}strong{color:var(--cream-dim);font-weight:500}
+    .workflow{border:1px solid var(--border);padding:20px 24px;margin-bottom:12px}
+    .wf-header{margin-bottom:12px}.wf-title{font-family:var(--serif);font-size:17px;font-style:italic;color:var(--cream);margin-bottom:4px}.wf-trigger{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.06em}
+    .wf-trigger span{background:rgba(196,162,101,0.08);color:var(--amber);padding:1px 7px;border-radius:2px;margin-left:6px}
+    .wf-steps{padding-left:18px;font-size:13px;color:var(--cream-mute)}.wf-steps li{margin-bottom:4px}
+    .pro-tip{padding:16px 20px;border:1px solid rgba(107,158,111,0.2);border-left:3px solid var(--success);background:rgba(107,158,111,0.04);margin:28px 0}.pro-tip strong{color:var(--success)}.pro-tip p{margin:0;font-size:14px;color:var(--cream-dim)}
+    .divider{border:none;border-top:1px solid var(--border);margin:48px 0}
+    .faq-item{border-bottom:1px solid var(--border);padding:20px 0}.faq-q{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--cream-dim);margin-bottom:10px;font-weight:500}.faq-a{font-size:14px;color:var(--cream-mute);line-height:1.7}
+    .cta-block{margin-top:64px;padding:48px;background:var(--ink-2);border:1px solid var(--border-h);text-align:center}.cta-block h2{font-family:var(--serif);font-size:32px;font-weight:400;font-style:italic;color:var(--cream);margin:0 0 12px}.cta-block p{font-size:14px;color:var(--cream-mute);margin-bottom:24px;font-weight:300}.cta-btn{display:inline-block;padding:13px 32px;background:var(--cream);color:var(--ink);border-radius:7px;font-size:14px;font-weight:600;font-family:var(--sans);text-decoration:none}
+    .footer{border-top:1px solid var(--border);padding:32px 64px;display:flex;justify-content:space-between;align-items:center}.footer-brand{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.08em}.footer-links{display:flex;gap:20px}.footer-links a{font-family:var(--mono);font-size:10px;color:var(--cream-mute);text-decoration:none}.footer-links a:hover{color:var(--cream)}
+    @media(max-width:768px){.nav{padding:16px 24px}.hero{padding:72px 24px 40px}.content{padding:48px 24px 64px}.footer{padding:24px;flex-direction:column;gap:12px}}
+  </style>
+</head>
+<body>
+<nav class="nav"><a class="nav-brand" href="/"><span class="nav-revo">Revo</span><span class="nav-sys">-Sys</span></a><div class="nav-links"><a href="/" class="nav-link">Home</a><a href="/blog" class="nav-link">Blog</a><a href="/#contact" class="nav-link">Contact</a><a href="/portal" class="nav-portal">Client Portal</a></div></nav>
+<header class="hero"><div class="hero-inner">
+  <div class="breadcrumb"><a href="/">Home</a><span>/</span><a href="/blog">Blog</a><span>/</span>HubSpot</div>
+  <div class="hero-tag">HubSpot</div>
+  <h1>HubSpot Marketing Automation:<br>The Ultimate Setup Guide for 2025</h1>
+  <div class="hero-meta">REVO-SYS · APRIL 2025 · 10 MIN READ</div>
+</div></header>
+<main class="content">
+  <div class="quick-answer"><div class="qa-label">Quick Answer</div><p class="qa-text">HubSpot marketing automation uses Workflows to trigger emails, update properties, notify reps, and move contacts through lifecycle stages — all based on behaviour and attributes. The most impactful automations are <strong>lead nurturing sequences, MQL-to-sales handoffs, and re-engagement campaigns</strong>.</p></div>
+
+  <h2>The 7 HubSpot Workflows Every B2B Company Needs</h2>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">1. Lead Nurturing Sequence — Top of Funnel</div><div class="wf-trigger">TRIGGER:<span>Form submission (any lead magnet)</span></div></div>
+    <ol class="wf-steps"><li>Immediately: Send thank-you email with content download</li><li>Day 2: Educational email — "The problem most [ICP] teams face"</li><li>Day 5: Case study email — how a client achieved [result]</li><li>Day 9: Social proof email — testimonials + ROI stats</li><li>Day 14: Soft CTA — "Ready to see how this works for you?"</li><li>If demo booked: exit workflow, enrol in sales handoff workflow</li></ol>
+  </div>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">2. MQL → Sales Handoff</div><div class="wf-trigger">TRIGGER:<span>Lead score ≥ MQL threshold</span></div></div>
+    <ol class="wf-steps"><li>Update lifecycle stage to "Marketing Qualified Lead"</li><li>Assign contact to sales rep (round-robin or territory-based)</li><li>Send internal email to rep with contact summary</li><li>Create task: "Follow up within 24 hours"</li><li>If rep doesn't log activity in 48 hours: send reminder + notify manager</li></ol>
+  </div>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">3. Demo / Meeting Booked Follow-up</div><div class="wf-trigger">TRIGGER:<span>Meeting booked via Meetings link</span></div></div>
+    <ol class="wf-steps"><li>Immediately: Send confirmation with meeting details + prep agenda</li><li>Day before: Reminder with "3 things to bring to our conversation"</li><li>After meeting: Follow-up with recap + next steps template</li><li>Update contact lifecycle to "Sales Qualified Lead"</li></ol>
+  </div>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">4. Re-engagement Campaign</div><div class="wf-trigger">TRIGGER:<span>No email opens in 90 days + Lead/Subscriber lifecycle</span></div></div>
+    <ol class="wf-steps"><li>Day 1: Re-engagement email — "Still interested in [value prop]?"</li><li>Day 7 (if no open): Different subject line — "Quick question, [First Name]"</li><li>Day 14 (if still no open): "Removing you from our list" breakup email</li><li>If no engagement: mark as "Unqualified", suppress from future sends</li><li>If engages: re-enrol in nurture sequence</li></ol>
+  </div>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">5. Onboarding Automation (Post-Sale)</div><div class="wf-trigger">TRIGGER:<span>Deal stage = Closed Won</span></div></div>
+    <ol class="wf-steps"><li>Immediately: Welcome email with onboarding checklist</li><li>Day 3: "Getting started" video walkthrough</li><li>Day 7: Check-in email from CS rep</li><li>Day 14: "Have you tried [key feature]?" activation email</li><li>Day 30: NPS survey + health check</li></ol>
+  </div>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">6. Pricing Page Visitor Alert</div><div class="wf-trigger">TRIGGER:<span>Contact visits /pricing page</span></div></div>
+    <ol class="wf-steps"><li>Add contact to "High Intent" list</li><li>Increase lead score by +20</li><li>If assigned to sales rep: create task "Hot prospect visited pricing — reach out today"</li><li>If not yet assigned: enrol in direct CTA email sequence</li></ol>
+  </div>
+
+  <div class="workflow">
+    <div class="wf-header"><div class="wf-title">7. Data Enrichment &amp; Hygiene</div><div class="wf-trigger">TRIGGER:<span>Contact created (any source)</span></div></div>
+    <ol class="wf-steps"><li>Attempt enrichment via HubSpot Insights or connected enrichment tool</li><li>If company name missing: flag for manual review</li><li>Set lifecycle stage based on source</li><li>Assign to geographic territory if configured</li></ol>
+  </div>
+
+  <div class="pro-tip"><p><strong>Pro tip:</strong> Always set a goal on your workflows. When a contact achieves the goal (books a meeting, reaches a lifecycle stage), they exit automatically. This prevents contacts from receiving irrelevant emails after they've already converted.</p></div>
+
+  <hr class="divider">
+  <h2>Frequently Asked Questions</h2>
+  <div class="faq-item"><div class="faq-q">What can you automate with HubSpot?</div><div class="faq-a">HubSpot can automate: lead nurturing emails, lifecycle stage updates, lead scoring, contact property management, internal sales notifications, deal creation, meeting follow-ups, and customer onboarding workflows.</div></div>
+  <div class="faq-item"><div class="faq-q">How do I set up a lead nurturing workflow in HubSpot?</div><div class="faq-a">Go to Automation > Workflows, create a Contact-based workflow, set your enrollment trigger, then add email actions with time delays. Use if/then branches to personalise based on engagement behaviour.</div></div>
+  <div class="faq-item"><div class="faq-q">What HubSpot plan do you need for marketing automation?</div><div class="faq-a">Basic workflows are available on Marketing Hub Starter. Full workflow automation with branching and goal-setting requires Marketing Hub Professional (~$800/month) or Enterprise (~$3,600/month).</div></div>
+  <div class="faq-item"><div class="faq-q">How many workflows should a B2B company have?</div><div class="faq-a">Start with 5–7 core workflows (lead nurture, MQL handoff, demo follow-up, re-engagement, onboarding, data hygiene). Most mature HubSpot portals have 20–50 active workflows.</div></div>
+
+  <div class="cta-block">
+    <h2>Need help setting up HubSpot automation?</h2>
+    <p>Revo-Sys is a certified HubSpot Solutions Partner who builds marketing automation systems that drive pipeline — not just activity metrics.</p>
+    <a class="cta-btn" href="/#contact">Set up your HubSpot automation →</a>
+  </div>
+</main>
+<footer class="footer"><span class="footer-brand">© 2025 REVO-SYS · GTM PLATFORM</span><div class="footer-links"><a href="/blog">Blog</a><a href="/">Home</a><a href="/#contact">Contact</a></div></footer>
+</body>
+</html>

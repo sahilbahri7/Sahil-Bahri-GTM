@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import { AnimatePresence, motion } from "framer-motion";
+
+// Disable browser scroll-position restoration so every page load starts at top
+if (typeof window !== "undefined") window.history.scrollRestoration = "manual";
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap";
 
@@ -350,6 +354,20 @@ img,svg{max-width:100%;height:auto}
   /* Disable heavy translate hover on mobile (touch) */
   [style*="transform: translateY(-3px)"]{transform:none !important}
 }
+/* ── Scroll-reveal initial hidden states ──────────────────────────────────
+   The IntersectionObserver fires the CSS animation; these rules keep
+   elements invisible until it does. animation-fill-mode:both then locks
+   the final visible state so elements never re-hide on scroll-up.
+   ──────────────────────────────────────────────────────────────────────── */
+[data-reveal]{opacity:0}
+[data-reveal="fadeUp"]{transform:translateY(24px)}
+[data-reveal="slideInUp"]{transform:translateY(18px)}
+[data-reveal="scaleIn"]{transform:scale(0.7)}
+@media(max-width:767px){
+  [data-reveal="fadeUp"],[data-reveal="slideInUp"]{transform:translateY(12px)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+}
 `;
 const I={dash:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>,users:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,folder:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,doc:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,target:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,check:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="20 6 9 17 4 12"/></svg>,plus:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,edit:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,trash:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,x:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,back:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,send:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,lock:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,copy:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,upload:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,search:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,activity:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,star:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,settings:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,logout:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,ai:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>,arrow:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>,menu:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="16" y2="16"/></svg>,down:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="6 9 12 15 18 9"/></svg>,play:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>};
 const Icon=({name,size=18})=><span style={{display:"inline-flex",width:size,height:size,flexShrink:0}}>{I[name]}</span>;
@@ -364,62 +382,165 @@ const Tabs=({tabs,active,onChange})=>(<div style={{display:"flex",gap:0,marginBo
 const AIButton=({label="Enhance with AI",onConfirm,content})=>{const[st,setSt]=useState("idle");const[prompt,setPrompt]=useState("Improve for clarity and strategic impact.");const[result,setResult]=useState("");const run=async()=>{setSt("loading");const r=await callAI(`${prompt}\n\nContent:\n${content}`);setResult(r);setSt("preview");};if(st==="idle")return <div style={{marginTop:8}}><Btn v="ai" size="sm" icon="ai" onClick={()=>setSt("editing")}>{label}</Btn></div>;if(st==="loading")return <div style={{padding:24,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block"}}/></div>;if(st==="editing")return(<div style={{marginTop:12,padding:16,background:"rgba(124,111,160,0.06)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:10}}><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} rows={2} style={{width:"100%",padding:10,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(124,111,160,0.15)",borderRadius:6,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)",resize:"none"}}/><div style={{display:"flex",gap:8,marginTop:10}}><Btn v="ai" size="sm" onClick={run}>Run</Btn><Btn v="ghost" size="sm" onClick={()=>setSt("idle")}>Cancel</Btn></div></div>);return(<div style={{marginTop:12,padding:16,background:"rgba(107,158,111,0.06)",border:"1px solid rgba(107,158,111,0.15)",borderRadius:10}}><div style={{padding:14,background:"rgba(0,0,0,0.3)",borderRadius:6,color:"var(--cream-dim)",fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{result}</div><div style={{display:"flex",gap:8,marginTop:12}}><Btn size="sm" icon="check" onClick={()=>{onConfirm(result);setSt("idle");setResult("");}}>Accept</Btn><Btn v="ai" size="sm" onClick={run}>Retry</Btn><Btn v="ghost" size="sm" onClick={()=>{setSt("idle");setResult("");}}>Discard</Btn></div></div>);};
 
 // ============================================================
-// LEAD FUNNEL (ENLARGED, HOLISTIC)
+// REVENUE FUNNEL — horizontal trapezoid accordion
 // ============================================================
 const LeadFunnel = () => {
-  const [active, setActive] = useState(null);
-  const stages = [
-    { id: "signals", label: "Raw Signals", sub: "Intent data, web behavior, third-party sources, referral networks", count: "10,000+", color: "#5B8FA8", pct: 100, details: ["Website visitor behavior tracking", "Third-party intent signal monitoring", "Content engagement and research activity", "Event and conference lead capture", "Syndicated content interaction data", "Referral and partner network inputs"] },
-    { id: "enriched", label: "Enriched Data", sub: "Verified contacts, firmographic profiles, ICP scoring", count: "4,200", color: "#7C6FA0", pct: 72, details: ["Contact verification and deduplication", "Company firmographic enrichment", "Technology stack identification", "Organizational structure mapping", "Email and phone verification", "ICP fit scoring and segmentation"] },
-    { id: "leads", label: "Actioning Leads", sub: "Pipeline entry, sequence enrollment, outreach activation", count: "1,800", color: "#C4A265", pct: 52, details: ["Lead enters active pipeline", "Auto-assignment via territory rules", "Quality review and acceptance gate", "Enrolled in structured outreach sequence", "AI-personalized messaging generated", "Multi-channel touchpoints scheduled"] },
-    { id: "mql", label: "MQLs", sub: "Score-qualified, marketing-validated, sales-ready", count: "680", color: "#7B8F7E", pct: 36, details: ["Behavioral score threshold crossed", "Lifecycle stage updated to qualified", "Deal record auto-created for tracking", "Territory-based ownership assigned", "Outreach status moves to active", "Marketing classification applied"] },
-    { id: "sql", label: "SQLs", sub: "Sales-accepted, discovery completed, budget confirmed", count: "240", color: "#A8726F", pct: 22, details: ["Prospect engaged via reply or call", "Discovery conversation completed", "Qualification framework applied", "Business case and pain validated", "Deal formally created with value", "Multi-stakeholder engagement begins"] },
-    { id: "opp", label: "Opportunities", sub: "Active pipeline, deal management, forecasting", count: "85", color: "#6B9E6F", pct: 12, details: ["Deal linked to full account record", "Qualification fields completed", "Close timeline and value assigned", "Pipeline managed in deal board", "Stakeholder research ongoing", "Revenue forecasting activated"] },
+  const STAGES = [
+    { id:"s1", num:"01", name:"Raw Signals",    sub:"Where revenue starts",         color:"#5B8FA8", bg:"rgba(91,143,168,0.07)",    inset:0,  headline:"Capture every buying signal before your competitors do",              pills:["Intent data connected","Source attribution live","Zero signal leakage"],                           steps:["Signal detected","Source tagged","CRM record created"]     },
+    { id:"s2", num:"02", name:"Enrichment",     sub:"Know who matters",             color:"#7C6FA0", bg:"rgba(124,111,160,0.09)",   inset:14, headline:"Turn anonymous signals into sales-ready intelligence",               pills:["ICP score on every contact","Firmographic data auto-filled","Tech stack identified"],           steps:["Contact matched","Data enriched","ICP score assigned"]     },
+    { id:"s3", num:"03", name:"Routing",        sub:"Right rep, right now",         color:"#C4A265", bg:"rgba(196,162,101,0.11)",   inset:28, headline:"Eliminate the 47-hour lead response problem",                       pills:["Sub-90s lead assignment","Territory logic automated","SLA breach alerts live"],               steps:["Lead created","Rep assigned","Sequence enrolled"]          },
+    { id:"s4", num:"04", name:"MQL Gate",       sub:"Only real buyers pass",        color:"#C4A265", bg:"rgba(196,162,101,0.14)",   inset:42, headline:"Stop sending bad leads to sales and killing their trust",           pills:["Scoring model built and live","Marketing-to-sales SLA defined","False MQL rate reduced"],      steps:["Score calculated","Threshold checked","MQL promoted"]      },
+    { id:"s5", num:"05", name:"SQL Conversion", sub:"Sales takes over clean",       color:"#6B9E6F", bg:"rgba(107,158,111,0.16)",   inset:56, headline:"Give your sales team a pipeline they can actually trust",           pills:["Full context in CRM on handoff","Discovery call auto-booked","Pipeline hygiene enforced"],    steps:["Handoff triggered","Context delivered","Deal created"]     },
+    { id:"s6", num:"06", name:"Closed Revenue", sub:"The only metric that matters", color:"#E8E0D4", bg:"rgba(232,224,212,0.14)",   inset:70, headline:"Close faster with a revenue engine that runs itself",               pills:["Forecast accuracy above 85%","Rep admin time cut by 60%+","Full-funnel attribution live"],     steps:["Deal closed","Attribution logged","Loop feeds back"], dark:true },
   ];
-  return (
-    <div style={{ padding: "12px 0" }}>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${stages.length}, 1fr)`, gap: 8 }}>
-        {stages.map((s, i) => {
-          const isActive = active === s.id;
+
+  const [active,    setActive]   = useState(0);
+  const [isMobile,  setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const [mobOpen,   setMobOpen]  = useState(0);
+  const sectionRef  = useRef(null);
+  const timerRef    = useRef(null);
+  const interacted  = useRef(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Auto-advance every 4s on scroll-into-view; cancels permanently on first click
+  useEffect(() => {
+    if (isMobile) return;
+    const el = sectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        obs.disconnect();
+        timerRef.current = setInterval(() => {
+          if (!interacted.current) setActive(p => (p + 1) % STAGES.length);
+        }, 4000);
+      }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => { obs.disconnect(); clearInterval(timerRef.current); };
+  }, [isMobile]);
+
+  const goTo = (i) => {
+    interacted.current = true;
+    clearInterval(timerRef.current);
+    setActive(i);
+  };
+
+  const clipPath = (inset) => inset === 0
+    ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
+    : `polygon(${inset}px 0%, calc(100% - ${inset}px) 0%, 100% 100%, 0% 100%)`;
+
+  /* ── MOBILE: vertical accordion ── */
+  if (isMobile) {
+    return (
+      <div>
+        {STAGES.map((s, i) => {
+          const open = mobOpen === i;
+          const mClip = `polygon(0% 0%, 100% 0%, 100% 100%, ${i * 8}px 100%)`;
           return (
-            <div key={s.id} style={{ position: "relative" }}>
-              {/* Connector arrow */}
-              {i > 0 && <div style={{ position: "absolute", left: -6, top: 52, zIndex: 2 }}><svg width="12" height="16" viewBox="0 0 12 16"><path d="M0 3 L8 8 L0 13" fill="none" stroke={stages[i-1].color} strokeWidth="1.5" opacity="0.4"/></svg></div>}
-              <div onClick={() => setActive(isActive ? null : s.id)} style={{
-                padding: "24px 18px", borderRadius: 14, cursor: "pointer", transition: "all .3s", minHeight: isActive ? "auto" : 200,
-                background: isActive ? `${s.color}12` : "var(--ink)", border: `1px solid ${isActive ? s.color + "40" : "var(--border)"}`,
-                animation: isActive ? "nodeGlow 2.5s ease-in-out infinite" : "none",
-              }}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = s.color + "30"; e.currentTarget.style.background = `${s.color}08`; }}}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--ink)"; }}}>
-                <div style={{ height: 3, background: "var(--border)", borderRadius: 2, marginBottom: 18, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${s.pct}%`, background: s.color, borderRadius: 2, transition: "width 1s" }} />
+            <div key={s.id} style={{ background: s.bg, clipPath: mClip, marginBottom: 2 }}>
+              <div onClick={() => setMobOpen(open ? -1 : i)} style={{ height: 64, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", cursor:"pointer" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <span style={{ fontFamily:"var(--mono)", fontSize:10, color:s.color, letterSpacing:"0.12em" }}>{s.num}</span>
+                  <span style={{ fontFamily:"var(--sans)", fontSize:13, fontWeight:500, color:"var(--cream)" }}>{s.name}</span>
+                  <span style={{ fontFamily:"var(--sans)", fontSize:11, color:"var(--cream-mute)" }}>{s.sub}</span>
                 </div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: s.color, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>Stage {num(i + 1)}</div>
-                <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--cream)", marginBottom: 8, lineHeight: 1.2 }}>{s.label}</div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", lineHeight: 1.6, marginBottom: 14 }}>{s.sub}</div>
-                <div style={{ fontFamily: "var(--serif)", fontSize: 42, fontStyle: "italic", color: s.color, lineHeight: 1 }}>{s.count}</div>
-                {isActive && (
-                  <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${s.color}20`, animation: "fadeUp .3s ease-out" }}>
-                    {s.details.map((d, di) => (
-                      <div key={di} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 7 }}>
-                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: s.color, marginTop: 6, flexShrink: 0, opacity: 0.7 }} />
-                        <span style={{ fontSize: 12, color: "var(--cream-dim)", lineHeight: 1.5 }}>{d}</span>
-                      </div>
-                    ))}
+                <div style={{ transform: open ? "rotate(0)" : "rotate(-90deg)", transition:"transform 0.3s", color:"var(--cream-mute)", display:"flex" }}><Icon name="down" size={16}/></div>
+              </div>
+              <div style={{ maxHeight: open ? 400 : 0, overflow:"hidden", transition:"max-height 0.4s ease-out" }}>
+                <div style={{ padding:"0 24px 24px" }}>
+                  <p style={{ fontSize:15, color:"var(--cream-dim)", lineHeight:1.6, margin:"0 0 16px", fontWeight:300 }}>{s.headline}</p>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    {s.pills.map((p, pi) => <span key={pi} style={{ fontFamily:"var(--mono)", fontSize:10, color:s.dark?"#0B0B0B":s.color, background:s.color+"1E", border:`1px solid ${s.color}4D`, borderRadius:20, padding:"4px 12px" }}>{p}</span>)}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           );
         })}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, padding: "12px 4px" }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Click any stage to expand</span>
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 2s ease-in-out infinite" }} />
-          <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.1em" }}>LIVE SIGNAL FLOW</span>
+        <div style={{ textAlign:"center", marginTop:28, padding:"0 24px" }}>
+          <p style={{ fontFamily:"var(--sans)", fontSize:13, color:"var(--cream-mute)", margin:"0 0 16px" }}>Every stage is automated, measured, and optimised — this is the architecture we build for you.</p>
+          <button onClick={() => document.getElementById("work")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"10px 28px", background:"transparent", border:"1px solid #C4A265", borderRadius:4, color:"#C4A265", fontFamily:"var(--sans)", fontSize:13, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.background="#C4A265";e.currentTarget.style.color="#0B0B0B";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#C4A265";}}>See how we build this →</button>
         </div>
+      </div>
+    );
+  }
+
+  /* ── DESKTOP: horizontal trapezoid accordion ── */
+  return (
+    <div ref={sectionRef}>
+      {/* Funnel track */}
+      <div style={{ display:"flex", height:280, width:"100%", overflow:"hidden" }}>
+        {STAGES.map((s, i) => {
+          const isActive = active === i;
+          return (
+            <div
+              key={s.id}
+              onClick={() => !isActive && goTo(i)}
+              style={{
+                flex: isActive ? 1 : "0 0 72px",
+                transition: "flex 0.45s cubic-bezier(0.25,0.46,0.45,0.94)",
+                clipPath: clipPath(s.inset),
+                background: s.bg,
+                position: "relative",
+                overflow: "hidden",
+                cursor: isActive ? "default" : "pointer",
+              }}
+            >
+              {/* Accent left border (not clipped by outer clip-path since it's inside) */}
+              <div style={{ position:"absolute", left:0, top:0, bottom:0, width:2, background:isActive ? s.color : "transparent", transition:"background 0.3s", zIndex:2, pointerEvents:"none" }} />
+
+              {/* Active: 2-column content */}
+              {isActive && (
+                <div key={active} style={{ height:"100%", boxSizing:"border-box", padding:"28px 32px 28px 36px", display:"grid", gridTemplateColumns:"55% 1fr", gap:32, animation:"fadeIn 0.3s ease-out 0.2s both" }}>
+                  {/* Left column */}
+                  <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", minWidth:0 }}>
+                    <span style={{ fontFamily:"var(--mono)", fontSize:10, color:s.color, letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:6 }}>{s.num}</span>
+                    <h3 style={{ fontFamily:"var(--serif)", fontSize:32, fontWeight:400, fontStyle:"italic", color:"var(--cream)", margin:0, lineHeight:1.1 }}>{s.name}</h3>
+                    <div style={{ height:1, background:s.color, opacity:0.25, margin:"16px 0" }} />
+                    <p style={{ fontFamily:"var(--sans)", fontSize:16, color:"var(--cream)", lineHeight:1.6, margin:"0 0 16px", fontWeight:300 }}>{s.headline}</p>
+                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                      {s.pills.map((p, pi) => (
+                        <span key={pi} style={{ fontFamily:"var(--mono)", fontSize:10, color:s.dark?"#0B0B0B":s.color, background:s.color+"1E", border:`1px solid ${s.color}4D`, borderRadius:20, padding:"4px 12px" }}>{p}</span>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right column: process steps */}
+                  <div style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                    {s.steps.map((step, si) => (
+                      <div key={si} style={{ display:"flex", gap:14, alignItems:"flex-start" }}>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                          <div style={{ width:24, height:24, borderRadius:"50%", background:s.color+"18", border:`1px solid ${s.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--mono)", fontSize:11, color:s.color }}>{si+1}</div>
+                          {si < s.steps.length-1 && <div style={{ width:1, height:26, background:s.color+"33" }} />}
+                        </div>
+                        <span style={{ fontFamily:"var(--sans)", fontSize:12, color:"var(--cream-dim)", paddingTop:4, lineHeight:1.4 }}>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Collapsed: rotated vertical labels, bottom-aligned */}
+              {!isActive && (
+                <div style={{ height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-start", writingMode:"vertical-rl", transform:"rotate(180deg)", padding:"16px 0" }}>
+                  <span style={{ fontFamily:"var(--mono)", fontSize:9, color:s.color, letterSpacing:"0.1em", marginBottom:6 }}>{s.num}</span>
+                  <span style={{ fontFamily:"var(--sans)", fontSize:11, fontWeight:500, color:"var(--cream)", marginBottom:4, whiteSpace:"nowrap" }}>{s.name}</span>
+                  <span style={{ fontFamily:"var(--mono)", fontSize:9, color:"var(--cream-mute)", whiteSpace:"nowrap" }}>{s.sub}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ textAlign:"center", marginTop:28, padding:"0 64px" }}>
+        <p style={{ fontFamily:"var(--sans)", fontSize:13, color:"var(--cream-mute)", margin:"0 0 16px" }}>Every stage is automated, measured, and optimised — this is the architecture we build for you.</p>
+        <button onClick={() => document.getElementById("work")?.scrollIntoView({behavior:"smooth"})} style={{ padding:"10px 28px", background:"transparent", border:"1px solid #C4A265", borderRadius:4, color:"#C4A265", fontFamily:"var(--sans)", fontSize:13, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.background="#C4A265";e.currentTarget.style.color="#0B0B0B";}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#C4A265";}}>See how we build this →</button>
       </div>
     </div>
   );
@@ -447,7 +568,12 @@ const HeroFunnel = () => {
         ))}
       </div>
       {stages.map((s, i) => (
-        <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, justifyContent: "flex-start" }}>
+        <div
+          key={s.label}
+          data-reveal="slideInUp"
+          data-delay={String((0.5 + i * 0.15).toFixed(2))}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, justifyContent: "flex-start" }}
+        >
           <div style={{ width: `${s.w}%`, padding: "8px 14px", background: `${s.color}12`, border: `1px solid ${s.color}35`, borderRadius: 7, display: "flex", justifyContent: "space-between", alignItems: "center", backdropFilter: "blur(4px)" }}>
             <div>
               <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: s.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>{s.label}</div>
@@ -456,7 +582,9 @@ const HeroFunnel = () => {
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, opacity: 0.8, animation: `flowPulse ${1.4 + i * 0.25}s ease-in-out ${i * 0.2}s infinite` }} />
           </div>
           {i < stages.length - 1 && (
-            <div style={{ width: 1, flex: 1, background: `linear-gradient(180deg, ${s.color}50, ${stages[i + 1].color}40)`, animation: `connectorPulse 2s ease-in-out ${i * 0.3}s infinite`, minHeight: 12 }} />
+            <div
+              style={{ width: 1, flex: 1, background: `linear-gradient(180deg, ${s.color}50, ${stages[i + 1].color}40)`, animation: `connectorPulse 2s ease-in-out ${i * 0.3}s infinite`, minHeight: 12 }}
+            />
           )}
         </div>
       ))}
@@ -747,46 +875,254 @@ const StackMap = () => {
 // ============================================================
 // PORTFOLIO PAGE (Consulting Website)
 // ============================================================
+// ============================================================
+// PARTICLE CANVAS — hero background dots with cursor repulsion
+// ============================================================
+const HeroParticles = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const COUNT        = 120;
+    const REPEL_RADIUS = 120;
+    const MAX_SPEED    = 4;
+    const EASE         = 0.03;
+    const AMBER_SHARE  = 0.20;
+
+    let raf;
+    let particles = [];
+    const mouse = { x: -9999, y: -9999 };
+
+    const resize = () => {
+      canvas.width  = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+
+    const makeParticle = () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.08 + Math.random() * 0.17;
+      const ox = Math.cos(angle) * speed;
+      const oy = Math.sin(angle) * speed;
+      return { x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: ox, vy: oy, ox, oy, r: 1 + Math.random() * 1.5 };
+    };
+
+    const initParticles = () => {
+      const indices = Array.from({ length: COUNT }, (_, i) => i);
+      const amberSet = new Set(indices.sort(() => Math.random() - 0.5).slice(0, Math.round(COUNT * AMBER_SHARE)));
+      particles = Array.from({ length: COUNT }, (_, i) => ({
+        ...makeParticle(),
+        color: amberSet.has(i) ? "rgba(196,162,101,0.25)" : "rgba(232,224,212,0.18)",
+      }));
+    };
+
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        const dx = p.x - mouse.x, dy = p.y - mouse.y, dist = Math.sqrt(dx * dx + dy * dy);
+        let desiredVx = p.ox, desiredVy = p.oy;
+        if (dist < REPEL_RADIUS && dist > 0) {
+          const force = (REPEL_RADIUS - dist) / REPEL_RADIUS;
+          desiredVx += (dx / dist) * force * MAX_SPEED;
+          desiredVy += (dy / dist) * force * MAX_SPEED;
+        }
+        p.vx += (desiredVx - p.vx) * EASE;
+        p.vy += (desiredVy - p.vy) * EASE;
+        const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (spd > MAX_SPEED) { p.vx = (p.vx / spd) * MAX_SPEED; p.vy = (p.vy / spd) * MAX_SPEED; }
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < -4) p.x = canvas.width + 4; else if (p.x > canvas.width + 4) p.x = -4;
+        if (p.y < -4) p.y = canvas.height + 4; else if (p.y > canvas.height + 4) p.y = -4;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    const section = canvas.parentElement;
+    const onMouseMove  = (e) => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; };
+    const onMouseLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+    const onResize = () => {
+      resize();
+      for (const p of particles) {
+        if (p.x > canvas.width)  p.x = Math.random() * canvas.width;
+        if (p.y > canvas.height) p.y = Math.random() * canvas.height;
+      }
+    };
+
+    resize(); initParticles(); tick();
+    section.addEventListener("mousemove",  onMouseMove);
+    section.addEventListener("mouseleave", onMouseLeave);
+    window.addEventListener("resize",      onResize);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      section.removeEventListener("mousemove",  onMouseMove);
+      section.removeEventListener("mouseleave", onMouseLeave);
+      window.removeEventListener("resize",      onResize);
+    };
+  }, []);
+
+  return (
+    <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", pointerEvents: "none", zIndex: 0 }} />
+  );
+};
+
+// ============================================================
+// SCROLL REVEAL — wire up IntersectionObserver for every [data-reveal] el
+// ============================================================
+const applyScrollReveal = (root) => {
+  const isMobile = window.innerWidth < 768;
+  const dur = isMobile ? "0.5s" : "0.65s";
+  const observers = [];
+  root.querySelectorAll("[data-reveal]:not([data-revealed])").forEach((el) => {
+    const anim  = el.dataset.reveal;
+    const delay = el.dataset.delay || "0";
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.setAttribute("data-revealed", "");        // lock revealed so it never re-hides
+        el.style.animation = `${anim} ${dur} ease-out ${delay}s both`;
+        obs.disconnect();
+      }
+    }, { threshold: 0.15 });
+    obs.observe(el);
+    observers.push(obs);
+  });
+  return () => observers.forEach(o => o.disconnect());
+};
+
+// ============================================================
+// STAT COUNTER — counts up from 0 to target on scroll-into-view
+// ============================================================
+const StatCounter = ({ value, label }) => {
+  const match = value.match(/^(\d+)(.*)$/);
+  const target = parseInt(match[1], 10);
+  const suffix = match[2] || "";
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const startedRef = useRef(false);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !startedRef.current) {
+        startedRef.current = true;
+        const duration = 1800;
+        let startTime = null;
+        const tick = (now) => {
+          if (!startTime) startTime = now;
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+          setCount(Math.round(eased * target));
+          if (progress < 1) {
+            rafRef.current = requestAnimationFrame(tick);
+          }
+        };
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    }, { threshold: 0 }); // fire as soon as any pixel enters viewport
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      startedRef.current = false; // reset so StrictMode double-mount works
+    };
+  }, [target]);
+  return (
+    <div ref={ref}>
+      <span style={{ fontFamily: "var(--serif)", fontSize: 38, fontStyle: "italic", color: "var(--amber)" }}>{count}{suffix}</span>
+      <span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4 }}>{label}</span>
+    </div>
+  );
+};
+
 const PortfolioPage = ({ data, onLogin }) => {
   const ps = data.portfolioSettings;
   const [expandedCase, setExpandedCase] = useState(null);
   const [hov, setHov] = useState(null);
   const [filterCat, setFilterCat] = useState("all");
   const [activeTool, setActiveTool] = useState(0);
+  const [cForm, setCForm] = useState({ name: "", email: "", company: "", message: "", budget: "" });
+  const [cState, setCState] = useState("idle");
+  const [cError, setCError] = useState("");
   const categories = ["all", ...new Set(CASE_STUDIES.map(c => c.category))];
   const filteredCases = filterCat === "all" ? CASE_STUDIES : CASE_STUDIES.filter(c => c.category === filterCat);
 
+  // Scroll-reveal: re-runs when filter changes so newly mounted case-study
+  // rows also get picked up; data-revealed guards already-animated elements.
+  const revealRef = useRef(null);
+  useEffect(() => {
+    if (!revealRef.current) return;
+    return applyScrollReveal(revealRef.current);
+  }, [filterCat]);
+
+  const submitContact = async () => {
+    if (!cForm.name || !cForm.email || !cForm.message) return;
+    setCState("loading");
+    try {
+      const base = window.location.hostname === "localhost" ? "https://revosys.pro" : "";
+      const res = await fetch(`${base}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cForm),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Failed to send");
+      setCState("success");
+      setCForm({ name: "", email: "", company: "", message: "", budget: "" });
+    } catch (err) {
+      setCState("error");
+      setCError(err.message);
+    }
+  };
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ink)" }}>
+    <div ref={revealRef} style={{ minHeight: "100vh", background: "var(--ink)" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, opacity: 0.03, background: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundSize: "128px" }} />
       {/* Nav */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "20px 64px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(11,11,11,0.88)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginLeft:4}}>-Sys</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",letterSpacing:"0.12em",textTransform:"uppercase",marginLeft:14}}>GTM Platform</span></div>
+        <button onClick={() => { window.location.href = "/"; }} style={{ display: "flex", alignItems: "baseline", gap: 0, background: "none", border: "none", cursor: "pointer", padding: 0 }}><span style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",letterSpacing:"0.15em",textTransform:"uppercase",marginLeft:4}}>-Sys</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",letterSpacing:"0.12em",textTransform:"uppercase",marginLeft:14}}>GTM Platform</span></button>
         <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
-          {["About", "Funnel", "Diagnostics", "Work"].map(s => (<button key={s} onClick={() => document.getElementById(s === "Diagnostics" ? "workflows" : s.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{s}</button>))}
+          {["About", "Funnel", "Work"].map(s => (<button key={s} onClick={() => document.getElementById(s.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{s}</button>))}
+          <a href="/blog" style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>Blog</a>
+          <button onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })} style={{ background: "none", border: "none", color: "var(--cream-mute)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color .2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"} onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>Contact</button>
           <button onClick={onLogin} style={{ padding: "8px 20px", background: "transparent", border: "1px solid var(--border-h)", borderRadius: 6, color: "var(--cream-dim)", fontSize: 13, fontFamily: "var(--mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cream)"; e.currentTarget.style.color = "var(--cream)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-h)"; e.currentTarget.style.color = "var(--cream-dim)"; }}>Client Portal</button>
         </div>
       </nav>
       {/* Hero */}
-      <section style={{ padding: "200px 64px 100px", maxWidth: 1560, margin: "0 auto", position: "relative" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 80, alignItems: "center" }}>
+      <section style={{ padding: "200px 64px 100px", maxWidth: 1560, margin: "0 auto", position: "relative", overflow: "hidden" }}>
+        <HeroParticles />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 80, alignItems: "center", position: "relative", zIndex: 1 }}>
           {/* Left: copy */}
           <div>
-            <div style={{ animation: "fadeUp .8s ease-out" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40 }}>Revenue Operations / GTM Strategy / AI Automation</div>
-              <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 760, marginBottom: 32 }}>{ps.headline}</h1>
-              <p style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 520, lineHeight: 1.8, fontWeight: 300 }}>{ps.subheadline}</p>
+            <div>
+              <div
+                style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 40, animation: "fadeUp 0.7s ease-out 0.1s both" }}
+              >Revenue Operations / GTM Strategy / AI Automation</div>
+              <h1
+                style={{ fontFamily: "var(--serif)", fontSize: "clamp(42px, 6vw, 76px)", fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.08, maxWidth: 760, marginBottom: 32, animation: "fadeUp 0.7s ease-out 0.3s both" }}
+              >{ps.headline}</h1>
+              <p
+                style={{ fontSize: 18, color: "var(--cream-mute)", maxWidth: 520, lineHeight: 1.8, fontWeight: 300, animation: "fadeUp 0.7s ease-out 0.5s both" }}
+              >{ps.subheadline}</p>
             </div>
-            <div style={{ marginTop: 48, display: "flex", gap: 16, animation: "fadeUp .8s ease-out .2s both" }}>
+            <div
+              style={{ marginTop: 48, display: "flex", gap: 16, animation: "fadeUp 0.7s ease-out 0.7s both" }}
+            >
               <button onClick={() => document.getElementById("work")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "var(--sans)" }}>View Work</button>
               <button onClick={() => document.getElementById("workflows")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "14px 36px", background: "transparent", color: "var(--cream-dim)", border: "1px solid var(--border-h)", borderRadius: 8, fontSize: 15, cursor: "pointer", fontFamily: "var(--sans)" }}>Run a Diagnostic</button>
             </div>
             <div style={{ display: "flex", gap: 48, marginTop: 72, animation: "fadeUp .8s ease-out .4s both" }}>
-              {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (<div key={l}><span style={{ fontFamily: "var(--serif)", fontSize: 38, fontStyle: "italic", color: "var(--amber)" }}>{v}</span><span style={{ display: "block", fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4 }}>{l}</span></div>))}
+              {[["6+", "Years in RevOps"], ["4", "CRM Platforms"], ["15+", "GTM Implementations"], ["3x", "Pipeline Velocity"]].map(([v, l]) => (
+                <StatCounter key={l} value={v} label={l} />
+              ))}
             </div>
           </div>
           {/* Right: animated funnel */}
-          <div style={{ width: 420, animation: "fadeIn 1.2s ease-out .4s both", flexShrink: 0 }}>
+          <div style={{ width: 420, flexShrink: 0 }}>
             <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)", animation: "flowPulse 1.8s ease-in-out infinite" }} />
               GTM Signal Flow
@@ -805,37 +1141,52 @@ const PortfolioPage = ({ data, onLogin }) => {
         <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 64 }}>
           <div>
             <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>About</div>
-            <h2 style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.15, marginBottom: 24 }}>The System</h2>
+            <h2 data-reveal="fadeUp" data-delay="0.1" style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.15, marginBottom: 24 }}>The System</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 24 }}>{["HubSpot RevOps", "HubSpot Sales", "Salesforce Admin"].map(c => (<span key={c} style={{ fontFamily: "var(--mono)", fontSize: 11, padding: "5px 12px", borderRadius: 4, border: "1px solid var(--border)", color: "var(--cream-mute)", letterSpacing: "0.05em" }}>{c}</span>))}</div>
             <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Core Stack</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 8, overflow: "hidden" }}>{["HubSpot", "Braze", "Amplitude", "ZoomInfo", "Apollo", "Salesforce", "Make.com", "MindStudio"].map(t => (<div key={t} style={{ padding: "10px 12px", background: "var(--ink-2)", fontFamily: "var(--mono)", fontSize: 13, color: "var(--cream-dim)" }}>{t}</div>))}</div>
           </div>
           <div>
-            <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>Revo-Sys is a boutique revenue operations consultancy building the systems that turn B2B complexity into predictable, scalable growth.</p>
-            <p style={{ fontSize: 18, color: "var(--cream-dim)", lineHeight: 2, marginBottom: 24, fontWeight: 300 }}>We specialize in building the operational backbone of B2B growth. With 6+ years across marketing operations, sales operations, and revenue architecture, Revo-Sys bridges the gap between strategic vision and technical execution for companies scaling their go-to-market motion.</p>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 24, fontWeight: 300 }}>Our approach centers on unified data architectures: connecting CRM, marketing automation, product analytics, and enrichment tools into a single operational framework. We design lead scoring models, automated routing logic, pipeline workflows, and attribution systems that give revenue teams complete visibility from first touch to closed deal.</p>
-            <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.9, marginBottom: 32, fontWeight: 300 }}>We also operate at the frontier of AI-powered RevOps: deploying no-code AI agents for prospecting, research automation, and intelligent CRM management using platforms like Make.com and MindStudio. Our systems reduce manual effort by 60%+ while increasing outreach effectiveness and pipeline velocity.</p>
+            <p style={{ fontSize: 20, color: "var(--cream-dim)", lineHeight: 1.65, marginBottom: 40, fontWeight: 300, maxWidth: 680 }}>We build the operational backbone of B2B growth — <em style={{ fontFamily: "var(--serif)", fontStyle: "italic", color: "var(--cream)" }}>from first signal to closed revenue</em>.</p>
+            {/* 4 capability tiles */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 2 }}>
+              {[
+                { icon: "activity", color: "var(--sky)", label: "Revenue Architecture", desc: "Unified data model across CRM, enrichment, and product — one source of truth for every team." },
+                { icon: "target", color: "var(--amber)", label: "GTM Strategy", desc: "ICP, lead scoring, routing logic, and pipeline stage design built to scale with your motion." },
+                { icon: "ai", color: "var(--violet)", label: "AI Automation", desc: "No-code AI agents that cut admin work by 60%+ and accelerate pipeline velocity end-to-end." },
+                { icon: "dash", color: "var(--success)", label: "Lifecycle Marketing", desc: "Behaviour-triggered campaigns from first touch through expansion and retention — zero gaps." },
+              ].map((cap, ci) => (
+                <div key={ci} data-reveal="scaleIn" data-delay={String((0.1 * ci).toFixed(2))} style={{ padding: "28px 24px", background: "var(--ink-2)", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: `${cap.color}12`, border: `1px solid ${cap.color}28`, display: "flex", alignItems: "center", justifyContent: "center", color: cap.color, flexShrink: 0 }}>
+                      <Icon name={cap.icon} size={16} />
+                    </div>
+                    <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: cap.color, letterSpacing: "0.08em", textTransform: "uppercase" }}>{cap.label}</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--cream-mute)", lineHeight: 1.65, margin: 0, fontWeight: 300 }}>{cap.desc}</p>
+                </div>
+              ))}
+            </div>
             {/* Services inline */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden" }}>{ps.services.map((svc, i) => (<div key={svc.id} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--border)", borderRadius: 10, overflow: "hidden", marginTop: 2 }}>{ps.services.map((svc, i) => (<div key={svc.id} data-reveal="fadeUp" data-delay={String((0.12 * i).toFixed(2))} style={{ padding: "28px 24px", background: "var(--ink-2)" }}><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--amber)", letterSpacing: "0.1em" }}>{num(i + 1)}</span><h3 style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 400, color: "var(--cream)", margin: "10px 0 6px", fontStyle: "italic" }}>{svc.title}</h3><p style={{ color: "var(--cream-mute)", fontSize: 12, lineHeight: 1.7, fontWeight: 300 }}>{svc.description}</p></div>))}</div>
           </div>
         </div>
       </section>
-      {/* Lead Funnel (ENLARGED) */}
-      <section id="funnel" style={{ padding: "100px 40px", maxWidth: 1560, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, padding: "0 24px" }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>The Revenue Funnel</h2></div>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 280, textAlign: "right", lineHeight: 1.6 }}>FROM RAW SIGNALS TO CLOSED REVENUE</span>
+      {/* Revenue Funnel — horizontal trapezoid accordion */}
+      <section id="funnel" style={{ background: "#0B0B0B", padding: "80px 64px" }}>
+        <div data-reveal="fadeUp" style={{ maxWidth: 1560, margin: "0 auto 52px", display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", letterSpacing: "0.2em", textTransform: "uppercase", display: "block", marginBottom: 10 }}>Interactive</span>
+            <h2 style={{ fontFamily: "var(--serif)", fontSize: 36, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", margin: 0 }}>The Revenue Funnel</h2>
+          </div>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.1em", textTransform: "uppercase", maxWidth: 340, textAlign: "right", lineHeight: 1.7 }}>HOW WE ENGINEER YOUR GTM<br/>FROM SIGNAL TO CLOSED REVENUE</span>
         </div>
-        <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 700, fontWeight: 300, padding: "0 24px" }}>This is the lead architecture we design for every engagement. Each stage has defined automation rules, manual quality gates, and clear handoff criteria between teams.</p>
-        <div style={{ background: "var(--ink-2)", border: "1px solid var(--border)", borderRadius: 20, padding: "32px 28px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--sky), var(--violet), var(--amber), var(--sage), var(--rose), var(--success))", opacity: 0.4 }} />
-          <LeadFunnel />
-        </div>
+        <LeadFunnel />
       </section>
       {/* Interactive Diagnostics */}
       <section id="workflows" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive Diagnostics</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>See the Thinking in Action</h2></div>
+          <div data-reveal="fadeUp"><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Interactive Diagnostics</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>See the Thinking in Action</h2></div>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em", maxWidth: 320, textAlign: "right", lineHeight: 1.6 }}>YOUR NUMBERS / INSTANT INSIGHTS</span>
         </div>
         <p style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, marginBottom: 40, maxWidth: 800, fontWeight: 300 }}>Plug in your real numbers. Get instant visual diagnostics. No sign-up, no AI fluff. Just the math and frameworks we use with every client.</p>
@@ -847,7 +1198,7 @@ const PortfolioPage = ({ data, onLogin }) => {
             { title: "Automation ROI Calculator", sub: "What automation saves?", color: "var(--success)", icon: "03" },
             { title: "Stack Integration Map", sub: "Automations you're missing?", color: "var(--violet)", icon: "04" },
           ].map((tab, i) => (
-            <div key={i} onClick={() => setActiveTool(i)}
+            <div key={i} data-reveal="scaleIn" data-delay={String((0.12 * i).toFixed(2))} onClick={() => setActiveTool(i)}
               onMouseEnter={e => { if (activeTool !== i) { e.currentTarget.style.borderColor = tab.color + "35"; e.currentTarget.style.background = `${tab.color}06`; }}}
               onMouseLeave={e => { if (activeTool !== i) { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--ink)"; }}}
               style={{ padding: "26px 24px", borderRadius: 16, cursor: "pointer", transition: "all .25s", background: activeTool === i ? `linear-gradient(145deg, ${tab.color}14, ${tab.color}06)` : "var(--ink)", border: `1.5px solid ${activeTool === i ? tab.color + "55" : "var(--border)"}`, transform: activeTool === i ? "translateY(-3px)" : "none", boxShadow: activeTool === i ? `0 12px 40px ${tab.color}18` : "none" }}>
@@ -889,12 +1240,12 @@ const PortfolioPage = ({ data, onLogin }) => {
       {/* Case Studies */}
       <section id="work" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
-          <div><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After We Stepped In</h2></div>
+          <div data-reveal="fadeUp"><span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Portfolio</span><h2 style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", marginTop: 10 }}>What Changed After We Stepped In</h2></div>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 32, flexWrap: "wrap" }}>{categories.map(c => (<button key={c} onClick={() => setFilterCat(c)} style={{ padding: "8px 20px", borderRadius: 8, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "all .2s", background: filterCat === c ? "rgba(196,162,101,0.1)" : "transparent", border: filterCat === c ? "1px solid rgba(196,162,101,0.25)" : "1px solid var(--border)", color: filterCat === c ? "var(--amber)" : "var(--cream-mute)" }}>{c}</button>))}</div>
         <div style={{ display: "grid", gap: 2 }}>{filteredCases.map((cs, i) => {
           const isExp = expandedCase === cs.id;
-          return (<div key={cs.id} style={{ background: isExp ? "var(--ink-2)" : hov === cs.id ? "var(--ink-2)" : "var(--ink)", transition: "background .3s", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
+          return (<div key={cs.id} data-reveal="fadeUp" data-delay={String((0.1 * i).toFixed(2))} style={{ background: isExp ? "var(--ink-2)" : hov === cs.id ? "var(--ink-2)" : "var(--ink)", transition: "background .3s", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
             <div style={{ padding: "28px 36px", display: "grid", gridTemplateColumns: "50px 1fr auto", gap: 24, alignItems: "center", cursor: "pointer" }} onClick={() => setExpandedCase(isExp ? null : cs.id)} onMouseEnter={() => setHov(cs.id)} onMouseLeave={() => setHov(null)}>
               <span style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, color: isExp ? "var(--amber)" : "var(--ink-4)", fontStyle: "italic", lineHeight: 1, transition: "color .3s" }}>{num(i + 1)}</span>
               <div>
@@ -945,9 +1296,99 @@ const PortfolioPage = ({ data, onLogin }) => {
           </div>);
         })}</div>
       </section>
+      {/* Contact Section */}
+      <section id="contact" style={{ padding: "100px 64px", maxWidth: 1560, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
+          {/* Left — headline + bullets */}
+          <div>
+            <div data-reveal="fadeUp" style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>Get in Touch</div>
+            <h2 data-reveal="fadeUp" data-delay="0.15" style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, fontStyle: "italic", color: "var(--cream)", lineHeight: 1.12, marginBottom: 28, maxWidth: 480 }}>Let's build your revenue system.</h2>
+            <p data-reveal="fadeUp" data-delay="0.25" style={{ fontSize: 16, color: "var(--cream-mute)", lineHeight: 1.8, fontWeight: 300, marginBottom: 40, maxWidth: 420 }}>Tell us about your GTM challenges. We'll come back with a clear perspective on what's worth fixing and how we'd approach it.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {[
+                { label: "CRM implementation or migration", color: "var(--sky)" },
+                { label: "GTM strategy & ICP definition", color: "var(--amber)" },
+                { label: "Lead scoring & pipeline automation", color: "var(--violet)" },
+                { label: "AI agents & RevOps architecture", color: "var(--success)" },
+              ].map((item, i) => (
+                <div key={i} data-reveal="scaleIn" data-delay={String((0.08 * i).toFixed(2))} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: "var(--cream-dim)", fontWeight: 300 }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 48, padding: "20px 24px", border: "1px solid var(--border)", background: "var(--ink-2)", borderRadius: 10 }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Response time</div>
+              <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--amber)" }}>Within 1 business day.</div>
+            </div>
+          </div>
+          {/* Right — form */}
+          <div data-reveal="fadeUp" data-delay="0.3" style={{ background: "var(--ink-2)", border: "1px solid var(--border-h)", borderRadius: 16, padding: "40px", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--amber), var(--violet), var(--sky))", opacity: 0.5 }} />
+            {cState === "success" ? (
+              <div style={{ textAlign: "center", padding: "60px 0", animation: "fadeUp .4s ease-out" }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(107,158,111,0.12)", border: "1px solid rgba(107,158,111,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><Icon name="check" size={24} /></div>
+                <h3 style={{ fontFamily: "var(--serif)", fontSize: 26, fontStyle: "italic", color: "var(--cream)", marginBottom: 12, fontWeight: 400 }}>Message received.</h3>
+                <p style={{ fontSize: 14, color: "var(--cream-mute)", lineHeight: 1.7, marginBottom: 24 }}>I'll review your message and get back to you within 1 business day.</p>
+                <button onClick={() => setCState("idle")} style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--amber)", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>Send another →</button>
+              </div>
+            ) : (
+              <div>
+                <h3 style={{ fontFamily: "var(--serif)", fontSize: 22, fontStyle: "italic", color: "var(--cream)", marginBottom: 24, fontWeight: 400 }}>Start a conversation</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Name *</label>
+                    <input value={cForm.name} onChange={e => setCForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Email *</label>
+                    <input type="email" value={cForm.email} onChange={e => setCForm(f => ({ ...f, email: e.target.value }))} placeholder="you@company.com" style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)" }} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Company</label>
+                    <input value={cForm.company} onChange={e => setCForm(f => ({ ...f, company: e.target.value }))} placeholder="Company name" style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Budget range</label>
+                    <select value={cForm.budget} onChange={e => setCForm(f => ({ ...f, budget: e.target.value }))} style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: cForm.budget ? "var(--cream)" : "var(--cream-mute)", fontSize: 14, fontFamily: "var(--sans)", appearance: "none" }}>
+                      <option value="">Select range</option>
+                      <option>Under $5,000</option>
+                      <option>$5,000 – $15,000</option>
+                      <option>$15,000 – $40,000</option>
+                      <option>$40,000+</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream-mute)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>What are you working on? *</label>
+                  <textarea value={cForm.message} onChange={e => setCForm(f => ({ ...f, message: e.target.value }))} placeholder="Describe your GTM challenge, current setup, and what outcome you're aiming for..." rows={5} style={{ width: "100%", padding: "11px 14px", background: "var(--ink)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--cream)", fontSize: 14, fontFamily: "var(--sans)", resize: "vertical", lineHeight: 1.7 }} />
+                </div>
+                {cState === "error" && <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(168,91,91,0.08)", border: "1px solid rgba(168,91,91,0.2)", borderRadius: 6, fontFamily: "var(--mono)", fontSize: 11, color: "var(--danger)" }}>Error: {cError}. Please try again.</div>}
+                <button
+                  onClick={submitContact}
+                  disabled={cState === "loading" || !cForm.name || !cForm.email || !cForm.message}
+                  style={{ width: "100%", padding: "14px", background: "var(--cream)", color: "var(--ink)", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: cState === "loading" ? "wait" : "pointer", fontFamily: "var(--sans)", opacity: (!cForm.name || !cForm.email || !cForm.message) ? 0.4 : 1, transition: "opacity .2s" }}
+                >
+                  {cState === "loading" ? "Sending…" : "Send message →"}
+                </button>
+                <p style={{ fontSize: 11, color: "var(--cream-mute)", marginTop: 12, textAlign: "center", fontFamily: "var(--mono)", letterSpacing: "0.04em" }}>No pitch decks. No sales calls unless you want one.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
       {/* Footer */}
-      <footer style={{ padding: "60px 64px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <footer style={{ padding: "40px 64px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontFamily: "var(--serif)", fontSize: 18, fontStyle: "italic", color: "var(--cream-mute)" }}>Revo-Sys</span>
+        <div style={{ display: "flex", gap: 28 }}>
+          {[["About", "#about"], ["Work", "#work"], ["Blog", "/blog"], ["Contact", "#contact"]].map(([label, href]) => (
+            <a key={label} href={href} style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--cream-mute)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none", transition: "color .2s" }}
+               onMouseEnter={e => e.currentTarget.style.color = "var(--cream)"}
+               onMouseLeave={e => e.currentTarget.style.color = "var(--cream-mute)"}>{label}</a>
+          ))}
+        </div>
         <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--cream-mute)", letterSpacing: "0.1em" }}>&copy; {new Date().getFullYear()} / Revenue Systems</span>
       </footer>
     </div>
@@ -1871,343 +2312,322 @@ const JobFinderAgent=({data,dispatch,user})=>{
   const filtered=jobs.filter(j=>!excludedSources.has(j.platform)&&(filterPlatform==="all"||j.platform===filterPlatform)).slice().sort(sortFn);
   const closeDetail=()=>{setSelectedJob(null);setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setDetailPhase("info");};
 
-  // ═══════════════════════════════════════════════
-  // MAIN UI — Dashboard-first, config is collapsible
-  // ═══════════════════════════════════════════════
-  return(<div style={{animation:"fadeUp .3s ease-out"}}>
-    {/* ── Collapsible Config Panel (TOP) ── */}
-    {showConfig&&<div style={{padding:24,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16,animation:"fadeUp .2s ease-out"}}>
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:14}}>SEARCH CONFIGURATION</div>
-      <div style={{marginBottom:12}}>
-        <ChipInput label="KEYWORDS — press Enter to add each tag" chips={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="HubSpot, then Enter..." accent="var(--success)"/>
+  // ═══════════════════════════════════════════════════════
+  // CLAY-STYLE LAYOUT: sticky left filters | inline results
+  // ═══════════════════════════════════════════════════════
+  return(<div style={{display:"flex",height:"calc(100vh - 140px)",animation:"fadeUp .3s ease-out",overflow:"hidden",position:"relative"}}>
+    {/* ── LEFT SIDEBAR: Persistent filter panel ── */}
+    <aside style={{width:272,flexShrink:0,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
+      <div style={{padding:"18px 18px 14px",borderBottom:"1px solid var(--border)"}}>
+        <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.14em",marginBottom:3}}>JOB SEARCH</div>
+        <div style={{fontSize:11,color:"var(--cream-dim)"}}>{lastRun?`Scanned ${new Date(lastRun).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})} at ${new Date(lastRun).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`:schedule?.enabled?"Scheduled run active":"Not yet run"}</div>
+        {autoRunStatus&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}><div style={{width:8,height:8,border:"1.5px solid var(--success)",borderTopColor:"transparent",borderRadius:"50%",animation:"spin .8s linear infinite",flexShrink:0}}/><span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)"}}>{autoRunStatus}</span></div>}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
-        <Field label="Location" value={searchForm.location} onChange={v=>setSearchForm({...searchForm,location:v})} placeholder="Remote, Canada, New York, London..."/>
-        <ChipInput label="TITLE FILTER (ANY match)" chips={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="consultant, manager..." accent="var(--amber)"/>
+
+      <div style={{padding:"16px 18px",flex:1,display:"flex",flexDirection:"column",gap:16,overflowY:"auto"}}>
+
+        {/* Keywords */}
+        <ChipInput label="KEYWORDS" chips={searchForm.keywords} onChange={v=>setSearchForm({...searchForm,keywords:v})} placeholder="HubSpot, then Enter…" accent="var(--success)"/>
+
+        {/* Location */}
+        <div>
+          <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>LOCATION</label>
+          <input value={searchForm.location} onChange={e=>setSearchForm({...searchForm,location:e.target.value})} placeholder="Remote · Canada · New York…" style={{width:"100%",padding:"8px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:7,color:"var(--cream)",fontSize:12,fontFamily:"var(--sans)",boxSizing:"border-box"}}/>
+        </div>
+
+        {/* Title filter */}
+        <ChipInput label="TITLE FILTER (any match)" chips={searchForm.title} onChange={v=>setSearchForm({...searchForm,title:v})} placeholder="consultant…" accent="var(--amber)"/>
+
+        {/* Date */}
         <div>
           <label style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:"0.12em",color:"var(--cream-mute)",display:"block",marginBottom:6}}>DATE POSTED</label>
-          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"10px 12px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:8,color:"var(--cream)",fontSize:13,fontFamily:"var(--sans)"}}>
+          <select value={searchForm.datePosted} onChange={e=>setSearchForm({...searchForm,datePosted:e.target.value})} style={{width:"100%",padding:"8px 10px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:7,color:"var(--cream)",fontSize:12,fontFamily:"var(--sans)"}}>
             <option value="today">Today</option><option value="3days">Last 3 days</option><option value="week">Last week</option><option value="month">Last month</option><option value="all">All time</option>
           </select>
         </div>
-      </div>
-      {/* Schedule config */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8,marginTop:8}}>AUTO-RUN SCHEDULE</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-        {["daily","weekly","biweekly","monthly"].map(f=>(
-          <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"6px 14px",borderRadius:6,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
-        ))}
-        {schedule?.enabled&&<button onClick={clearSchedule} style={{padding:"6px 14px",borderRadius:6,background:"rgba(168,91,91,0.08)",border:"1px solid rgba(168,91,91,0.2)",color:"var(--danger)",fontSize:11,fontFamily:"var(--mono)",cursor:"pointer"}}>Disable</button>}
-      </div>
-      {schedule?.enabled&&<p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",margin:"0 0 8px"}}>Auto-runs {schedule.frequency} · Next: {new Date(schedule.nextRun).toLocaleString()}</p>}
 
-      {/* FETCH FROM — which providers to actually call when searching */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
-        <span>FETCH FROM ({fetchSources.length}/7 providers)</span>
-        <span style={{cursor:"pointer",color:"var(--sky)"}} onClick={()=>{const all=["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];setFetchSources(all);try{localStorage.setItem("rs_job_fetch_sources",JSON.stringify(all));}catch{}}}>Select all</span>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(120px, 1fr))",gap:4,marginBottom:4}}>
-        {[
-          {k:"JSearch",label:"JSearch (LI/Indeed)",c:"#0A66C2"},
-          {k:"Upwork",label:"Upwork (RSS+JS)",c:"#14A800"},
-          {k:"Remotive",label:"Remotive",c:"#14A800"},
-          {k:"Jobicy",label:"Jobicy",c:"#7C6FA0"},
-          {k:"Arbeitnow",label:"Arbeitnow",c:"#F76707"},
-          {k:"The Muse",label:"The Muse",c:"#E91E63"},
-          {k:"RemoteOK",label:"RemoteOK",c:"#FF4742"},
-        ].map(s=>{
-          const on=fetchSources.includes(s.k);
-          return(<label key={s.k} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:4,background:on?`${s.c}10`:"var(--ink)",border:`1px solid ${on?`${s.c}30`:"var(--border)"}`,cursor:"pointer"}}>
-            <input type="checkbox" checked={on} onChange={()=>toggleFetchSource(s.k)} style={{accentColor:s.c,cursor:"pointer"}}/>
-            <span style={{fontFamily:"var(--mono)",fontSize:9,color:on?s.c:"var(--cream-mute)",flex:1}}>{s.label}</span>
-          </label>);
-        })}
-      </div>
-      <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:"4px 0 0"}}>These are queried on each search. Uncheck slow or irrelevant providers.</p>
-
-      {/* Sources multi-select (Clay-style) */}
-      <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginTop:12,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
-        <span>SOURCES ({ALL_PLATFORMS.length - excludedSources.size}/{ALL_PLATFORMS.length})</span>
-        <span style={{cursor:"pointer",color:"var(--sky)"}} onClick={()=>setExcludedSources(new Set())}>Include all</span>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(130px, 1fr))",gap:4}}>
-        {ALL_PLATFORMS.map(s=>{
-          const excluded=excludedSources.has(s);
-          const cnt=platformCounts[s]||0;
-          const rapidReq=["LinkedIn","Indeed","Glassdoor","ZipRecruiter","Upwork"].includes(s);
-          const unavailable=rapidReq&&!hasRapid;
-          return(<label key={s} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:4,background:excluded||unavailable?"var(--ink)":`${platCol[s]||"var(--cream-mute)"}10`,border:`1px solid ${excluded||unavailable?"var(--border)":`${platCol[s]}30`}`,cursor:unavailable?"not-allowed":"pointer",opacity:unavailable?0.4:1}}>
-            <input type="checkbox" checked={!excluded&&!unavailable} disabled={unavailable} onChange={()=>!unavailable&&toggleSource(s)} style={{accentColor:platCol[s]||"var(--cream)",cursor:unavailable?"not-allowed":"pointer"}}/>
-            <span style={{fontFamily:"var(--mono)",fontSize:9,color:excluded||unavailable?"var(--cream-mute)":platCol[s]||"var(--cream)",flex:1}}>{s}</span>
-            {cnt>0&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"var(--ink-2)",padding:"1px 5px",borderRadius:3}}>{cnt}</span>}
-          </label>);
-        })}
-      </div>
-      {!hasRapid&&<p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",margin:"6px 0 0"}}>Add RevoSys_RapidAPI env var to unlock LinkedIn, Indeed, Glassdoor, ZipRecruiter, Upwork</p>}
-      <div style={{display:"flex",gap:8,marginTop:14,paddingTop:14,borderTop:"1px solid var(--border)"}}>
-        <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Apply Filters & Search"}</Btn>
-        <button onClick={()=>setShowConfig(false)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Close</button>
-      </div>
-    </div>}
-
-    {/* ── Top Picks Dashboard ── */}
-    <div style={{padding:28,background:"var(--ink-2)",borderRadius:14,border:"1px solid var(--border)",marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+        {/* Fetch Sources */}
         <div>
-          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>AUTONOMOUS JOB INTELLIGENCE</div>
-          <h3 style={{fontFamily:"var(--serif)",fontSize:24,fontStyle:"italic",color:"var(--cream)",margin:0}}>Today's Top Picks</h3>
-          <p style={{fontSize:12,color:"var(--cream-mute)",marginTop:4}}>
-            {lastRun?`Last scan: ${new Date(lastRun).toLocaleString()}`:"No scans yet"}
-            {schedule?.enabled&&<span style={{color:"var(--success)",marginLeft:8}}>· Auto-runs {schedule.frequency}</span>}
-            {hasRapid&&<span style={{color:"#0A66C2",marginLeft:8}}>· LinkedIn/Indeed active</span>}
-          </p>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em"}}>SOURCES</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--sky)",cursor:"pointer"}} onClick={()=>{const a=["JSearch","Upwork","Remotive","Jobicy","Arbeitnow","The Muse","RemoteOK"];setFetchSources(a);try{localStorage.setItem("rs_job_fetch_sources",JSON.stringify(a));}catch{}}}>All</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {[{k:"JSearch",label:"LinkedIn · Indeed · Glassdoor",c:"#0A66C2"},{k:"Upwork",label:"Upwork",c:"#14A800"},{k:"Remotive",label:"Remotive",c:"#14A800"},{k:"Jobicy",label:"Jobicy",c:"#7C6FA0"},{k:"Arbeitnow",label:"Arbeitnow",c:"#F76707"},{k:"The Muse",label:"The Muse",c:"#E91E63"},{k:"RemoteOK",label:"RemoteOK",c:"#FF4742"}].map(s=>{
+              const on=fetchSources.includes(s.k);
+              const cnt=platformCounts[s.k]||0;
+              return(<label key={s.k} style={{display:"flex",alignItems:"center",gap:7,padding:"5px 6px",borderRadius:5,background:on?`${s.c}10`:"transparent",cursor:"pointer"}}>
+                <input type="checkbox" checked={on} onChange={()=>toggleFetchSource(s.k)} style={{accentColor:s.c,flexShrink:0}}/>
+                <span style={{flex:1,fontFamily:"var(--mono)",fontSize:10,color:on?s.c:"var(--cream-mute)"}}>{s.label}</span>
+                {cnt>0&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"var(--ink)",padding:"0 5px",borderRadius:10,lineHeight:"18px"}}>{cnt}</span>}
+              </label>);
+            })}
+          </div>
+          {!hasRapid&&<p style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--danger)",margin:"6px 0 0",lineHeight:1.5}}>Add RevoSys_RapidAPI to unlock LinkedIn/Indeed/Glassdoor</p>}
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setShowConfig(!showConfig)} style={{padding:"6px 12px",borderRadius:6,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>{showConfig?"Hide":"Configure"}</button>
-          <Btn icon="search" v="ai" onClick={()=>runAutonomous(true)} disabled={loading||ranking} size="sm">{loading?"Scanning...":ranking?"Ranking...":"Run Now"}</Btn>
+
+        {/* Schedule */}
+        <div style={{paddingTop:12,borderTop:"1px solid var(--border)"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:8}}>AUTO-RUN SCHEDULE</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+            {["daily","weekly","biweekly","monthly"].map(f=>(
+              <button key={f} onClick={()=>saveSchedule(f)} style={{padding:"5px 0",borderRadius:5,background:schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.12)":"var(--ink)",border:`1px solid ${schedule?.frequency===f&&schedule?.enabled?"rgba(107,158,111,0.3)":"var(--border)"}`,color:schedule?.frequency===f&&schedule?.enabled?"var(--success)":"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+            ))}
+          </div>
+          {schedule?.enabled&&<div style={{marginTop:6}}>
+            <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",margin:"0 0 2px"}}>Next: {new Date(schedule.nextRun).toLocaleString()}</p>
+            <button onClick={clearSchedule} style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",background:"none",border:"none",cursor:"pointer",padding:0}}>Disable</button>
+          </div>}
         </div>
-      </div>
 
-      {/* Auto-run status */}
-      {autoRunStatus&&<div style={{padding:"10px 14px",background:"rgba(107,158,111,0.06)",borderRadius:8,border:"1px solid rgba(107,158,111,0.15)",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-        <div style={{width:12,height:12,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-        <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--success)"}}>{autoRunStatus}</span>
-      </div>}
-
-      {/* API status warnings */}
-      {apiErrors.length>0&&<div style={{padding:"10px 14px",background:"rgba(168,91,91,0.06)",borderRadius:8,border:"1px solid rgba(168,91,91,0.15)",marginBottom:14}}>
-        {apiErrors.map((e,i)=><div key={i} style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--danger)",marginBottom:2}}>{e.source}: {e.error}</div>)}
-      </div>}
-
-      {/* No-results reason */}
-      {noResultsReason&&topPicks.length===0&&!loading&&<div style={{padding:"10px 14px",background:"rgba(196,162,101,0.06)",borderRadius:8,border:"1px solid rgba(196,162,101,0.15)",marginBottom:14}}>
-        <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",lineHeight:1.6}}>{noResultsReason}</div>
-      </div>}
-
-      {/* Per-source diagnostics (how many from each, how many dropped by filter) */}
-      {diagnostics.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-        {diagnostics.map((d,i)=>(
-          <div key={i} title={`${d.raw} raw · ${d.kept} kept · dropped: ${d.dropped_location} loc, ${d.dropped_title} title, ${d.dropped_date} date`} style={{padding:"4px 10px",borderRadius:4,background:"var(--ink)",border:"1px solid var(--border)",fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>
-            <span style={{color:"var(--cream-dim)"}}>{d.source}</span> <span style={{color:d.kept>0?"var(--success)":"var(--danger)"}}>{d.kept}</span>/{d.raw}
-          </div>
-        ))}
-      </div>}
-
-      {/* Top 5 picks — shown as action cards */}
-      {(ranking||loading)&&topPicks.length===0?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>{loading?"Scanning platforms...":"AI is ranking the best matches..."}</p></div>
-      :topPicks.length>0?<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {topPicks.map((job,idx)=>(
-          <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");setSidebarOpen(true);}} style={{padding:"16px 20px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",cursor:"pointer",display:"flex",gap:14,alignItems:"flex-start",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="var(--success)"} onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
-            <div style={{width:28,height:28,borderRadius:8,background:"rgba(107,158,111,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--success)",flexShrink:0}}>{idx+1}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",letterSpacing:"0.06em",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"var(--cream-mute)"}15`}}>{job.platform}</span>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:"var(--ink-2)"}}>{job.type}</span>
-                {job.salary!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--success)",padding:"2px 6px",borderRadius:3,background:"rgba(107,158,111,0.08)"}}>{job.salary}</span>}
-              </div>
-              <div style={{fontSize:14,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:2}}>{job.title}</div>
-              <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",marginBottom:4}}>{job.company} · {job.location}</div>
-              <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(job.description||"").substring(0,120)}</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");else alert("No application URL available for this listing.");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply</button>
-              <button onClick={e=>{e.stopPropagation();setSelectedJob(job);setDetailPhase("info");setSidebarOpen(true);}} style={{padding:"5px 10px",borderRadius:5,background:"var(--ink-2)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Details</button>
-            </div>
-          </div>
-        ))}
-        {jobs.length>5&&<button onClick={()=>setSidebarOpen(true)} style={{padding:"10px",borderRadius:8,background:"var(--ink)",border:"1px solid var(--border)",color:"var(--cream-mute)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer",textAlign:"center"}}>View all {jobs.length} results →</button>}
-      </div>
-      :<div style={{padding:30,textAlign:"center",color:"var(--cream-mute)",fontSize:12}}>
-        <p style={{margin:"0 0 8px"}}>No jobs loaded yet. Click "Run Now" or configure filters below.</p>
-        <Btn v="ai" icon="search" onClick={()=>runAutonomous(true)} disabled={loading}>Search Jobs</Btn>
-      </div>}
-    </div>
-
-    {/* ═══════ RESULTS SIDEBAR (slides in from right) ═══════ */}
-    {sidebarOpen&&<div style={{position:"fixed",top:0,right:0,bottom:0,width:selectedJob?900:460,zIndex:999,display:"flex",transition:"width .3s ease"}}>
-      <div onClick={()=>{setSidebarOpen(false);closeDetail();}} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:-1}}/>
-
-      {/* Job list panel */}
-      <div style={{width:selectedJob?440:460,background:"var(--ink-2)",borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
-        <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>
-            <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--success)",letterSpacing:"0.1em"}}>{filtered.length} JOBS FOUND</div>
-            {apiSources.length>0&&<div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",marginTop:2}}>from {apiSources.join(", ")}</div>}
-          </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"4px 8px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:10,fontFamily:"var(--mono)"}} title="Sort"><option value="relevance">Relevance</option><option value="newest">Newest</option><option value="company">Company A-Z</option></select>
-            <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{padding:"4px 8px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:10,fontFamily:"var(--mono)"}}><option value="all">All</option>{platforms.map(p=><option key={p} value={p}>{p}</option>)}</select>
-            <button onClick={()=>{setSidebarOpen(false);closeDetail();}} style={{background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",padding:4}}><Icon name="x" size={16}/></button>
-          </div>
-        </div>
-        <div style={{flex:1,overflowY:"auto"}}>
-          {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Scanning platforms...</p></div>
-          :filtered.length===0?<div style={{padding:40,textAlign:"center",color:"var(--cream-mute)",fontSize:12}}>No matching jobs found. Try different keywords.</div>
-          :filtered.map(job=>(
-            <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}} style={{padding:"14px 20px",borderBottom:"1px solid var(--border)",cursor:"pointer",background:selectedJob?.id===job.id?"rgba(107,158,111,0.06)":"transparent",borderLeft:selectedJob?.id===job.id?"3px solid var(--success)":"3px solid transparent",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background=selectedJob?.id===job.id?"rgba(107,158,111,0.06)":"var(--ink-3)"} onMouseLeave={e=>e.currentTarget.style.background=selectedJob?.id===job.id?"rgba(107,158,111,0.06)":"transparent"}>
-              <div style={{display:"flex",gap:6,marginBottom:6}}>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",letterSpacing:"0.06em",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"var(--cream-mute)"}15`}}>{job.platform}</span>
-                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:"var(--ink)"}}>{job.type}</span>
-              </div>
-              <div style={{fontSize:13,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:3}}>{job.title}</div>
-              <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",marginBottom:4}}>{job.company}</div>
-              <div style={{display:"flex",gap:8,fontSize:10,fontFamily:"var(--mono)",color:"var(--cream-mute)"}}>
-                <span>{job.salary}</span><span>·</span><span>{job.location}</span><span>·</span><span>{job.posted}</span>
-              </div>
-              {job.tags?.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:6}}>{job.tags.slice(0,4).map((t,i)=><span key={i} style={{padding:"1px 6px",borderRadius:3,background:"var(--ink)",fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{t}</span>)}</div>}
+        {/* Diagnostics */}
+        {diagnostics.length>0&&<div style={{paddingTop:12,borderTop:"1px solid var(--border)"}}>
+          <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.12em",marginBottom:6}}>LAST RUN RESULTS</div>
+          {diagnostics.map((d,i)=>(
+            <div key={i} title={`dropped: ${d.dropped_location} loc · ${d.dropped_title} title · ${d.dropped_date} date`} style={{display:"flex",justifyContent:"space-between",marginBottom:3,cursor:"help"}}>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>{d.source}</span>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:d.kept>0?"var(--success)":"var(--cream-mute)"}}>{d.kept}/{d.raw}</span>
             </div>
           ))}
-        </div>
+          {noResultsReason&&<p style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",margin:"4px 0 0",lineHeight:1.5}}>{noResultsReason}</p>}
+          {apiErrors.length>0&&apiErrors.map((e,i)=><p key={i} style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--danger)",margin:"2px 0 0"}}>{e.source}: {e.error}</p>)}
+        </div>}
       </div>
 
-      {/* Detail panel */}
-      {selectedJob&&<div style={{flex:1,background:"var(--ink)",borderLeft:"1px solid var(--border)",overflowY:"auto",padding:"24px 28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[selectedJob.platform]||"var(--cream-mute)",padding:"2px 8px",borderRadius:4,background:`${platCol[selectedJob.platform]||"var(--cream-mute)"}15`,letterSpacing:"0.06em"}}>{selectedJob.platform}</span>
-              <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 8px",borderRadius:4,background:"var(--ink-2)"}}>{selectedJob.posted}</span>
+      {/* Search button */}
+      <div style={{padding:"14px 18px",borderTop:"1px solid var(--border)",flexShrink:0}}>
+        <button onClick={()=>runAutonomous(true)} disabled={loading||ranking} style={{width:"100%",padding:"11px 0",borderRadius:8,background:loading||ranking?"rgba(107,158,111,0.06)":"rgba(107,158,111,0.12)",border:"1px solid rgba(107,158,111,0.3)",color:loading||ranking?"var(--cream-mute)":"var(--success)",fontSize:12,fontFamily:"var(--mono)",cursor:loading||ranking?"not-allowed":"pointer",letterSpacing:"0.08em",transition:"all .15s"}}>
+          {loading?"◌  Scanning…":ranking?"◌  AI Ranking…":"⌕  Search Jobs"}
+        </button>
+      </div>
+    </aside>
+
+    {/* ── MAIN AREA ── */}
+    <main style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",minWidth:0}}>
+
+      {/* ── AI TOP PICKS strip ── */}
+      <section style={{padding:"18px 24px 0",borderBottom:"1px solid var(--border)",paddingBottom:18,flexShrink:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",letterSpacing:"0.14em"}}>✦ AI TOP PICKS</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>{lastRun?`· ${new Date(lastRun).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})} ${new Date(lastRun).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`:""}{schedule?.enabled?` · auto ${schedule.frequency}`:""}</span>
+          </div>
+          {topPicks.length>0&&!ranking&&jobs.length>0&&<button onClick={()=>rankJobs(filtered.length?filtered:jobs)} style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"none",border:"1px solid var(--border)",borderRadius:4,padding:"3px 8px",cursor:"pointer"}}>Re-rank</button>}
+        </div>
+
+        {(ranking||(loading&&topPicks.length===0))?
+          <div style={{display:"flex",gap:10}}>{[0,1,2,3,4].map(i=>(<div key={i} style={{minWidth:200,height:108,borderRadius:10,background:"var(--ink-2)",border:"1px solid var(--border)",opacity:0.5+i*0.05}}/>))}</div>
+        :topPicks.length>0?
+          <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
+            {topPicks.map((job,idx)=>(
+              <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}} style={{minWidth:200,maxWidth:216,padding:"12px 14px",background:selectedJob?.id===job.id?"rgba(107,158,111,0.08)":"var(--ink-2)",borderRadius:10,border:`1px solid ${selectedJob?.id===job.id?"rgba(107,158,111,0.45)":"var(--border)"}`,cursor:"pointer",transition:"all .15s",flexShrink:0}} onMouseEnter={e=>{if(selectedJob?.id!==job.id)e.currentTarget.style.borderColor="rgba(107,158,111,0.3)";}} onMouseLeave={e=>{if(selectedJob?.id!==job.id)e.currentTarget.style.borderColor="var(--border)";}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                  <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",padding:"2px 6px",borderRadius:3,background:`${platCol[job.platform]||"#888"}15`}}>{job.platform}</span>
+                  <span style={{fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--success)",lineHeight:1}}>{idx+1}</span>
+                </div>
+                <div style={{fontSize:12,color:"var(--cream)",fontWeight:500,lineHeight:1.4,marginBottom:4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{job.title}</div>
+                <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--amber)",marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.company}</div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  {job.salary&&job.salary!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--success)",flex:1}}>{job.salary}</span>}
+                  <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");}} style={{padding:"4px 8px",borderRadius:4,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:9,fontFamily:"var(--mono)",cursor:"pointer",whiteSpace:"nowrap"}}>Apply →</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        :!loading&&<div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",padding:"8px 0"}}>No picks yet — run a search to get AI-ranked suggestions.</div>
+        }
+      </section>
+
+      {/* ── ALL RESULTS table ── */}
+      <section style={{flex:1,padding:"0 24px 24px",minHeight:0}}>
+        {/* Table header */}
+        <div style={{display:"grid",gridTemplateColumns:"3fr 1.4fr 1fr 1fr 80px",gap:12,padding:"10px 0",borderBottom:"1px solid var(--border)",position:"sticky",top:0,background:"var(--ink-2)",zIndex:2}}>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>ROLE</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:loading||ranking?"var(--amber)":"var(--cream-dim)",fontWeight:500}}>{loading||ranking?"":`${filtered.length} results`}</span>
+            {apiSources.length>0&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>from {apiSources.join(" · ")}</span>}
+          </div>
+          <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>COMPANY</span>
+          <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em"}}>LOCATION</span>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{padding:"3px 6px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:9,fontFamily:"var(--mono)"}}>
+              <option value="relevance">Relevance</option><option value="newest">Newest</option><option value="company">A-Z</option>
+            </select>
+          </div>
+          <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)} style={{padding:"3px 6px",background:"var(--ink)",border:"1px solid var(--border)",borderRadius:4,color:"var(--cream)",fontSize:9,fontFamily:"var(--mono)"}}>
+            <option value="all">All</option>{platforms.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        {/* Rows */}
+        {loading?
+          <div>{[0,1,2,3,4,5,6].map(i=>(<div key={i} style={{height:60,borderBottom:"1px solid var(--border)",opacity:0.4+(i*0.04),background:i%2===0?"var(--ink-2)":"transparent"}}/>))}</div>
+        :filtered.length===0&&jobs.length===0?
+          <div style={{padding:"64px 0",textAlign:"center"}}>
+            <div style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream-mute)",marginBottom:12}}>No results yet</div>
+            <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",marginBottom:20}}>Add keywords and click Search Jobs to begin</div>
+            <button onClick={()=>runAutonomous(true)} style={{padding:"10px 20px",borderRadius:8,background:"rgba(107,158,111,0.1)",border:"1px solid rgba(107,158,111,0.3)",color:"var(--success)",fontSize:12,fontFamily:"var(--mono)",cursor:"pointer"}}>Run search →</button>
+          </div>
+        :filtered.length===0?
+          <div style={{padding:"40px 0",textAlign:"center",fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)"}}>No results match current filters. Try adjusting keywords or sources.</div>
+        :filtered.map((job,i)=>{
+          const isSel=selectedJob?.id===job.id;
+          return(
+            <div key={job.id} onClick={()=>{setSelectedJob(job);setDetailPhase("info");setScope(null);setAsset(null);setBranding(null);setApprovalStatus("pending");}} style={{display:"grid",gridTemplateColumns:"3fr 1.4fr 1fr 1fr 80px",gap:12,alignItems:"center",padding:"12px 0",borderBottom:"1px solid var(--border)",cursor:"pointer",borderLeft:isSel?"2px solid var(--success)":"2px solid transparent",paddingLeft:isSel?8:0,background:isSel?"rgba(107,158,111,0.04)":i%2===0?"transparent":"rgba(255,255,255,0.01)",transition:"all .1s"}} onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background="rgba(255,255,255,0.03)";}} onMouseLeave={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"transparent":"rgba(255,255,255,0.01)";}}>
+              <div style={{minWidth:0}}>
+                <div style={{display:"flex",gap:5,marginBottom:3,alignItems:"center"}}>
+                  <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[job.platform]||"var(--cream-mute)",padding:"1px 5px",borderRadius:2,background:`${platCol[job.platform]||"#888"}18`,whiteSpace:"nowrap"}}>{job.platform}</span>
+                  {job.type&&job.type!=="Not listed"&&<span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",opacity:0.7}}>{job.type}</span>}
+                </div>
+                <div style={{fontSize:13,color:isSel?"var(--cream)":"var(--cream-dim)",fontWeight:isSel?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.title}</div>
+              </div>
+              <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.company}</div>
+              <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.location}</div>
+              <div style={{fontFamily:"var(--mono)",fontSize:10,color:job.salary&&job.salary!=="Not listed"?"var(--success)":"var(--cream-mute)",whiteSpace:"nowrap"}}>{job.salary&&job.salary!=="Not listed"?job.salary:job.posted}</div>
+              <button onClick={e=>{e.stopPropagation();const u=job.applyUrl||job.url;if(u)window.open(u,"_blank","noopener,noreferrer");}} style={{padding:"5px 10px",borderRadius:5,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",color:"var(--success)",fontSize:10,fontFamily:"var(--mono)",cursor:"pointer"}}>Apply</button>
             </div>
-            <h2 style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 4px"}}>{selectedJob.title}</h2>
-            <p style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--amber)",margin:0}}>{selectedJob.company} · {selectedJob.location}</p>
-          </div>
-          {selectedJob.companyLogo&&<img src={selectedJob.companyLogo} alt="" style={{width:48,height:48,borderRadius:10,border:"1px solid var(--border)",objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
-        </div>
+          );
+        })}
+      </section>
+    </main>
 
-        <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid var(--border)"}}>
-          {[{k:"info",l:"Details"},{k:"scope",l:"Scope",d:!scope},{k:"asset",l:"Asset",d:!asset},{k:"approve",l:"Apply",d:!scope||!asset}].map(t=>
-            <button key={t.k} onClick={()=>!t.d&&setDetailPhase(t.k)} style={{padding:"8px 16px",background:"none",border:"none",borderBottom:detailPhase===t.k?"2px solid var(--cream)":"2px solid transparent",color:t.d?"var(--ink-5)":detailPhase===t.k?"var(--cream)":"var(--cream-mute)",fontSize:12,cursor:t.d?"default":"pointer",fontFamily:"var(--sans)",opacity:t.d?0.3:1}}>{t.l}</button>
-          )}
-        </div>
-
-        {detailPhase==="info"&&<div>
-          <div style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,marginBottom:16}}>{selectedJob.description}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-            {[["Salary",selectedJob.salary],["Type",selectedJob.type],["Location",selectedJob.location],["Source",selectedJob.source]].map(([l,v])=>(<div key={l} style={{padding:"10px 14px",background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:2}}>{l}</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{v||"—"}</div></div>))}
+    {/* ── DETAIL PANEL: fixed right overlay ── */}
+    {selectedJob&&<>
+      <div onClick={closeDetail} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:998}}/>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,width:490,background:"var(--ink)",borderLeft:"1px solid var(--border)",zIndex:999,display:"flex",flexDirection:"column",animation:"slideIn .2s ease-out"}}>
+        {/* Header */}
+        <div style={{padding:"18px 22px 14px",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",gap:5,marginBottom:6}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:platCol[selectedJob.platform]||"var(--cream-mute)",padding:"2px 7px",borderRadius:3,background:`${platCol[selectedJob.platform]||"#888"}15`}}>{selectedJob.platform}</span>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",padding:"2px 7px",borderRadius:3,background:"var(--ink-2)"}}>{selectedJob.posted}</span>
+              </div>
+              <h2 style={{fontFamily:"var(--serif)",fontSize:19,fontStyle:"italic",color:"var(--cream)",fontWeight:400,margin:"0 0 4px",lineHeight:1.3}}>{selectedJob.title}</h2>
+              <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",margin:0}}>{selectedJob.company} · {selectedJob.location}</p>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
+              {selectedJob.companyLogo&&<img src={selectedJob.companyLogo} alt="" style={{width:38,height:38,borderRadius:7,border:"1px solid var(--border)",objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+              <button onClick={closeDetail} style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",background:"none",border:"1px solid var(--border)",borderRadius:4,padding:"3px 8px",cursor:"pointer"}}>✕ close</button>
+            </div>
           </div>
-          {selectedJob.tags?.length>0&&<div style={{marginBottom:16}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>TAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{selectedJob.tags.map((t,i)=><span key={i} style={{padding:"4px 10px",borderRadius:6,background:"var(--ink-2)",border:"1px solid var(--border)",fontSize:11,color:"var(--cream-dim)"}}>{t}</span>)}</div></div>}
-          {(selectedJob.companyWebsite||branding)&&<div style={{padding:14,background:"var(--ink-2)",borderRadius:8,border:"1px solid var(--border)",marginBottom:16}}>
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:6}}>COMPANY BRANDING {scrapeLoad&&<span style={{color:"var(--amber)"}}>— scraping…</span>}</div>
-            {selectedJob.companyWebsite&&<a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:12,color:"var(--sky)",textDecoration:"none"}}>{selectedJob.companyWebsite}</a>}
-            {!branding&&selectedJob.companyWebsite&&!scrapeLoad&&<div style={{marginTop:8}}><Btn size="sm" v="secondary" onClick={()=>scrapeCompany(selectedJob.companyWebsite)} disabled={scrapeLoad}>{scrapeLoad?"Scraping...":"Scrape Branding"}</Btn></div>}
-            {branding&&!branding.error&&<div style={{marginTop:8}}>
-              <div style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,marginBottom:8}}><span style={{color:"var(--success)"}}>✓</span> {branding.title||branding.ogTitle} — {(branding.description||branding.ogDesc||"").substring(0,150)}</div>
-              {branding.brand?.palette?.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)"}}>Palette:</span>
-                {branding.brand.palette.slice(0,6).map((c,i)=>(<div key={i} title={c} style={{width:18,height:18,borderRadius:4,background:c,border:"1px solid var(--border)",cursor:"help"}}/>))}
-                {branding.brand.logo&&<img src={branding.brand.logo} alt="logo" style={{marginLeft:"auto",width:24,height:24,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+        </div>
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+          {[{k:"info",l:"Details"},{k:"scope",l:"Scope",d:!scope},{k:"asset",l:"Asset",d:!asset},{k:"approve",l:"Apply",d:!scope||!asset}].map(t=>(
+            <button key={t.k} onClick={()=>!t.d&&setDetailPhase(t.k)} style={{flex:1,padding:"9px 4px",background:"none",border:"none",borderBottom:detailPhase===t.k?"2px solid var(--cream)":"2px solid transparent",color:t.d?"var(--ink-4)":detailPhase===t.k?"var(--cream)":"var(--cream-mute)",fontSize:11,cursor:t.d?"default":"pointer",fontFamily:"var(--mono)",opacity:t.d?0.3:1,letterSpacing:"0.05em"}}>{t.l}</button>
+          ))}
+        </div>
+        {/* Content */}
+        <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
+          {detailPhase==="info"&&<div>
+            <div style={{fontSize:13,color:"var(--cream-dim)",lineHeight:1.8,marginBottom:16,whiteSpace:"pre-wrap"}}>{selectedJob.description}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+              {[["Salary",selectedJob.salary],["Type",selectedJob.type],["Location",selectedJob.location],["Source",selectedJob.source]].map(([l,v])=>(<div key={l} style={{padding:"9px 11px",background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:2}}>{l}</div><div style={{fontSize:11,color:"var(--cream-dim)"}}>{v||"—"}</div></div>))}
+            </div>
+            {selectedJob.tags?.length>0&&<div style={{marginBottom:14}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:5}}>TAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{selectedJob.tags.map((t,i)=><span key={i} style={{padding:"3px 8px",borderRadius:4,background:"var(--ink-2)",border:"1px solid var(--border)",fontSize:11,color:"var(--cream-dim)"}}>{t}</span>)}</div></div>}
+            {(selectedJob.companyWebsite||branding)&&<div style={{padding:11,background:"var(--ink-2)",borderRadius:7,border:"1px solid var(--border)",marginBottom:14}}>
+              <div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",letterSpacing:"0.1em",marginBottom:5}}>COMPANY BRANDING {scrapeLoad&&<span style={{color:"var(--amber)"}}>— scraping…</span>}</div>
+              {selectedJob.companyWebsite&&<a href={selectedJob.companyWebsite} target="_blank" rel="noopener" style={{fontSize:11,color:"var(--sky)",textDecoration:"none",display:"block",marginBottom:6}}>{selectedJob.companyWebsite}</a>}
+              {branding&&!branding.error&&<div>
+                <div style={{fontSize:11,color:"var(--cream-mute)",marginBottom:6}}><span style={{color:"var(--success)"}}>✓ </span>{(branding.title||branding.ogTitle||"").substring(0,60)} — {(branding.description||branding.ogDesc||"").substring(0,100)}</div>
+                {branding.brand?.palette?.length>0&&<div style={{display:"flex",gap:5,alignItems:"center"}}>
+                  {branding.brand.palette.slice(0,5).map((c,i)=>(<div key={i} title={c} style={{width:15,height:15,borderRadius:3,background:c,border:"1px solid var(--border)"}}/>))}
+                  {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{marginLeft:"auto",width:20,height:20,borderRadius:3,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+                </div>}
               </div>}
             </div>}
+            <div style={{display:"flex",gap:8}}>
+              <Btn v="ai" icon="doc" onClick={()=>generateScope(selectedJob)} disabled={loading}>Generate Scope</Btn>
+              <Btn v="secondary" onClick={()=>window.open(selectedJob.applyUrl||selectedJob.url,"_blank")}>View Listing</Btn>
+            </div>
           </div>}
-          <div style={{display:"flex",gap:8}}>
-            <Btn v="ai" icon="doc" onClick={()=>generateScope(selectedJob)} disabled={loading}>Generate Scope</Btn>
-            <Btn v="secondary" onClick={()=>window.open(selectedJob.url,"_blank")}>View Original Listing</Btn>
-          </div>
-        </div>}
 
-        {detailPhase==="scope"&&<div>
-          {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Generating scope for {selectedJob.company}...</p></div>
-          :scope&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            {/* Brand banner — surfaces the client's palette so the scope feels personalized */}
-            {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",marginBottom:12,background:`${brandColor}10`,border:`1px solid ${brandColor}30`,borderRadius:8}}>
-              {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:22,height:22,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
-              <span style={{fontFamily:"var(--mono)",fontSize:9,color:brandColor,letterSpacing:"0.1em"}}>BRAND ALIGNED — {selectedJob.company}</span>
-              <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
-                {(branding.brand.palette||[]).slice(0,4).map((c,i)=>(<div key={i} title={c} style={{width:14,height:14,borderRadius:3,background:c,border:"1px solid var(--border)"}}/>))}
+          {detailPhase==="scope"&&<div>
+            {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--amber)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:10}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Generating scope for {selectedJob.company}…</p></div>
+            :scope?<div style={{animation:"fadeUp .3s ease-out"}}>
+              {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",marginBottom:10,background:`${brandColor}10`,border:`1px solid ${brandColor}30`,borderRadius:6}}>
+                {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:brandColor}}>BRAND ALIGNED — {selectedJob.company}</span>
+                <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{(branding.brand.palette||[]).slice(0,4).map((c,i)=>(<div key={i} style={{width:11,height:11,borderRadius:2,background:c}}/>))}</div>
+              </div>}
+              <div style={{fontFamily:"var(--mono)",fontSize:8,color:brandColor,letterSpacing:"0.1em",marginBottom:5}}>TAILORED SCOPE</div>
+              <h3 style={{fontSize:15,color:"var(--cream)",fontWeight:500,margin:"0 0 5px"}}>{scope.title}</h3>
+              <p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,marginBottom:12}}>{scope.executive_summary}</p>
+              {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"9px 11px",marginBottom:4,background:"var(--ink-2)",borderRadius:6,borderLeft:`2px solid ${brandColor}`}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:brandColor,marginBottom:3}}>{s.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{s.content}</p></div>))}
+              <div style={{display:"flex",gap:14,marginTop:10,fontSize:11}}>
+                <span><span style={{color:"var(--cream-mute)"}}>Investment: </span><span style={{color:"var(--success)"}}>{scope.investment}</span></span>
+                <span><span style={{color:"var(--cream-mute)"}}>Timeline: </span><span style={{color:brandColor}}>{scope.timeline}</span></span>
               </div>
-            </div>}
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:brandColor,letterSpacing:"0.1em",marginBottom:6}}>TAILORED SCOPE</div>
-            <h3 style={{fontSize:17,color:"var(--cream)",fontWeight:500,margin:"0 0 6px"}}>{scope.title}</h3>
-            <p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.7,marginBottom:16}}>{scope.executive_summary}</p>
-            {scope.sections?.map((s,i)=>(<div key={i} style={{padding:"12px 14px",marginBottom:6,background:"var(--ink-2)",borderRadius:8,borderLeft:`2px solid ${brandColor}`}}><div style={{fontFamily:"var(--mono)",fontSize:10,color:brandColor,marginBottom:4}}>{s.title}</div><p style={{fontSize:12,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>{s.content}</p></div>))}
-            <div style={{display:"flex",gap:16,marginTop:14,fontSize:12}}>
-              <div><span style={{color:"var(--cream-mute)"}}>Investment:</span> <span style={{color:"var(--success)"}}>{scope.investment}</span></div>
-              <div><span style={{color:"var(--cream-mute)"}}>Timeline:</span> <span style={{color:brandColor}}>{scope.timeline}</span></div>
-            </div>
-            <div style={{display:"flex",gap:8,marginTop:16}}>
-              <Btn v="ai" icon="star" onClick={()=>generateAsset(selectedJob)}>Create Work Asset</Btn>
-              <Btn v="secondary" size="sm" onClick={()=>{setScope(null);generateScope(selectedJob);}}>Regenerate</Btn>
-              <Btn v="secondary" size="sm" onClick={()=>navigator.clipboard?.writeText(JSON.stringify(scope,null,2))}>Copy</Btn>
-            </div>
+              <div style={{display:"flex",gap:6,marginTop:12}}>
+                <Btn v="ai" icon="star" onClick={()=>generateAsset(selectedJob)} size="sm">Create Asset</Btn>
+                <Btn v="secondary" size="sm" onClick={()=>{setScope(null);generateScope(selectedJob);}}>Regenerate</Btn>
+                <Btn v="secondary" size="sm" onClick={()=>navigator.clipboard?.writeText(JSON.stringify(scope,null,2))}>Copy</Btn>
+              </div>
+            </div>:null}
           </div>}
-        </div>}
 
-        {detailPhase==="asset"&&<div>
-          {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:20,height:20,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:12}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Creating case study...</p></div>
-          :asset&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            {branding?.brand?.primary&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",marginBottom:12,background:`${brandAccent}10`,border:`1px solid ${brandAccent}30`,borderRadius:8}}>
-              {branding.brand.logo&&<img src={branding.brand.logo} alt="" style={{width:22,height:22,borderRadius:4,objectFit:"contain",background:"#fff"}} onError={e=>e.target.style.display="none"}/>}
-              <span style={{fontFamily:"var(--mono)",fontSize:9,color:brandAccent,letterSpacing:"0.1em"}}>STYLED FOR {selectedJob.company.toUpperCase()}</span>
-            </div>}
-            <div style={{fontFamily:"var(--mono)",fontSize:9,color:brandAccent,letterSpacing:"0.1em",marginBottom:6}}>CASE STUDY</div>
-            <h3 style={{fontSize:17,color:"var(--cream)",fontWeight:500,margin:"0 0 4px"}}>{asset.title}</h3>
-            <p style={{fontSize:11,color:brandAccent,margin:"0 0 12px"}}>{asset.subtitle} · {asset.client_type}</p>
-            <div style={{padding:12,background:"var(--ink-2)",borderRadius:8,marginBottom:12}}><div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--danger)",marginBottom:4}}>CHALLENGE</div><p style={{fontSize:12,color:"var(--cream-dim)",lineHeight:1.6,margin:0}}>{asset.challenge}</p></div>
-            {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:8}}><div style={{width:24,height:24,borderRadius:6,background:`${brandAccent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:9,color:brandAccent,flexShrink:0}}>{i+1}</div><div><div style={{fontSize:12,color:"var(--cream)",fontWeight:500}}>{p.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,margin:0}}>{p.detail}</p></div></div>))}
-            <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(asset.results?.length||1,3)},1fr)`,gap:8,marginTop:12}}>
-              {asset.results?.map((r,i)=>(<div key={i} style={{textAlign:"center",padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--serif)",fontSize:20,fontStyle:"italic",color:"var(--success)"}}>{r.metric}</div><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{r.label}</div></div>))}
-            </div>
-            {asset.testimonial&&<div style={{marginTop:12,padding:10,background:"var(--ink-2)",borderRadius:6,borderLeft:"2px solid var(--amber)"}}><p style={{fontSize:11,color:"var(--cream-dim)",fontStyle:"italic",margin:0}}>"{asset.testimonial}"</p></div>}
-            <div style={{display:"flex",gap:8,marginTop:16}}>
-              <Btn icon="check" onClick={()=>setDetailPhase("approve")}>Submit for Approval</Btn>
-              <Btn v="secondary" size="sm" onClick={()=>{setAsset(null);generateAsset(selectedJob);}}>Regenerate</Btn>
-            </div>
+          {detailPhase==="asset"&&<div>
+            {loading?<div style={{padding:40,textAlign:"center"}}><div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--violet)",borderRadius:"50%",animation:"spin .8s linear infinite",display:"inline-block",marginBottom:10}}/><p style={{color:"var(--cream-mute)",fontSize:12}}>Creating case study…</p></div>
+            :asset?<div style={{animation:"fadeUp .3s ease-out"}}>
+              {branding?.brand?.primary&&<div style={{padding:"7px 10px",marginBottom:10,background:`${brandAccent}10`,border:`1px solid ${brandAccent}30`,borderRadius:6}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:8,color:brandAccent}}>STYLED FOR {selectedJob.company.toUpperCase()}</span>
+              </div>}
+              <div style={{fontFamily:"var(--mono)",fontSize:8,color:brandAccent,letterSpacing:"0.1em",marginBottom:5}}>CASE STUDY</div>
+              <h3 style={{fontSize:15,color:"var(--cream)",fontWeight:500,margin:"0 0 3px"}}>{asset.title}</h3>
+              <p style={{fontSize:11,color:brandAccent,margin:"0 0 10px"}}>{asset.subtitle} · {asset.client_type}</p>
+              <div style={{padding:10,background:"var(--ink-2)",borderRadius:6,marginBottom:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--danger)",marginBottom:3}}>CHALLENGE</div><p style={{fontSize:11,color:"var(--cream-dim)",lineHeight:1.6,margin:0}}>{asset.challenge}</p></div>
+              {asset.approach?.map((p,i)=>(<div key={i} style={{display:"flex",gap:8,marginBottom:7}}><div style={{width:20,height:20,borderRadius:4,background:`${brandAccent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--mono)",fontSize:8,color:brandAccent,flexShrink:0}}>{i+1}</div><div><div style={{fontSize:12,color:"var(--cream)",fontWeight:500}}>{p.title}</div><p style={{fontSize:11,color:"var(--cream-mute)",lineHeight:1.5,margin:0}}>{p.detail}</p></div></div>))}
+              <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(asset.results?.length||1,3)},1fr)`,gap:6,marginTop:8}}>
+                {asset.results?.map((r,i)=>(<div key={i} style={{textAlign:"center",padding:8,background:"var(--ink-2)",borderRadius:5}}><div style={{fontFamily:"var(--serif)",fontSize:17,fontStyle:"italic",color:"var(--success)"}}>{r.metric}</div><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)"}}>{r.label}</div></div>))}
+              </div>
+              {asset.testimonial&&<div style={{marginTop:8,padding:8,background:"var(--ink-2)",borderRadius:5,borderLeft:`2px solid ${brandColor}`}}><p style={{fontSize:11,color:"var(--cream-dim)",fontStyle:"italic",margin:0}}>"{asset.testimonial}"</p></div>}
+              <div style={{display:"flex",gap:6,marginTop:12}}>
+                <Btn icon="check" onClick={()=>setDetailPhase("approve")} size="sm">Submit for Approval</Btn>
+                <Btn v="secondary" size="sm" onClick={()=>{setAsset(null);generateAsset(selectedJob);}}>Regenerate</Btn>
+              </div>
+            </div>:null}
           </div>}
-        </div>}
 
-        {detailPhase==="approve"&&<div>
-          {approvalStatus==="pending"&&<div style={{animation:"fadeUp .3s ease-out"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-              <div style={{width:40,height:40,borderRadius:10,background:"rgba(196,162,101,0.1)",border:"1px solid rgba(196,162,101,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:14,fontStyle:"italic",color:"var(--amber)"}}>SB</div>
-              <div><div style={{fontSize:14,color:"var(--cream)",fontWeight:500}}>Approval Required</div><p style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",margin:0}}>Sahil Bahri · Founder, Revo-Sys</p></div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-              <div style={{padding:12,background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",letterSpacing:"0.08em",marginBottom:3}}>SCOPE</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{scope?.title||"Not generated"}</div></div>
-              <div style={{padding:12,background:"var(--ink-2)",borderRadius:8}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--violet)",letterSpacing:"0.08em",marginBottom:3}}>ASSET</div><div style={{fontSize:12,color:"var(--cream-dim)"}}>{asset?.title||"Not generated"}</div></div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"center",padding:"16px 0",flexDirection:"column",alignItems:"center"}}>
-              <div style={{display:"flex",gap:10}}>
-                <Btn onClick={()=>{
-                  // Actually open the job listing so the founder can apply
-                  const applyUrl=selectedJob.applyUrl||selectedJob.url;
-                  if(applyUrl){
-                    const w=window.open(applyUrl,"_blank","noopener,noreferrer");
-                    if(!w){alert("Pop-up blocked — please allow pop-ups or open the listing manually.");}
-                  }
-                  setApprovalStatus("approved");
-                  // Record that we applied in localStorage (for later syncing to CRM)
-                  try{
-                    const key="rs_job_applications";
-                    const prev=JSON.parse(localStorage.getItem(key)||"[]");
-                    prev.unshift({jobId:selectedJob.id,title:selectedJob.title,company:selectedJob.company,url:applyUrl,platform:selectedJob.platform,appliedAt:new Date().toISOString(),scope:scope?.title,asset:asset?.title});
-                    localStorage.setItem(key,JSON.stringify(prev.slice(0,200)));
-                  }catch{}
-                }}>Approve & Open Application →</Btn>
+          {detailPhase==="approve"&&<div>
+            {approvalStatus==="pending"&&<div style={{animation:"fadeUp .3s ease-out"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                <div style={{width:34,height:34,borderRadius:8,background:"rgba(196,162,101,0.1)",border:"1px solid rgba(196,162,101,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)"}}>SB</div>
+                <div><div style={{fontSize:13,color:"var(--cream)",fontWeight:500}}>Approval Required</div><p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:0}}>Sahil Bahri · Founder, Revo-Sys</p></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                <div style={{padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--amber)",marginBottom:3}}>SCOPE</div><div style={{fontSize:11,color:"var(--cream-dim)"}}>{scope?.title||"Not generated"}</div></div>
+                <div style={{padding:10,background:"var(--ink-2)",borderRadius:6}}><div style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--violet)",marginBottom:3}}>ASSET</div><div style={{fontSize:11,color:"var(--cream-dim)"}}>{asset?.title||"Not generated"}</div></div>
+              </div>
+              <div style={{display:"flex",gap:8,flexDirection:"column"}}>
+                <Btn onClick={()=>{const u=selectedJob.applyUrl||selectedJob.url;if(u){const w=window.open(u,"_blank","noopener,noreferrer");if(!w)alert("Pop-up blocked — please allow pop-ups.");}setApprovalStatus("approved");try{const k="rs_job_applications";const p=JSON.parse(localStorage.getItem(k)||"[]");p.unshift({jobId:selectedJob.id,title:selectedJob.title,company:selectedJob.company,url:u,platform:selectedJob.platform,appliedAt:new Date().toISOString(),scope:scope?.title,asset:asset?.title});localStorage.setItem(k,JSON.stringify(p.slice(0,200)));}catch{}}}>Approve & Open Application →</Btn>
                 <Btn v="danger" onClick={()=>{setApprovalStatus("rejected");setDetailPhase("info");}}>Reject</Btn>
               </div>
-              <p style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",margin:0}}>Opens the original listing in a new tab so you can submit your application with the generated scope & asset.</p>
-            </div>
+              <p style={{fontFamily:"var(--mono)",fontSize:8,color:"var(--cream-mute)",margin:"10px 0 0",lineHeight:1.5}}>Opens the listing in a new tab for direct application. Use your generated scope & asset as reference.</p>
+            </div>}
+            {approvalStatus==="approved"&&<div style={{textAlign:"center",padding:"32px 0",animation:"fadeUp .3s ease-out"}}>
+              <div style={{width:48,height:48,borderRadius:"50%",background:"rgba(107,158,111,0.12)",border:"2px solid rgba(107,158,111,0.3)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><Icon name="check" size={20}/></div>
+              <p style={{fontFamily:"var(--serif)",fontSize:17,fontStyle:"italic",color:"var(--success)",margin:"0 0 4px"}}>Application Sent</p>
+              <p style={{fontSize:12,color:"var(--cream-mute)",margin:"0 0 14px"}}>{selectedJob.title} at {selectedJob.company}</p>
+              <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                <Btn v="secondary" size="sm" onClick={()=>window.open(selectedJob.applyUrl||selectedJob.url,"_blank")}>View Listing</Btn>
+                <Btn v="secondary" size="sm" onClick={closeDetail}>Back to Results</Btn>
+              </div>
+            </div>}
           </div>}
-          {approvalStatus==="approved"&&<div style={{textAlign:"center",padding:"24px 0",animation:"fadeUp .3s ease-out"}}>
-            <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(107,158,111,0.12)",border:"2px solid rgba(107,158,111,0.3)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:12}}><Icon name="check" size={24}/></div>
-            <p style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--success)",margin:"0 0 6px"}}>Application Submitted</p>
-            <p style={{fontSize:12,color:"var(--cream-mute)",margin:"0 0 12px"}}>{selectedJob.title} at {selectedJob.company}</p>
-            <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-              <Btn v="secondary" size="sm" onClick={()=>window.open(selectedJob.url,"_blank")}>View Listing</Btn>
-              <Btn v="secondary" size="sm" onClick={closeDetail}>Find More</Btn>
-            </div>
-          </div>}
-        </div>}
-      </div>}
-    </div>}
+        </div>
+      </div>
+    </>}
   </div>);
 };
 
 const JobsPage=({data,dispatch,user})=>(
-  <div>
-    <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Intelligence</span>
-    <h1 style={{fontFamily:"var(--serif)",fontSize:36,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:8,marginBottom:12}}>Job Finder</h1>
-    <p style={{fontSize:14,color:"var(--cream-mute)",lineHeight:1.7,marginBottom:32,maxWidth:640}}>Autonomous daily scan across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Remotive and Jobicy — AI-ranked top picks with tailored scope and asset generation, ready to apply on approval.</p>
+  <div style={{margin:"0 -48px",marginTop:-36}}>
+    <div style={{padding:"28px 48px 16px",borderBottom:"1px solid var(--border)",background:"var(--ink-2)"}}>
+      <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--cream-mute)",letterSpacing:"0.2em",textTransform:"uppercase"}}>Intelligence</span>
+      <h1 style={{fontFamily:"var(--serif)",fontSize:30,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginTop:6,marginBottom:4}}>Job Finder</h1>
+      <p style={{fontSize:13,color:"var(--cream-mute)",lineHeight:1.6,margin:0}}>Daily autonomous scan across Upwork, LinkedIn, Indeed, Glassdoor, Remotive and more — AI-ranked top picks with brand-aligned scope &amp; asset generation, ready to apply.</p>
+    </div>
     <JobFinderAgent data={data} dispatch={dispatch} user={user}/>
   </div>
 );
@@ -2396,6 +2816,7 @@ export default function App(){
         }
       });
     }
+    window.scrollTo(0, 0);
     if(!document.querySelector('link[href*="Instrument"]')){const l=document.createElement("link");l.rel="stylesheet";l.href=FONTS;document.head.appendChild(l);}
   },[]);
 
@@ -2422,61 +2843,70 @@ export default function App(){
   const navItems=user?.role==="client" ? clientNav : adminNav;
 
   if(!user){
-    if(page==="login") return (
-      <div style={{minHeight:"100vh",background:"var(--ink)",display:"flex",fontFamily:"var(--sans)"}}>
+    return (
+      <div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}>
         <style>{CSS}</style>
-        {/* Left: login form */}
-        <div style={{flex:"0 0 480px",display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 64px"}}>
-          <div style={{animation:"fadeUp .5s ease-out"}}>
-            <span style={{display:"block",marginBottom:52}}><span style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:13,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>
+        <AnimatePresence mode="wait">
+          <motion.div key={page} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.35,ease:"easeInOut"}} style={{minHeight:"100vh"}}>
+            {page==="login" ? (
+              <div style={{minHeight:"100vh",background:"var(--ink)",display:"flex"}}>
+                {/* Left: login form */}
+                <div style={{flex:"0 0 480px",display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 64px"}}>
+                  <div style={{animation:"fadeUp .5s ease-out"}}>
+                    <span style={{display:"block",marginBottom:52}}><span style={{fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:13,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>
 
-            {loginStep==="email"&&<>
-              <h1 style={{fontFamily:"var(--serif)",fontSize:38,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:8}}>Sign in</h1>
-              <p style={{color:"var(--cream-mute)",fontSize:14,marginBottom:36,fontWeight:300,lineHeight:1.6}}>Enter your email to receive a secure login link.</p>
-              {loginErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(168,91,91,0.1)",color:"var(--danger)",fontSize:13,marginBottom:20}}>{loginErr}</div>}
-              <Field label="Email Address" value={loginEmail} onChange={v=>setLoginEmail(v)} placeholder="you@company.com"/>
-              <Btn onClick={submitEmail} style={{width:"100%",justifyContent:"center",marginTop:4}} size="lg">Send Login Link</Btn>
-            </>}
+                    {loginStep==="email"&&<>
+                      <h1 style={{fontFamily:"var(--serif)",fontSize:38,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:8}}>Sign in</h1>
+                      <p style={{color:"var(--cream-mute)",fontSize:14,marginBottom:36,fontWeight:300,lineHeight:1.6}}>Enter your email to receive a secure login link.</p>
+                      {loginErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"rgba(168,91,91,0.1)",color:"var(--danger)",fontSize:13,marginBottom:20}}>{loginErr}</div>}
+                      <Field label="Email Address" value={loginEmail} onChange={v=>setLoginEmail(v)} placeholder="you@company.com"/>
+                      <Btn onClick={submitEmail} style={{width:"100%",justifyContent:"center",marginTop:4}} size="lg">Send Login Link</Btn>
+                    </>}
 
-            {loginStep==="sent"&&<>
-              <div style={{width:48,height:48,borderRadius:14,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28}}>
-                {loginSending
-                  ? <div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                  : <Icon name="send" size={20}/>}
-              </div>
-              <h1 style={{fontFamily:"var(--serif)",fontSize:32,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:12}}>Check your inbox</h1>
-              <p style={{color:"var(--cream-mute)",fontSize:14,lineHeight:1.8,fontWeight:300}}>If you have an account, you will receive a login link shortly.<br/><br/>Click the link in the email to access your workspace — no password required.</p>
-              <button onClick={()=>{setLoginStep("email");setLoginErr("");}} style={{display:"block",margin:"32px 0 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em",padding:0}}>← TRY A DIFFERENT EMAIL</button>
-            </>}
+                    {loginStep==="sent"&&<>
+                      <div style={{width:48,height:48,borderRadius:14,background:"rgba(107,158,111,0.08)",border:"1px solid rgba(107,158,111,0.2)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28}}>
+                        {loginSending
+                          ? <div style={{width:18,height:18,border:"2px solid var(--border)",borderTopColor:"var(--success)",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                          : <Icon name="send" size={20}/>}
+                      </div>
+                      <h1 style={{fontFamily:"var(--serif)",fontSize:32,fontWeight:400,fontStyle:"italic",color:"var(--cream)",marginBottom:12}}>Check your inbox</h1>
+                      <p style={{color:"var(--cream-mute)",fontSize:14,lineHeight:1.8,fontWeight:300}}>If you have an account, you will receive a login link shortly.<br/><br/>Click the link in the email to access your workspace — no password required.</p>
+                      <button onClick={()=>{setLoginStep("email");setLoginErr("");}} style={{display:"block",margin:"32px 0 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em",padding:0}}>← TRY A DIFFERENT EMAIL</button>
+                    </>}
 
-            <button onClick={()=>nav("portfolio")} style={{display:"block",margin:"28px auto 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em"}}>← BACK TO REVOSYS.PRO</button>
-          </div>
-        </div>
-
-        {/* Right: branded panel */}
-        <div style={{flex:1,background:"var(--ink-2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderLeft:"1px solid var(--border)",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:-120,right:-120,width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(196,162,101,0.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
-          <div style={{animation:"fadeIn .8s ease-out .3s both",maxWidth:340,textAlign:"center"}}>
-            <div style={{width:56,height:56,borderRadius:16,background:"rgba(196,162,101,0.06)",border:"1px solid rgba(196,162,101,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 32px",fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--amber)"}}>R</div>
-            <h2 style={{fontFamily:"var(--serif)",fontSize:28,fontWeight:400,fontStyle:"italic",color:"var(--cream)",lineHeight:1.3,marginBottom:16}}>Your project workspace, in one place.</h2>
-            <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",lineHeight:1.9,letterSpacing:"0.03em"}}>Track progress, review proposals, approve scopes, and access deliverables — all within your private workspace.</p>
-            <div style={{marginTop:40,display:"grid",gap:10}}>
-              {[["Projects & Tasks","Live status on every deliverable"],["Proposals & Scopes","Review, approve, and sign off"],["Deliverables","Download files and assets"]].map(([t,s])=>(
-                <div key={t} style={{padding:"14px 18px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",textAlign:"left"}}>
-                  <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.06em",marginBottom:3}}>{t}</div>
-                  <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{s}</div>
+                    <button onClick={()=>nav("portfolio")} style={{display:"block",margin:"28px auto 0",background:"none",border:"none",color:"var(--cream-mute)",cursor:"pointer",fontSize:11,fontFamily:"var(--mono)",letterSpacing:"0.08em"}}>← BACK TO REVOSYS.PRO</button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      <Analytics />
+
+                {/* Right: branded panel */}
+                <div style={{flex:1,background:"var(--ink-2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderLeft:"1px solid var(--border)",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:-120,right:-120,width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(196,162,101,0.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
+                  <div style={{animation:"fadeIn .8s ease-out .3s both",maxWidth:340,textAlign:"center"}}>
+                    <div style={{width:56,height:56,borderRadius:16,background:"rgba(196,162,101,0.06)",border:"1px solid rgba(196,162,101,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 32px",fontFamily:"var(--serif)",fontSize:22,fontStyle:"italic",color:"var(--amber)"}}>R</div>
+                    <h2 style={{fontFamily:"var(--serif)",fontSize:28,fontWeight:400,fontStyle:"italic",color:"var(--cream)",lineHeight:1.3,marginBottom:16}}>Your project workspace, in one place.</h2>
+                    <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--cream-mute)",lineHeight:1.9,letterSpacing:"0.03em"}}>Track progress, review proposals, approve scopes, and access deliverables — all within your private workspace.</p>
+                    <div style={{marginTop:40,display:"grid",gap:10}}>
+                      {[["Projects & Tasks","Live status on every deliverable"],["Proposals & Scopes","Review, approve, and sign off"],["Deliverables","Download files and assets"]].map(([t,s])=>(
+                        <div key={t} style={{padding:"14px 18px",background:"var(--ink)",borderRadius:10,border:"1px solid var(--border)",textAlign:"left"}}>
+                          <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.06em",marginBottom:3}}>{t}</div>
+                          <div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)"}}>{s}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <PortfolioPage data={data} onLogin={()=>{window.history.pushState({},"","/portal");setPage("login");}}/>
+            )}
+          </motion.div>
+        </AnimatePresence>
+        <Analytics />
       </div>
     );
-    return(<div style={{fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><><PortfolioPage data={data} onLogin={()=>{window.history.pushState({},"","/portal");setPage("login");}}/><Analytics /></></div>);
   }
 
 
-  return(<div style={{display:"flex",minHeight:"100vh",background:"var(--ink)",fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><aside style={{width:sidebar?220:56,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .25s ease",overflow:"hidden",flexShrink:0}}><div style={{padding:sidebar?"20px 16px":"20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid var(--border)"}}><button onClick={()=>setSidebar(!sidebar)} className="ghost-btn"><Icon name="menu" size={18}/></button>{sidebar&&<span style={{whiteSpace:"nowrap"}}><span style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>}</div><nav style={{flex:1,padding:"12px 8px"}}>{navItems.filter(n=>!n.roles||n.roles.includes(user.role)).map(n=>(<button key={n.key} onClick={()=>nav(n.key)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name={n.icon} size={16}/>{sidebar&&<span>{n.label}</span>}</button>))}</nav><div style={{padding:"12px 8px",borderTop:"1px solid var(--border)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:6}}><div style={{width:32,height:32,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{user.avatar}</div>{sidebar&&<div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{user.name}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"capitalize"}}>{user.role}</span></div>}</div><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",background:"none",border:"none",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="logout" size={16}/>{sidebar&&<span>Sign Out</span>}</button></div></aside><main style={{flex:1,overflow:"auto",padding:"36px 48px"}}>{page==="dashboard"&&<DashboardPage data={vd} user={user} onNav={nav}/>}{page==="clients"&&<ClientsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="projects"&&<ProjectsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="project_detail"&&<ProjectDetail data={vd} dispatch={dispatch} user={user} projectId={detailId} onNav={nav}/>}{page==="activity"&&<ActivityPage data={vd}/>}{page==="settings"&&<SettingsPage data={data} dispatch={dispatch} user={user}/>}{page==="agents"&&<AgentsPage data={vd} dispatch={dispatch} user={user}/>}{page==="jobs"&&<JobsPage data={vd} dispatch={dispatch} user={user}/>}{page==="inbox"&&<InboxPage data={vd} dispatch={dispatch} user={user}/>}</main><Analytics /></div>);
+  return(<div style={{display:"flex",minHeight:"100vh",background:"var(--ink)",fontFamily:"var(--sans)",color:"var(--cream)"}}><style>{CSS}</style><aside style={{width:sidebar?220:56,background:"var(--ink-2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .25s ease",overflow:"hidden",flexShrink:0}}><div style={{padding:sidebar?"20px 16px":"20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid var(--border)"}}><button onClick={()=>setSidebar(!sidebar)} className="ghost-btn"><Icon name="menu" size={18}/></button>{sidebar&&<span style={{whiteSpace:"nowrap"}}><span style={{fontFamily:"var(--serif)",fontSize:18,fontStyle:"italic",color:"var(--cream)"}}>Revo</span><span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--amber)",letterSpacing:"0.1em"}}>-Sys</span></span>}</div><nav style={{flex:1,padding:"12px 8px"}}>{navItems.filter(n=>!n.roles||n.roles.includes(user.role)).map(n=>(<button key={n.key} onClick={()=>nav(n.key)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:2,background:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"rgba(196,162,101,0.08)":"transparent",border:"none",borderRadius:6,color:(page===n.key||(n.key==="projects"&&page==="project_detail"))?"var(--amber)":"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name={n.icon} size={16}/>{sidebar&&<span>{n.label}</span>}</button>))}</nav><div style={{padding:"12px 8px",borderTop:"1px solid var(--border)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",marginBottom:6}}><div style={{width:32,height:32,borderRadius:8,background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--serif)",fontSize:12,fontStyle:"italic",color:"var(--amber)",flexShrink:0}}>{user.avatar}</div>{sidebar&&<div><p style={{margin:0,fontSize:13,color:"var(--cream-dim)"}}>{user.name}</p><span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--cream-mute)",textTransform:"capitalize"}}>{user.role}</span></div>}</div><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebar?"10px 12px":"10px 6px",background:"none",border:"none",borderRadius:6,color:"var(--cream-mute)",cursor:"pointer",fontSize:13,fontFamily:"var(--sans)",justifyContent:sidebar?"flex-start":"center"}}><Icon name="logout" size={16}/>{sidebar&&<span>Sign Out</span>}</button></div></aside><main style={{flex:1,overflow:"auto",padding:"36px 48px"}}><AnimatePresence mode="wait"><motion.div key={page} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.3}} style={{minHeight:"100%"}}>{page==="dashboard"&&<DashboardPage data={vd} user={user} onNav={nav}/>}{page==="clients"&&<ClientsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="projects"&&<ProjectsPage data={vd} dispatch={dispatch} user={user} onNav={nav}/>}{page==="project_detail"&&<ProjectDetail data={vd} dispatch={dispatch} user={user} projectId={detailId} onNav={nav}/>}{page==="activity"&&<ActivityPage data={vd}/>}{page==="settings"&&<SettingsPage data={data} dispatch={dispatch} user={user}/>}{page==="agents"&&<AgentsPage data={vd} dispatch={dispatch} user={user}/>}{page==="jobs"&&<JobsPage data={vd} dispatch={dispatch} user={user}/>}{page==="inbox"&&<InboxPage data={vd} dispatch={dispatch} user={user}/>}</motion.div></AnimatePresence></main><Analytics /></div>);
 
 }
