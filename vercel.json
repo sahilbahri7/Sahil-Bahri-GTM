@@ -8,6 +8,12 @@
       "destination": "https://app.revosys.pro/portal",
       "permanent": false,
       "has": [{ "type": "host", "value": "revosys.pro" }]
+    },
+    {
+      "source": "/portal",
+      "destination": "https://app.revosys.pro/portal",
+      "permanent": false,
+      "has": [{ "type": "host", "value": "www.revosys.pro" }]
     }
   ],
   "rewrites": [
