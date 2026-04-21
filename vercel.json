@@ -2,6 +2,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/portal",
+      "destination": "https://app.revosys.pro/portal",
+      "permanent": false,
+      "has": [{ "type": "host", "value": "revosys.pro" }]
+    }
+  ],
   "rewrites": [
     { "source": "/((?!api/|blog/).*)", "destination": "/index.html" }
   ]

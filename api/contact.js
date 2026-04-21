@@ -101,7 +101,7 @@ export default async function handler(req, res) {
           <p style="margin:0 0 24px;font-size:15px;color:#9a9a7a;line-height:1.8;">Thanks for reaching out. I'll review your message and get back to you within 1 business day. In the meantime, feel free to explore the blog or check out the case studies on the site.</p>
           <table cellpadding="0" cellspacing="0">
             <tr><td style="border-radius:8px;background:#e8e0d4;">
-              <a href="https://revosys.pro/blog" style="display:inline-block;padding:12px 28px;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;color:#0e0e0c;text-decoration:none;border-radius:8px;">Read the Blog →</a>
+              <a href="https://app.revosys.pro/blog" style="display:inline-block;padding:12px 28px;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;color:#0e0e0c;text-decoration:none;border-radius:8px;">Read the Blog →</a>
             </td></tr>
           </table>
         </td></tr>
