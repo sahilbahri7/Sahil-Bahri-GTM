@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RevOps KPIs: 15 Revenue Metrics Every Team Must Track in 2025 | Revo-Sys</title>
+  <meta name="description" content="The 15 RevOps KPIs that actually matter — pipeline velocity, win rate, CAC, NRR, time-to-revenue, and more. With benchmarks and how to calculate each.">
+  <link rel="canonical" href="https://revosys.pro/blog/revops-kpis-metrics">
+  <meta property="og:title" content="RevOps KPIs: 15 Revenue Metrics Every Team Must Track in 2025">
+  <meta property="og:description" content="The 15 RevOps KPIs that actually matter — with benchmarks, formulas, and what to do when each metric is off.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://revosys.pro/blog/revops-kpis-metrics">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "RevOps KPIs: 15 Revenue Metrics Every Team Must Track in 2025",
+    "description": "The 15 RevOps KPIs that actually matter — pipeline velocity, win rate, CAC, NRR, MQL-to-SQL, and more with benchmarks and formulas.",
+    "author": { "@type": "Organization", "name": "Revo-Sys", "url": "https://revosys.pro" },
+    "publisher": { "@type": "Organization", "name": "Revo-Sys" },
+    "datePublished": "2025-04-01",
+    "mainEntityOfPage": "https://revosys.pro/blog/revops-kpis-metrics"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "What are the most important RevOps KPIs?", "acceptedAnswer": { "@type": "Answer", "text": "The most important RevOps KPIs are: pipeline velocity (how fast deals move), MQL-to-SQL conversion rate (marketing-to-sales handoff quality), win rate (close ratio), net revenue retention or NRR (expansion vs churn), CAC payback period (efficiency), and time-to-first-revenue (speed of new rep or new market ramp)." } },
+      { "@type": "Question", "name": "What is a good MQL-to-SQL conversion rate?", "acceptedAnswer": { "@type": "Answer", "text": "A good B2B MQL-to-SQL conversion rate is 13–25%. Below 10% usually indicates a misaligned ICP between marketing and sales, a poor lead scoring model, or insufficient qualification criteria before handoff. Above 35% may indicate marketing is too conservative and under-generating MQLs." } },
+      { "@type": "Question", "name": "What is pipeline velocity and how do you calculate it?", "acceptedAnswer": { "@type": "Answer", "text": "Pipeline velocity measures how fast revenue is moving through your pipeline. Formula: (Number of Opportunities × Win Rate × Average Deal Size) ÷ Sales Cycle Length in days. A higher number means faster, more efficient revenue generation. Track it weekly to catch slowdowns early." } },
+      { "@type": "Question", "name": "What is a good win rate for B2B SaaS?", "acceptedAnswer": { "@type": "Answer", "text": "A good win rate for B2B SaaS is 20–30% of opportunities. Enterprise deals typically run 15–20%, while SMB can reach 30–40%. Win rate below 15% usually signals either poor qualification (too many unqualified deals entering the pipeline) or competitive positioning issues." } }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://revosys.pro" },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://revosys.pro/blog" },
+      { "@type": "ListItem", "position": 3, "name": "RevOps KPIs", "item": "https://revosys.pro/blog/revops-kpis-metrics" }
+    ]
+  }
+  </script>
+  <style>
+    :root{--ink:#0B0B0B;--ink-2:#111111;--ink-3:#1A1A1A;--cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#7A756D;--amber:#C4A265;--sky:#5B8FA8;--violet:#7C6FA0;--success:#6B9E6F;--danger:#A85B5B;--border:rgba(232,224,212,0.08);--border-h:rgba(232,224,212,0.15);--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-font-smoothing:antialiased}
+    body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.7}
+    a{color:var(--amber);text-decoration:none}a:hover{text-decoration:underline}
+    .nav{position:fixed;top:0;left:0;right:0;width:100%;z-index:100;padding:20px 64px;display:flex;justify-content:space-between;align-items:center;background:rgba(11,11,11,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+    .nav-brand{display:flex;align-items:baseline;gap:0;text-decoration:none}
+    .nav-revo{font-family:var(--serif);font-size:22px;font-style:italic;color:var(--cream)}
+    .nav-sys{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.15em;text-transform:uppercase;margin-left:3px}
+    .nav-links{display:flex;gap:28px;align-items:center}
+    .nav-link{color:var(--cream-mute);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:color .2s}
+    .nav-link:hover{color:var(--cream)}
+    .nav-portal{padding:8px 20px;background:transparent;border:1px solid var(--border-h);border-radius:6px;color:var(--cream-dim);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:all .2s}
+    .nav-portal:hover{border-color:var(--cream);color:var(--cream)}
+    .hero{padding:100px 64px 60px;border-bottom:1px solid var(--border)}
+    .hero-inner{max-width:760px}
+    .breadcrumb{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;display:flex;gap:8px;align-items:center}
+    .breadcrumb a{color:var(--cream-mute);text-decoration:none}.breadcrumb a:hover{color:var(--amber)}.breadcrumb span{opacity:.4}
+    .hero-tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:2px;background:rgba(196,162,101,0.08);color:var(--amber);border:1px solid rgba(196,162,101,0.2);margin-bottom:20px}
+    .hero h1{font-family:var(--serif);font-size:clamp(32px,5vw,54px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.12;margin-bottom:20px}
+    .hero-meta{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em}
+    .content{max-width:760px;margin:0 auto;padding:64px 64px 100px}
+    .quick-answer{padding:20px 24px;border:1px solid rgba(196,162,101,0.2);border-left:3px solid var(--amber);background:rgba(196,162,101,0.04);margin-bottom:48px}
+    .qa-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+    .qa-text{font-size:15px;color:var(--cream-dim);line-height:1.7}
+    h2{font-family:var(--serif);font-size:28px;font-weight:400;font-style:italic;color:var(--cream);margin:48px 0 16px;line-height:1.2}
+    h3{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-dim);margin:32px 0 12px}
+    p{color:var(--cream-mute);margin-bottom:16px;font-size:15px}
+    ul,ol{color:var(--cream-mute);padding-left:20px;margin-bottom:16px;font-size:15px}
+    li{margin-bottom:8px}strong{color:var(--cream-dim);font-weight:500}
+    .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin:32px 0}
+    .stat-card{background:var(--ink-2);padding:24px;text-align:center}
+    .stat-num{font-family:var(--serif);font-size:40px;font-style:italic;color:var(--amber);line-height:1}
+    .stat-label{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.08em;margin-top:6px;line-height:1.5}
+    .divider{border:none;border-top:1px solid var(--border);margin:48px 0}
+    /* KPI table */
+    .kpi-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13px}
+    .kpi-table th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-mute);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border-h);background:var(--ink-2)}
+    .kpi-table td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cream-mute);vertical-align:top;line-height:1.5}
+    .kpi-table tr:hover td{background:var(--ink-2)}
+    .kpi-name{color:var(--cream-dim);font-weight:500}
+    .kpi-num{font-family:var(--serif);font-size:16px;font-style:italic;color:var(--amber)}
+    .kpi-formula{font-family:var(--mono);font-size:10px;color:var(--sky);line-height:1.5}
+    /* Metric cards */
+    .metric-group{margin:32px 0}
+    .group-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-mute);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .group-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .metric-cards{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border)}
+    .metric-card{background:var(--ink-2);padding:20px 22px}
+    .mc-title{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px}
+    .mc-benchmark{font-family:var(--serif);font-size:24px;font-style:italic;margin-bottom:4px}
+    .mc-formula{font-family:var(--mono);font-size:10px;color:var(--sky);margin-bottom:8px}
+    .mc-desc{font-size:12px;color:var(--cream-mute);line-height:1.6}
+    .mc-alert{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:3px;font-family:var(--mono);letter-spacing:.04em}
+    .alert-warn{background:rgba(168,91,91,0.06);color:var(--danger);border:1px solid rgba(168,91,91,0.15)}
+    .alert-good{background:rgba(107,158,111,0.06);color:var(--success);border:1px solid rgba(107,158,111,0.15)}
+    /* FAQ */
+    .faq-item{border-bottom:1px solid var(--border);padding:20px 0}
+    .faq-q{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--cream-dim);margin-bottom:10px;font-weight:500}
+    .faq-a{font-size:14px;color:var(--cream-mute);line-height:1.7}
+    /* CTA */
+    .cta-block{margin-top:64px;padding:48px;background:var(--ink-2);border:1px solid var(--border-h);text-align:center}
+    .cta-block h2{font-family:var(--serif);font-size:32px;font-weight:400;font-style:italic;color:var(--cream);margin:0 0 12px}
+    .cta-block p{font-size:14px;color:var(--cream-mute);margin-bottom:24px;font-weight:300}
+    .cta-btn{display:inline-block;padding:13px 32px;background:var(--cream);color:var(--ink);border-radius:7px;font-size:14px;font-weight:600;font-family:var(--sans);text-decoration:none}
+    .footer{border-top:1px solid var(--border);padding:32px 64px;display:flex;justify-content:space-between;align-items:center}
+    .footer-brand{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.08em}
+    .footer-links{display:flex;gap:20px}
+    .footer-links a{font-family:var(--mono);font-size:10px;color:var(--cream-mute);text-decoration:none}.footer-links a:hover{color:var(--cream)}
+    @media(max-width:768px){.nav{padding:16px 24px}.hero{padding:80px 24px 40px}.content{padding:48px 24px 64px}.footer{padding:24px;flex-direction:column;gap:12px}.stat-grid{grid-template-columns:1fr}.metric-cards{grid-template-columns:1fr}.kpi-table{font-size:12px}}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="/"><span class="nav-revo">Revo</span><span class="nav-sys">-Sys</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/blog" class="nav-link">Blog</a>
+    <a href="/#contact" class="nav-link">Contact</a>
+    <a href="/portal" class="nav-portal">Client Portal</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb"><a href="/">Home</a><span>/</span><a href="/blog">Blog</a><span>/</span><span>RevOps KPIs</span></div>
+    <span class="hero-tag">Revenue Operations</span>
+    <h1>The 15 RevOps KPIs Every<br>Revenue Team Must Track</h1>
+    <div class="hero-meta">April 2025 &nbsp;·&nbsp; 10 min read &nbsp;·&nbsp; By Revo-Sys</div>
+  </div>
+</header>
+
+<main class="content">
+  <div class="quick-answer">
+    <div class="qa-label">Quick Answer</div>
+    <div class="qa-text">The five RevOps KPIs that matter most are: <strong>pipeline velocity</strong> (speed of revenue flow), <strong>MQL-to-SQL conversion rate</strong> (marketing/sales alignment), <strong>win rate</strong> (close efficiency), <strong>net revenue retention</strong> (expansion minus churn), and <strong>CAC payback period</strong> (acquisition efficiency). Every other metric is downstream of these five.</div>
+  </div>
+
+  <p>Most RevOps dashboards are bloated with vanity metrics — activity counts, email opens, login rates. These tell you what happened but not <em>why</em> or <em>what to do next</em>.</p>
+  <p>The 15 metrics below are the ones that reveal leverage: where revenue is being created, where it's leaking, and which team owns the fix. Organised by function — pipeline, conversion, retention, and efficiency.</p>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">15</div><div class="stat-label">Core RevOps<br>KPIs covered</div></div>
+    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">KPI categories:<br>Pipeline · Conversion · Retention · Efficiency</div></div>
+    <div class="stat-card"><div class="stat-num">Every</div><div class="stat-label">Metric includes<br>benchmark + formula</div></div>
+  </div>
+
+  <h2>Category 1 — Pipeline Health</h2>
+  <p>These metrics tell you whether your pipeline is large enough, moving fast enough, and composed of the right deals to hit your number.</p>
+
+  <div class="metric-group">
+    <div class="group-label"><span class="group-dot" style="background:var(--sky)"></span>Pipeline Metrics</div>
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="mc-title">01 · Pipeline Velocity</div>
+        <div class="mc-benchmark" style="color:var(--sky)">Daily $ Flow</div>
+        <div class="mc-formula">(Opps × Win Rate × ACV) ÷ Cycle Length</div>
+        <div class="mc-desc">How much revenue your pipeline generates per day. The master metric for pipeline health — declining velocity catches problems before they hit revenue.</div>
+        <div class="mc-alert alert-warn">If declining: check # of opps, win rate, and deal size — one of the three is slipping.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">02 · Pipeline Coverage Ratio</div>
+        <div class="mc-benchmark" style="color:var(--amber)">3–4× quota</div>
+        <div class="mc-formula">Active Pipeline Value ÷ Revenue Target</div>
+        <div class="mc-desc">How many dollars of pipeline you have per dollar of quota. The classic "pipeline coverage" metric. Less than 3× is a red flag for hitting the number.</div>
+        <div class="mc-alert alert-warn">Below 2.5×: marketing or sourcing is under-delivering pipeline in time.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">03 · Average Sales Cycle</div>
+        <div class="mc-benchmark" style="color:var(--amber)">Varies by segment</div>
+        <div class="mc-formula">Avg days from opportunity created → closed-won</div>
+        <div class="mc-desc">Enterprise B2B: 90–180 days. SMB: 14–45 days. Rising cycle time is a leading indicator of pipeline decay — deals aging in late stages signal stall.</div>
+        <div class="mc-alert alert-good">Benchmark against previous quarter. 10%+ increase warrants investigation.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">04 · Deal Slip Rate</div>
+        <div class="mc-benchmark" style="color:var(--danger)">&lt;15% healthy</div>
+        <div class="mc-formula">Deals moved to next quarter ÷ Total forecasted deals</div>
+        <div class="mc-desc">The % of pipeline that was expected to close this quarter but slipped. Above 20% indicates forecast inaccuracy, qualification issues, or late-stage objections that need a playbook.</div>
+        <div class="mc-alert alert-warn">High slip rate + low cycle time = deals aren't properly qualified at entry.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Category 2 — Conversion & Funnel Efficiency</h2>
+  <p>These metrics measure how effectively your go-to-market motion converts attention into revenue at each stage.</p>
+
+  <div class="metric-group">
+    <div class="group-label"><span class="group-dot" style="background:var(--amber)"></span>Conversion Metrics</div>
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="mc-title">05 · MQL → SQL Conversion Rate</div>
+        <div class="mc-benchmark" style="color:var(--amber)">13–25% B2B</div>
+        <div class="mc-formula">SQLs created ÷ MQLs handed off × 100</div>
+        <div class="mc-desc">The health metric for the marketing-to-sales handoff. Below 10%: ICP mismatch or scoring model is broken. Above 35%: marketing is too conservative and under-generating.</div>
+        <div class="mc-alert alert-warn">If low: audit lead scoring criteria and ICP alignment with sales.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">06 · SQL → Opportunity Rate</div>
+        <div class="mc-benchmark" style="color:var(--amber)">40–60%</div>
+        <div class="mc-formula">Opportunities created ÷ SQLs accepted × 100</div>
+        <div class="mc-desc">The conversion from sales-accepted lead to a live deal. Low rates indicate discovery call quality, rep skills, or qualification criteria that aren't matching reality.</div>
+        <div class="mc-alert alert-warn">Track by rep. Low performer gaps reveal coaching opportunities.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">07 · Win Rate</div>
+        <div class="mc-benchmark" style="color:var(--success)">20–30% SaaS</div>
+        <div class="mc-formula">Closed-Won Deals ÷ Total Closed Deals × 100</div>
+        <div class="mc-desc">The percentage of opportunities you close. Track overall AND by: rep, segment, channel, and competitive scenario. Benchmarks vary widely by deal size.</div>
+        <div class="mc-alert alert-warn">Below 15%: qualification problem. Below 10%: positioning or competitive gap.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">08 · Lead Response Time</div>
+        <div class="mc-benchmark" style="color:var(--success)">&lt;5 minutes</div>
+        <div class="mc-formula">Time from form submit/inbound signal → first rep contact</div>
+        <div class="mc-desc">Responding within 5 minutes is 100× more likely to result in a qualified conversation than responding after 30 minutes. Automate with routing + instant notifications.</div>
+        <div class="mc-alert alert-good">Even 5 min → 30 min drops qualification likelihood by 21×.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Category 3 — Revenue Retention & Expansion</h2>
+  <p>For SaaS and recurring revenue businesses, what happens after the sale matters as much as acquisition. These metrics are non-negotiable for sustainable growth.</p>
+
+  <div class="metric-group">
+    <div class="group-label"><span class="group-dot" style="background:var(--success)"></span>Retention Metrics</div>
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="mc-title">09 · Net Revenue Retention (NRR)</div>
+        <div class="mc-benchmark" style="color:var(--success)">100%+ healthy, 120%+ elite</div>
+        <div class="mc-formula">(Starting MRR + Expansion − Churn − Contraction) ÷ Starting MRR</div>
+        <div class="mc-desc">The single most powerful indicator of company health. NRR above 100% means you grow revenue even without adding new customers. Best-in-class SaaS sits at 120–140%.</div>
+        <div class="mc-alert alert-warn">NRR below 90%: churn is outpacing expansion. Existential risk at scale.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">10 · Gross Revenue Retention (GRR)</div>
+        <div class="mc-benchmark" style="color:var(--success)">85–95% B2B</div>
+        <div class="mc-formula">(Starting MRR − Churn − Contraction) ÷ Starting MRR</div>
+        <div class="mc-desc">GRR strips out expansion and shows raw churn. High NRR but low GRR means expansion is masking a churn problem — eventually a risk as expansion headroom shrinks.</div>
+        <div class="mc-alert alert-warn">GRR below 80%: fundamental product-market fit or CS delivery issue.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">11 · Customer Health Score</div>
+        <div class="mc-benchmark" style="color:var(--amber)">Composite score</div>
+        <div class="mc-formula">Usage depth + NPS trend + support ticket frequency + expansion signals</div>
+        <div class="mc-desc">A leading indicator of churn or expansion. Build a composite score in your CRM. Accounts dropping below threshold trigger automatic CS outreach or intervention.</div>
+        <div class="mc-alert alert-good">Predictive: health score drops typically precede churn by 60–90 days.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">12 · Time to Value (TTV)</div>
+        <div class="mc-benchmark" style="color:var(--amber)">Varies by product</div>
+        <div class="mc-formula">Days from contract sign → first meaningful outcome for customer</div>
+        <div class="mc-desc">The fastest path to NRR 120%+ is reducing TTV. Customers who hit their "aha moment" fast expand faster, churn less, and refer more. Measure it. Optimize it relentlessly.</div>
+        <div class="mc-alert alert-warn">TTV above 90 days for SMB is a churn predictor. Redesign onboarding.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Category 4 — Efficiency & GTM Economics</h2>
+  <p>These are the board-level metrics that determine whether your growth is capital-efficient and sustainable.</p>
+
+  <div class="metric-group">
+    <div class="group-label"><span class="group-dot" style="background:var(--violet)"></span>Efficiency Metrics</div>
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="mc-title">13 · CAC Payback Period</div>
+        <div class="mc-benchmark" style="color:var(--violet)">12–18 months SaaS</div>
+        <div class="mc-formula">CAC ÷ (ACV × Gross Margin)</div>
+        <div class="mc-desc">How many months it takes to recover the cost of acquiring a customer. Under 12 months is excellent. Over 24 months raises capital efficiency concerns at scale.</div>
+        <div class="mc-alert alert-warn">Above 24 months: either CAC is too high or ACV/margin needs improvement.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">14 · Revenue per FTE</div>
+        <div class="mc-benchmark" style="color:var(--violet)">$150–300K/FTE early stage</div>
+        <div class="mc-formula">Total Revenue ÷ Total Full-Time Employees</div>
+        <div class="mc-desc">Measures operational leverage. Rising revenue per FTE means you're scaling efficiently. Declining means headcount is outpacing revenue growth — the #1 sign of over-hiring into GTM.</div>
+        <div class="mc-alert alert-good">Best-in-class SaaS at IPO: $300K–600K+ per FTE.</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-title">15 · Magic Number</div>
+        <div class="mc-benchmark" style="color:var(--amber)">&gt;0.75 efficient</div>
+        <div class="mc-formula">(ARR growth over quarter × 4) ÷ Prior quarter S&amp;M spend</div>
+        <div class="mc-desc">SaaS efficiency metric showing how much ARR you generate per dollar of sales &amp; marketing spend. Above 0.75 = good. Above 1.0 = excellent. Below 0.5 = rethink GTM motion.</div>
+        <div class="mc-alert alert-warn">Below 0.5: GTM spend is not generating proportionate revenue growth.</div>
+      </div>
+      <div class="metric-card" style="background:var(--ink-3)">
+        <div class="mc-title" style="color:var(--cream-mute)">Bonus · Ramp Time to Quota</div>
+        <div class="mc-benchmark" style="color:var(--cream-mute)">3–6 months avg</div>
+        <div class="mc-formula">Days from hire → first month at 100% quota attainment</div>
+        <div class="mc-desc">How fast new reps contribute. Longer ramp = higher carrying cost + talent risk. Cut ramp time with better onboarding, strong playbooks, and CRM data hygiene so reps inherit clean accounts.</div>
+        <div class="mc-alert alert-good">Best: ramp &lt;90 days. Above 180 days: onboarding or territory quality issue.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Building Your RevOps Dashboard</h2>
+  <p>The right dashboard puts these 15 metrics in front of the right people at the right cadence:</p>
+  <ul>
+    <li><strong>Weekly (operational):</strong> Pipeline velocity, lead response time, deal slip rate, MQL→SQL rate</li>
+    <li><strong>Monthly (revenue):</strong> Win rate, ACV, sales cycle, NRR, GRR, CAC payback</li>
+    <li><strong>Quarterly (strategic):</strong> Magic number, revenue per FTE, ramp time, health score trends</li>
+  </ul>
+  <p>Never mix cadences in one dashboard. A CEO doesn't need daily deal activity. A SDR manager doesn't need quarterly magic number. Segment by audience and update automatically.</p>
+
+  <hr class="divider">
+
+  <h2>Frequently Asked Questions</h2>
+  <div class="faq-item">
+    <div class="faq-q">What are the most important RevOps KPIs?</div>
+    <div class="faq-a">The five that matter most: pipeline velocity, MQL-to-SQL conversion rate, win rate, net revenue retention (NRR), and CAC payback period. Every other metric is downstream of these five. Master these before expanding your dashboard.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What is a good MQL-to-SQL conversion rate?</div>
+    <div class="faq-a">A good B2B MQL-to-SQL conversion rate is 13–25%. Below 10% usually indicates ICP misalignment between marketing and sales, or a broken lead scoring model. Above 35% may mean marketing is being too conservative and under-generating pipeline.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What is pipeline velocity and how do you calculate it?</div>
+    <div class="faq-a">Pipeline velocity = (# of opportunities × Win Rate × Average Deal Size) ÷ Sales Cycle Length in days. It measures how much revenue your pipeline generates per day. Track it weekly — a decline in velocity is a leading indicator of a revenue shortfall 30–60 days out.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What is a good win rate for B2B SaaS?</div>
+    <div class="faq-a">A good win rate for B2B SaaS is 20–30% of qualified opportunities. Enterprise typically runs 15–20%; SMB can reach 30–40%. Win rates below 15% usually signal either poor qualification (bad-fit deals in the pipeline) or competitive positioning gaps.</div>
+  </div>
+
+  <div class="cta-block">
+    <h2>Want these metrics built into your CRM?</h2>
+    <p>We design RevOps dashboards, lead scoring models, and automated reporting systems that surface these KPIs in real time — so your team always knows what to fix next.</p>
+    <a class="cta-btn" href="/#contact">Talk to Revo-Sys →</a>
+  </div>
+</main>
+
+<footer class="footer">
+  <span class="footer-brand">© 2025 REVO-SYS · GTM PLATFORM</span>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/#contact">Contact</a>
+    <a href="/portal">Client Portal</a>
+  </div>
+</footer>
+</body>
+</html>

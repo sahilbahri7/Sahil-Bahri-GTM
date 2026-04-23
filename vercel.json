@@ -1,7 +1,21 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/portal",
+      "destination": "https://app.revosys.pro/portal",
+      "permanent": false,
+      "has": [{ "type": "host", "value": "revosys.pro" }]
+    },
+    {
+      "source": "/portal",
+      "destination": "https://app.revosys.pro/portal",
+      "permanent": false,
+      "has": [{ "type": "host", "value": "www.revosys.pro" }]
+    }
+  ],
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
