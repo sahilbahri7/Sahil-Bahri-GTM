@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HubSpot RevOps Blueprint — Revo-Sys Architecture</title>
+  <meta name="description" content="A complete HubSpot CRM architecture for B2B SaaS: lifecycle stages, automation workflows, pipeline configuration, and revenue reporting.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#0B0B0B;--ink-2:#111;--ink-3:#161616;--ink-4:#1E1E1E;
+      --cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#6A6560;
+      --amber:#C4A265;--amber-dim:rgba(196,162,101,0.15);--amber-glow:rgba(196,162,101,0.06);
+      --sky:#5B8FA8;--sky-dim:rgba(91,143,168,0.15);
+      --violet:#7C6FA0;--violet-dim:rgba(124,111,160,0.15);
+      --success:#6B9E6F;--success-dim:rgba(107,158,111,0.12);
+      --danger:#A85B5B;
+      --border:rgba(232,224,212,0.07);--border-h:rgba(232,224,212,0.13);
+      --serif:'Instrument Serif',Georgia,serif;
+      --sans:'Outfit',system-ui,sans-serif;
+      --mono:'IBM Plex Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+    body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.7;overflow-x:hidden}
+    a{color:var(--amber);text-decoration:none}
+
+    /* NAV */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 64px;display:flex;justify-content:space-between;align-items:center;background:rgba(11,11,11,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .brand{display:flex;align-items:baseline;gap:3px;text-decoration:none}
+    .brand-r{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--cream)}
+    .brand-s{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.14em}
+    .nav-links{display:flex;gap:24px;align-items:center}
+    .nav-link{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:color .2s}
+    .nav-link:hover{color:var(--cream)}
+    .nav-badge{font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.12em;background:var(--amber-glow);border:1px solid rgba(196,162,101,0.2);padding:4px 10px;border-radius:3px}
+
+    /* HERO */
+    .hero{padding:160px 64px 80px;max-width:1360px;margin:0 auto;position:relative}
+    .hero-label{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:12px}
+    .hero-label::before{content:'';display:block;width:32px;height:1px;background:var(--amber);opacity:0.5}
+    .hero h1{font-family:var(--serif);font-size:clamp(48px,6vw,80px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.06;margin-bottom:24px}
+    .hero h1 em{color:var(--amber);font-style:italic}
+    .hero-sub{font-size:17px;color:var(--cream-mute);max-width:560px;line-height:1.85;font-weight:300;margin-bottom:56px}
+    .hero-stats{display:flex;gap:48px}
+    .stat{display:flex;flex-direction:column;gap:4px}
+    .stat-n{font-family:var(--serif);font-size:36px;font-style:italic;color:var(--amber)}
+    .stat-l{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.1em;text-transform:uppercase}
+    .hero-bg{position:absolute;top:0;right:0;width:55%;height:100%;pointer-events:none;overflow:hidden}
+    .hero-grid{position:absolute;top:0;right:-40px;width:100%;height:100%;opacity:0.025;background-image:linear-gradient(var(--cream) 1px,transparent 1px),linear-gradient(90deg,var(--cream) 1px,transparent 1px);background-size:48px 48px}
+    .hero-glow{position:absolute;top:40%;right:10%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(196,162,101,0.06) 0%,transparent 70%)}
+
+    /* SECTIONS */
+    .section{max-width:1360px;margin:0 auto;padding:80px 64px}
+    .section-label{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.18em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+    .section-title{font-family:var(--serif);font-size:clamp(32px,4vw,52px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.1;margin-bottom:16px}
+    .section-desc{font-size:15px;color:var(--cream-mute);max-width:600px;line-height:1.8;font-weight:300;margin-bottom:56px}
+
+    /* OVERVIEW PILLARS */
+    .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:0}
+    .pillar{background:var(--ink-2);padding:36px;position:relative;overflow:hidden;transition:background .3s}
+    .pillar:hover{background:var(--ink-3)}
+    .pillar-num{font-family:var(--serif);font-size:64px;font-style:italic;color:var(--ink-4);position:absolute;top:16px;right:20px;line-height:1;user-select:none}
+    .pillar-icon{width:40px;height:40px;border-radius:10px;background:var(--amber-glow);border:1px solid rgba(196,162,101,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+    .pillar-tag{font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+    .pillar h3{font-family:var(--serif);font-size:22px;font-style:italic;color:var(--cream);margin-bottom:10px}
+    .pillar p{font-size:13px;color:var(--cream-mute);line-height:1.7}
+    .pillar-items{margin-top:16px;display:flex;flex-direction:column;gap:5px}
+    .pillar-item{font-family:var(--mono);font-size:10px;color:var(--cream-mute);padding:5px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+    .pillar-item::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--amber);flex-shrink:0}
+
+    /* LIFECYCLE */
+    .lifecycle-scroll{overflow-x:auto;padding-bottom:16px;margin-bottom:40px}
+    .lifecycle-track{display:flex;gap:0;min-width:1100px;position:relative}
+    .stage{flex:1;min-width:140px;position:relative;cursor:pointer}
+    .stage-connector{position:absolute;top:36px;right:-12px;width:24px;height:24px;z-index:2;display:flex;align-items:center;justify-content:center}
+    .stage-connector svg{color:var(--amber);opacity:0.6}
+    .stage-head{padding:18px 16px 14px;border:1px solid var(--border);border-right:0;background:var(--ink-2);position:relative;transition:all .25s}
+    .stage:last-child .stage-head{border-right:1px solid var(--border)}
+    .stage:hover .stage-head{background:var(--ink-3);border-color:rgba(196,162,101,0.25)}
+    .stage-num{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.1em;margin-bottom:8px}
+    .stage-name{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--cream);margin-bottom:6px;letter-spacing:.01em}
+    .stage-prop{font-family:var(--mono);font-size:8px;color:var(--amber);letter-spacing:.05em;padding:2px 6px;background:var(--amber-glow);border:1px solid rgba(196,162,101,0.15);border-radius:2px;display:inline-block;margin-bottom:10px}
+    .stage-bar{height:3px;position:absolute;top:0;left:0;right:0;background:linear-gradient(90deg,var(--stage-c1,var(--ink-4)),var(--stage-c2,var(--ink-4)))}
+    .stage-body{padding:14px 16px;border:1px solid var(--border);border-top:0;border-right:0;background:var(--ink);display:none}
+    .stage:last-child .stage-body{border-right:1px solid var(--border)}
+    .stage:hover .stage-body,.stage.open .stage-body{display:block}
+    .stage-section-label{font-family:var(--mono);font-size:8px;color:var(--cream-mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;margin-top:10px}
+    .stage-section-label:first-child{margin-top:0}
+    .criteria-list{list-style:none;display:flex;flex-direction:column;gap:4px}
+    .criteria-list li{font-size:11px;color:var(--cream-dim);line-height:1.4;display:flex;gap:6px}
+    .criteria-list li::before{content:'—';color:var(--amber);opacity:0.6;flex-shrink:0}
+    .auto-badge{display:inline-block;font-family:var(--mono);font-size:8px;color:var(--sky);background:var(--sky-dim);border:1px solid rgba(91,143,168,0.2);padding:2px 6px;border-radius:2px;margin:2px 2px 0 0}
+
+    /* LIFECYCLE LEGEND */
+    .lc-legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+    .lc-legend-item{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.06em}
+    .lc-legend-dot{width:8px;height:8px;border-radius:50%}
+
+    /* WORKFLOW AUTOMATIONS */
+    .workflow-grid{display:grid;gap:28px;margin-top:0}
+    .workflow-card{background:var(--ink-2);border:1px solid var(--border);border-radius:0;overflow:hidden}
+    .workflow-card:hover{border-color:var(--border-h)}
+    .workflow-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .workflow-name{font-family:var(--sans);font-size:15px;font-weight:500;color:var(--cream)}
+    .workflow-tag{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px}
+    .workflow-body{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0}
+    .wf-col{padding:20px 20px 24px}
+    .wf-col-label{font-family:var(--mono);font-size:8px;color:var(--cream-mute);letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+    .wf-arrow{display:flex;align-items:center;justify-content:center;padding:0 4px;position:relative}
+    .wf-arrow::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border)}
+    .wf-arrow svg{position:relative;z-index:1;background:var(--ink-2);padding:0 4px}
+    .wf-item{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--cream-dim);line-height:1.4}
+    .wf-item:last-child{border-bottom:none}
+    .wf-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+    .wf-sub{font-family:var(--mono);font-size:9px;color:var(--cream-mute);margin-top:2px}
+
+    /* ANIMATED FLOW LINE */
+    @keyframes flowRight{
+      0%{stroke-dashoffset:48}
+      100%{stroke-dashoffset:0}
+    }
+    .flow-svg{width:100%;height:3px;overflow:visible}
+    .flow-line{stroke:var(--amber);stroke-width:1;stroke-dasharray:4 4;fill:none;animation:flowRight 1.2s linear infinite;opacity:0.4}
+
+    /* PIPELINE */
+    .pipeline-track{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:40px}
+    .pipe-stage{background:var(--ink-2);padding:0;overflow:hidden;transition:background .2s;cursor:default}
+    .pipe-stage:hover{background:var(--ink-3)}
+    .pipe-top{height:4px}
+    .pipe-body{padding:18px 16px 20px}
+    .pipe-name{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--cream);margin-bottom:4px}
+    .pipe-prob{font-family:var(--mono);font-size:22px;color:var(--amber);font-weight:300;margin-bottom:8px;line-height:1}
+    .pipe-prob span{font-size:11px;color:var(--cream-mute)}
+    .pipe-days{font-family:var(--mono);font-size:9px;color:var(--sky);letter-spacing:.06em;margin-bottom:12px}
+    .pipe-criteria{display:flex;flex-direction:column;gap:5px}
+    .pipe-crit{font-family:var(--mono);font-size:9px;color:var(--cream-mute);display:flex;gap:6px;line-height:1.3}
+    .pipe-crit::before{content:'✓';color:var(--success);flex-shrink:0}
+    .pipe-task{font-family:var(--mono);font-size:9px;color:var(--cream-mute);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+    .pipe-task-label{color:var(--amber);font-size:8px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+
+    /* REPORTING */
+    .report-layers{display:grid;gap:1px;background:var(--border);border:1px solid var(--border)}
+    .report-layer{background:var(--ink-2);display:grid;grid-template-columns:240px 1fr;gap:0;transition:background .2s}
+    .report-layer:hover{background:var(--ink-3)}
+    .report-label{padding:28px 24px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center}
+    .report-tier{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+    .report-title{font-family:var(--serif);font-size:18px;font-style:italic;color:var(--cream)}
+    .report-desc{font-size:12px;color:var(--cream-mute);margin-top:4px;line-height:1.5}
+    .report-metrics{padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;align-content:start}
+    .report-metric{padding:12px 14px;background:var(--ink);border:1px solid var(--border);border-radius:0;transition:border-color .2s}
+    .report-metric:hover{border-color:var(--border-h)}
+    .report-metric-name{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.06em;margin-bottom:4px}
+    .report-metric-formula{font-family:var(--mono);font-size:10px;color:var(--amber);line-height:1.3}
+    .report-metric-bench{font-family:var(--mono);font-size:8px;color:var(--success);margin-top:3px}
+
+    /* IMPLEMENTATION TIMELINE */
+    .timeline{position:relative;padding-left:32px;display:grid;gap:0}
+    .timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:1px;background:var(--border)}
+    .tl-item{padding:0 0 32px;position:relative}
+    .tl-dot{position:absolute;left:-28px;top:4px;width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:var(--ink-2);display:flex;align-items:center;justify-content:center}
+    .tl-dot.active{border-color:var(--amber);background:var(--amber-glow)}
+    .tl-dot.done{border-color:var(--success);background:var(--success-dim)}
+    .tl-week{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+    .tl-title{font-size:15px;font-weight:500;color:var(--cream);margin-bottom:6px}
+    .tl-items{display:flex;flex-direction:column;gap:4px}
+    .tl-task{font-family:var(--mono);font-size:10px;color:var(--cream-mute);display:flex;gap:8px}
+    .tl-task::before{content:'—';color:var(--sky);opacity:0.7}
+
+    /* CTA */
+    .cta-section{border-top:1px solid var(--border);padding:80px 64px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;max-width:1360px;margin:0 auto}
+    .cta-h{font-family:var(--serif);font-size:clamp(28px,3vw,44px);font-style:italic;color:var(--cream)}
+    .cta-sub{font-size:14px;color:var(--cream-mute);margin-top:8px;font-weight:300}
+    .cta-btns{display:flex;gap:12px;flex-shrink:0}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:0;font-size:13px;font-family:var(--sans);font-weight:500;text-decoration:none;transition:all .2s;white-space:nowrap;cursor:pointer;border:none}
+    .btn-primary{background:var(--cream);color:var(--ink)}
+    .btn-primary:hover{background:#fff}
+    .btn-secondary{background:transparent;color:var(--cream-dim);border:1px solid var(--border-h)}
+    .btn-secondary:hover{border-color:var(--cream);color:var(--cream)}
+
+    /* FOOTER */
+    .footer{border-top:1px solid var(--border);padding:28px 64px;display:flex;justify-content:space-between;align-items:center}
+    .footer-brand{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em}
+    .footer-links{display:flex;gap:20px}
+    .footer-links a{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.06em;text-decoration:none}
+    .footer-links a:hover{color:var(--cream)}
+
+    /* DIVIDER */
+    .divider{height:1px;background:var(--border);max-width:1360px;margin:0 auto}
+
+    /* SCROLL REVEAL */
+    [data-r]{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+    [data-r].vis{opacity:1;transform:translateY(0)}
+
+    @keyframes pulse-amber{
+      0%,100%{box-shadow:0 0 0 0 rgba(196,162,101,0)}
+      50%{box-shadow:0 0 0 6px rgba(196,162,101,0.08)}
+    }
+
+    @media(max-width:900px){
+      .nav{padding:14px 24px}
+      .hero{padding:100px 24px 60px}
+      .section{padding:60px 24px}
+      .hero-stats{gap:28px}
+      .pillars{grid-template-columns:1fr}
+      .workflow-body{grid-template-columns:1fr}
+      .wf-arrow{display:none}
+      .pipeline-track{grid-template-columns:repeat(2,1fr)}
+      .report-layer{grid-template-columns:1fr}
+      .report-label{border-right:none;border-bottom:1px solid var(--border)}
+      .cta-section{grid-template-columns:1fr;text-align:center}
+      .cta-btns{justify-content:center}
+      .footer{padding:24px;flex-direction:column;gap:12px}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="https://revosys.pro" class="brand">
+    <span class="brand-r">Revo</span><span class="brand-s">-Sys</span>
+  </a>
+  <div class="nav-links">
+    <a href="https://revosys.pro/blog" class="nav-link">Blog</a>
+    <a href="/gtm-stack/" class="nav-link">GTM Stack</a>
+    <a href="https://app.revosys.pro/portal" class="nav-link">Portal</a>
+    <span class="nav-badge">ARCH BRIEF 001</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+  </div>
+  <p class="hero-label">HubSpot RevOps Architecture — Revo-Sys</p>
+  <h1>The <em>HubSpot</em><br>RevOps Blueprint</h1>
+  <p class="hero-sub">A production-ready CRM architecture for B2B SaaS companies — from lifecycle stage design and workflow automation to pipeline configuration and revenue reporting. Every layer engineered to drive predictable growth.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-n">7</span><span class="stat-l">Lifecycle Stages</span></div>
+    <div class="stat"><span class="stat-n">12+</span><span class="stat-l">Automation Workflows</span></div>
+    <div class="stat"><span class="stat-n">6</span><span class="stat-l">Pipeline Stages</span></div>
+    <div class="stat"><span class="stat-n">40+</span><span class="stat-l">Revenue KPIs</span></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- OVERVIEW -->
+<section class="section" data-r>
+  <p class="section-label">System Overview</p>
+  <h2 class="section-title">Three systems.<br>One revenue engine.</h2>
+  <p class="section-desc">Every HubSpot implementation we deliver rests on three interlocking layers. Get all three right and the system runs itself. Miss one and the whole funnel leaks.</p>
+  <div class="pillars">
+    <div class="pillar">
+      <div class="pillar-num">01</div>
+      <div class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A265" stroke-width="1.4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="pillar-tag">Layer 01</div>
+      <h3>CRM Configuration</h3>
+      <p>The data model that makes everything else possible. Custom properties, lifecycle stages, pipeline stages, and lead statuses — all mapped to your specific GTM motion before a single workflow fires.</p>
+      <div class="pillar-items">
+        <div class="pillar-item">hs_lifecyclestage property mapping</div>
+        <div class="pillar-item">Custom contact & deal properties (30+)</div>
+        <div class="pillar-item">Lead scoring property setup</div>
+        <div class="pillar-item">Persona & ICP segmentation fields</div>
+        <div class="pillar-item">Data migration & deduplication</div>
+      </div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">02</div>
+      <div class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B8FA8" stroke-width="1.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="pillar-tag">Layer 02</div>
+      <h3>Automation Engine</h3>
+      <p>The operational core — enrollment triggers, branching logic, task creation, sequence enrollment, and internal notifications. This is where manual work disappears and repeatability is born.</p>
+      <div class="pillar-items">
+        <div class="pillar-item">MQL qualification workflow</div>
+        <div class="pillar-item">Lead routing by territory & segment</div>
+        <div class="pillar-item">Deal stage progression automation</div>
+        <div class="pillar-item">At-risk account detection</div>
+        <div class="pillar-item">CS handoff & onboarding sequences</div>
+      </div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">03</div>
+      <div class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B9E6F" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+      <div class="pillar-tag">Layer 03</div>
+      <h3>Revenue Intelligence</h3>
+      <p>The reporting stack that closes the loop — from contact-level funnel conversion to board-ready ARR dashboards. Built so leadership can trust the numbers and act on them.</p>
+      <div class="pillar-items">
+        <div class="pillar-item">Funnel conversion rate reports</div>
+        <div class="pillar-item">Pipeline velocity & coverage dashboards</div>
+        <div class="pillar-item">Attribution modeling (first/last/multi-touch)</div>
+        <div class="pillar-item">Revenue forecasting by segment</div>
+        <div class="pillar-item">Churn & expansion ARR tracking</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- LIFECYCLE ARCHITECTURE -->
+<section class="section" data-r>
+  <p class="section-label">Lifecycle Architecture</p>
+  <h2 class="section-title">Seven stages.<br>Every touchpoint defined.</h2>
+  <p class="section-desc">We configure each lifecycle stage with precise entry and exit criteria, the exact HubSpot property value it maps to, and the automation that fires the moment a contact transitions. Hover any stage to expand.</p>
+  <div class="lc-legend">
+    <div class="lc-legend-item"><div class="lc-legend-dot" style="background:var(--cream-mute)"></div>PRE-QUALIFY</div>
+    <div class="lc-legend-item"><div class="lc-legend-dot" style="background:var(--amber)"></div>MARKETING OWNED</div>
+    <div class="lc-legend-item"><div class="lc-legend-dot" style="background:var(--sky)"></div>SALES OWNED</div>
+    <div class="lc-legend-item"><div class="lc-legend-dot" style="background:var(--success)"></div>POST-CLOSE</div>
+  </div>
+  <div class="lifecycle-scroll">
+    <div class="lifecycle-track">
+
+      <!-- Stage 1: Subscriber -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:#2a2a2a;--stage-c2:#333">
+          <div class="stage-bar"></div>
+          <div class="stage-num">01 / 07</div>
+          <div class="stage-name">Subscriber</div>
+          <div class="stage-prop">lifecyclestage = subscriber</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>Any email address captured via web form</li><li>Newsletter opt-in (explicit consent)</li><li>Import from external list</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = (not set)</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">Welcome email</span>
+          <span class="auto-badge">Score init: 5pts</span>
+          <div class="stage-section-label">Exit Criteria</div>
+          <ul class="criteria-list"><li>Any high-intent form fill</li><li>Demo or contact page visit</li></ul>
+        </div>
+        <div class="stage-connector"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+
+      <!-- Stage 2: Lead -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:#3a3020;--stage-c2:#4a3e28">
+          <div class="stage-bar"></div>
+          <div class="stage-num">02 / 07</div>
+          <div class="stage-name">Lead</div>
+          <div class="stage-prop">lifecyclestage = lead</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>Form submission (content, contact, demo)</li><li>Manual import with contact info</li><li>Connected via LinkedIn (via enrichment)</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = New</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">Lead score: start</span>
+          <span class="auto-badge">Enrich via Clearbit</span>
+          <span class="auto-badge">Tag: source</span>
+          <div class="stage-section-label">Exit Criteria</div>
+          <ul class="criteria-list"><li>Score ≥ 40 AND ICP match</li><li>High-intent page visit (pricing 3×)</li></ul>
+        </div>
+        <div class="stage-connector"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+
+      <!-- Stage 3: MQL -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:var(--amber);--stage-c2:#a88a52">
+          <div class="stage-bar"></div>
+          <div class="stage-num">03 / 07</div>
+          <div class="stage-name">MQL</div>
+          <div class="stage-prop">lifecyclestage = marketingqualifiedlead</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>Score ≥ 40 (behavior + firmographic)</li><li>Industry = target ICP</li><li>Role = VP / Director / Head of / Manager</li><li>Company size 50–5,000 employees</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = Open</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">SDR notify</span>
+          <span class="auto-badge">Create task: call 24h</span>
+          <span class="auto-badge">Enroll: MQL sequence</span>
+          <span class="auto-badge">Slack: #mql-alerts</span>
+          <div class="stage-section-label">Exit Criteria</div>
+          <ul class="criteria-list"><li>SDR makes contact</li><li>Meeting booked</li><li>Disqualified → Recycled</li></ul>
+        </div>
+        <div class="stage-connector"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+
+      <!-- Stage 4: SQL -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:var(--sky);--stage-c2:#3d6e86">
+          <div class="stage-bar"></div>
+          <div class="stage-num">04 / 07</div>
+          <div class="stage-name">SQL</div>
+          <div class="stage-prop">lifecyclestage = salesqualifiedlead</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>BANT qualified by SDR</li><li>Budget authority confirmed</li><li>Need clearly articulated</li><li>Timeline = within 90 days</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = In Progress</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">Create deal</span>
+          <span class="auto-badge">Assign AE</span>
+          <span class="auto-badge">Stage: Prospecting</span>
+          <span class="auto-badge">Notify AE</span>
+          <div class="stage-section-label">Exit Criteria</div>
+          <ul class="criteria-list"><li>Discovery call completed</li><li>Demo scheduled</li><li>Disqualified</li></ul>
+        </div>
+        <div class="stage-connector"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+
+      <!-- Stage 5: Opportunity -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:#5478a0;--stage-c2:#3d5e84">
+          <div class="stage-bar"></div>
+          <div class="stage-num">05 / 07</div>
+          <div class="stage-name">Opportunity</div>
+          <div class="stage-prop">lifecyclestage = opportunity</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>Discovery complete, moving to demo</li><li>Active deal in pipeline</li><li>Deal stage ≥ Discovery</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = In Progress</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">Deal progression</span>
+          <span class="auto-badge">AE task queue</span>
+          <span class="auto-badge">Proposal due alert</span>
+          <div class="stage-section-label">Exit Criteria</div>
+          <ul class="criteria-list"><li>Deal closed-won</li><li>Deal closed-lost (→ nurture)</li></ul>
+        </div>
+        <div class="stage-connector"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+
+      <!-- Stage 6: Customer -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:var(--success);--stage-c2:#4a7a4d">
+          <div class="stage-bar"></div>
+          <div class="stage-num">06 / 07</div>
+          <div class="stage-name">Customer</div>
+          <div class="stage-prop">lifecyclestage = customer</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>Deal closed-won</li><li>Contract signed</li><li>Payment received (or order placed)</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = Connected</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">CS handoff</span>
+          <span class="auto-badge">Onboarding seq.</span>
+          <span class="auto-badge">NPS: day 30</span>
+          <span class="auto-badge">QBR: day 90</span>
+          <div class="stage-section-label">Exit Criteria</div>
+          <ul class="criteria-list"><li>Churned (→ re-engage nurture)</li><li>NPS ≥ 9 (→ Evangelist)</li></ul>
+        </div>
+        <div class="stage-connector"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+
+      <!-- Stage 7: Evangelist -->
+      <div class="stage" onclick="this.classList.toggle('open')">
+        <div class="stage-head" style="--stage-c1:#7a5f9a;--stage-c2:#5c4778">
+          <div class="stage-bar"></div>
+          <div class="stage-num">07 / 07</div>
+          <div class="stage-name">Evangelist</div>
+          <div class="stage-prop">lifecyclestage = evangelist</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-section-label">Entry Criteria</div>
+          <ul class="criteria-list"><li>NPS score ≥ 9</li><li>Active referrals submitted</li><li>Case study participant</li></ul>
+          <div class="stage-section-label">Lead Status</div>
+          <ul class="criteria-list"><li>hs_lead_status = (custom: Champion)</li></ul>
+          <div class="stage-section-label">Automation</div>
+          <span class="auto-badge">Referral program</span>
+          <span class="auto-badge">Testimonial req.</span>
+          <span class="auto-badge">VIP tag</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Animated flow -->
+  <div style="margin-bottom:8px;padding:0 2px">
+    <svg class="flow-svg" height="3"><line class="flow-line" x1="0" y1="1.5" x2="100%" y2="1.5"/></svg>
+  </div>
+  <p style="font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.08em;text-align:center">← LEAD JOURNEY PROGRESSES RIGHTWARD AS QUALIFICATION CRITERIA ARE MET →</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- AUTOMATION WORKFLOWS -->
+<section class="section" data-r>
+  <p class="section-label">Automation Engine</p>
+  <h2 class="section-title">Trigger. Filter. Act.<br>Every time.</h2>
+  <p class="section-desc">Each workflow follows a strict three-stage logic: enrollment trigger defines who enters, filter conditions define who proceeds, and the action sequence defines exactly what happens next — with zero human intervention required.</p>
+  <div class="workflow-grid">
+
+    <!-- Workflow 1: MQL Qualification -->
+    <div class="workflow-card">
+      <div class="workflow-header">
+        <div class="workflow-name">MQL Qualification & SDR Routing</div>
+        <span class="workflow-tag" style="color:var(--amber);background:var(--amber-glow);border:1px solid rgba(196,162,101,0.2)">MARKETING → SALES HANDOFF</span>
+      </div>
+      <div class="workflow-body">
+        <div class="wf-col">
+          <div class="wf-col-label">Enrollment Triggers</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--amber)"></div><div><div>Lead score ≥ 40</div><div class="wf-sub">Property: hs_score ≥ 40</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--amber)"></div><div><div>Pricing page: 3 visits</div><div class="wf-sub">Event: page_view &gt;= 3</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--amber)"></div><div><div>Demo form submitted</div><div class="wf-sub">Form: demo-request-form</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--amber)"></div><div><div>Email CTA clicked (x2)</div><div class="wf-sub">Email click count ≥ 2</div></div></div>
+        </div>
+        <div class="wf-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4A265" stroke-width="1.5" opacity="0.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="wf-col">
+          <div class="wf-col-label">Filter Conditions (ALL must match)</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>Industry = SaaS / Tech / FinTech</div><div class="wf-sub">Contact property: industry</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>Job title contains: VP, Dir, Head, Manager</div><div class="wf-sub">Contact property: jobtitle</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>Employees between 50 and 5,000</div><div class="wf-sub">Company property: numberofemployees</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>Not already MQL or further</div><div class="wf-sub">lifecyclestage ≤ lead</div></div></div>
+        </div>
+        <div class="wf-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4A265" stroke-width="1.5" opacity="0.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="wf-col">
+          <div class="wf-col-label">Action Sequence</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Set: lifecyclestage = MQL</div><div class="wf-sub">0 min delay</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Set: hs_lead_status = Open</div><div class="wf-sub">0 min delay</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Rotate: Assign SDR (territory)</div><div class="wf-sub">Round-robin by region</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Create task: "Call MQL — 24h"</div><div class="wf-sub">Task owner = assigned SDR</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Enroll in SDR outreach sequence</div><div class="wf-sub">5-step email + call sequence</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Send: Slack notify → #mql-alerts</div><div class="wf-sub">Webhook to Slack integration</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow 2: Deal Stage Progression -->
+    <div class="workflow-card">
+      <div class="workflow-header">
+        <div class="workflow-name">Deal Stage Progression & AE Task Automation</div>
+        <span class="workflow-tag" style="color:var(--sky);background:var(--sky-dim);border:1px solid rgba(91,143,168,0.2)">PIPELINE MANAGEMENT</span>
+      </div>
+      <div class="workflow-body">
+        <div class="wf-col">
+          <div class="wf-col-label">Enrollment Triggers</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Deal stage changed</div><div class="wf-sub">Property change: dealstage</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Meeting outcome logged</div><div class="wf-sub">Activity: meeting_completed</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>Proposal viewed by prospect</div><div class="wf-sub">Document tracking event</div></div></div>
+        </div>
+        <div class="wf-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B8FA8" stroke-width="1.5" opacity="0.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="wf-col">
+          <div class="wf-col-label">Branch Conditions</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>If Discovery → Demo</div><div class="wf-sub">dealstage = appointment_scheduled</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>If Proposal → Contract Sent</div><div class="wf-sub">dealstage = decision_maker_bought_in</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--violet)"></div><div><div>If in stage &gt; 14 days (stale)</div><div class="wf-sub">Time in stage threshold</div></div></div>
+        </div>
+        <div class="wf-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B8FA8" stroke-width="1.5" opacity="0.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="wf-col">
+          <div class="wf-col-label">Action Sequence</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--success)"></div><div><div>Create next-step task for AE</div><div class="wf-sub">Stage-specific task template</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--success)"></div><div><div>Update deal close date</div><div class="wf-sub">Rolling 30-day projection</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--success)"></div><div><div>Alert: Manager if stale (&gt;14d)</div><div class="wf-sub">Internal email notification</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--success)"></div><div><div>Log: Stage transition timestamp</div><div class="wf-sub">Custom property: last_stage_change</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow 3: Churn Risk -->
+    <div class="workflow-card">
+      <div class="workflow-header">
+        <div class="workflow-name">At-Risk Customer Detection & CS Alert</div>
+        <span class="workflow-tag" style="color:var(--danger);background:rgba(168,91,91,0.08);border:1px solid rgba(168,91,91,0.2)">CHURN PREVENTION</span>
+      </div>
+      <div class="workflow-body">
+        <div class="wf-col">
+          <div class="wf-col-label">Enrollment Triggers</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>NPS score submitted ≤ 6</div><div class="wf-sub">Survey response: score ≤ 6</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>No login in 21+ days</div><div class="wf-sub">Custom property: last_login_date</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>Support ticket: severity = critical</div><div class="wf-sub">Ticket property: hs_ticket_priority</div></div></div>
+        </div>
+        <div class="wf-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A85B5B" stroke-width="1.5" opacity="0.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="wf-col">
+          <div class="wf-col-label">Risk Scoring Branch</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>NPS ≤ 6 AND no login &gt; 30d = CRITICAL</div><div class="wf-sub">Multiple risk signals combined</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--amber)"></div><div><div>NPS 7-8 OR no login 21-30d = AT RISK</div><div class="wf-sub">Single risk signal present</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--sky)"></div><div><div>ARR &gt; $50K = escalate to leadership</div><div class="wf-sub">Deal property: amount</div></div></div>
+        </div>
+        <div class="wf-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A85B5B" stroke-width="1.5" opacity="0.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="wf-col">
+          <div class="wf-col-label">Action Sequence</div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>Set: custom property "risk_level"</div><div class="wf-sub">at_risk | critical | healthy</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>Create task: CS check-in (24h SLA)</div><div class="wf-sub">Owner = assigned CSM</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>Alert: Slack → #churn-risk channel</div><div class="wf-sub">Account name + ARR + risk reason</div></div></div>
+          <div class="wf-item"><div class="wf-dot" style="background:var(--danger)"></div><div><div>Enroll: Win-back email sequence</div><div class="wf-sub">If no CS response within 48h</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PIPELINE CONFIGURATION -->
+<section class="section" data-r>
+  <p class="section-label">Pipeline Configuration</p>
+  <h2 class="section-title">Six stages.<br>No guesswork on probability.</h2>
+  <p class="section-desc">Each pipeline stage carries a defined close probability, average time-in-stage target, required activities to progress, and automated tasks that fire on entry. Sales never has to wonder what comes next.</p>
+  <div class="pipeline-track">
+
+    <div class="pipe-stage">
+      <div class="pipe-top" style="background:linear-gradient(90deg,#2a2a2a,var(--amber))"></div>
+      <div class="pipe-body">
+        <div class="pipe-name">Prospecting</div>
+        <div class="pipe-prob">10<span>% close prob.</span></div>
+        <div class="pipe-days">Target: 0 – 7 days</div>
+        <div class="pipe-criteria">
+          <div class="pipe-crit">SQL confirmed by SDR</div>
+          <div class="pipe-crit">Contact info verified</div>
+          <div class="pipe-crit">Company qualified (BANT partial)</div>
+        </div>
+        <div class="pipe-task">
+          <div class="pipe-task-label">Auto Tasks on Entry</div>
+          <div>→ Call attempt #1</div>
+          <div>→ Email: intro from AE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-stage">
+      <div class="pipe-top" style="background:linear-gradient(90deg,var(--amber),#a88a52)"></div>
+      <div class="pipe-body">
+        <div class="pipe-name">Discovery Call</div>
+        <div class="pipe-prob">20<span>% close prob.</span></div>
+        <div class="pipe-days">Target: 7 – 14 days</div>
+        <div class="pipe-criteria">
+          <div class="pipe-crit">Meeting held with decision maker</div>
+          <div class="pipe-crit">Pain points documented in CRM</div>
+          <div class="pipe-crit">Budget range confirmed</div>
+          <div class="pipe-crit">Next step agreed (demo date)</div>
+        </div>
+        <div class="pipe-task">
+          <div class="pipe-task-label">Auto Tasks on Entry</div>
+          <div>→ Log: discovery notes</div>
+          <div>→ Create: demo prep checklist</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-stage">
+      <div class="pipe-top" style="background:linear-gradient(90deg:#a88a52,var(--sky))"></div>
+      <div class="pipe-body">
+        <div class="pipe-name">Demo / Evaluation</div>
+        <div class="pipe-prob">40<span>% close prob.</span></div>
+        <div class="pipe-days">Target: 14 – 30 days</div>
+        <div class="pipe-criteria">
+          <div class="pipe-crit">Demo delivered to ≥2 stakeholders</div>
+          <div class="pipe-crit">Evaluation criteria confirmed</div>
+          <div class="pipe-crit">Champion identified internally</div>
+        </div>
+        <div class="pipe-task">
+          <div class="pipe-task-label">Auto Tasks on Entry</div>
+          <div>→ Send: tailored case study</div>
+          <div>→ Schedule: technical call</div>
+          <div>→ Alert: SE assigned</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-stage">
+      <div class="pipe-top" style="background:linear-gradient(90deg,var(--sky),#3d6e86)"></div>
+      <div class="pipe-body">
+        <div class="pipe-name">Proposal Sent</div>
+        <div class="pipe-prob">60<span>% close prob.</span></div>
+        <div class="pipe-days">Target: 30 – 45 days</div>
+        <div class="pipe-criteria">
+          <div class="pipe-crit">Proposal doc delivered & tracked</div>
+          <div class="pipe-crit">Pricing approved internally</div>
+          <div class="pipe-crit">Legal review initiated</div>
+        </div>
+        <div class="pipe-task">
+          <div class="pipe-task-label">Auto Tasks on Entry</div>
+          <div>→ Track: document open events</div>
+          <div>→ Follow up: +3 days if unopened</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-stage">
+      <div class="pipe-top" style="background:linear-gradient(90deg,#3d6e86,var(--violet))"></div>
+      <div class="pipe-body">
+        <div class="pipe-name">Contract Sent</div>
+        <div class="pipe-prob">80<span>% close prob.</span></div>
+        <div class="pipe-days">Target: 45 – 60 days</div>
+        <div class="pipe-criteria">
+          <div class="pipe-crit">MSA / SOW sent for signature</div>
+          <div class="pipe-crit">Legal redlines resolved</div>
+          <div class="pipe-crit">Verbal commit received from exec</div>
+        </div>
+        <div class="pipe-task">
+          <div class="pipe-task-label">Auto Tasks on Entry</div>
+          <div>→ Escalate: manager awareness</div>
+          <div>→ Ping: finance for booking</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-stage">
+      <div class="pipe-top" style="background:linear-gradient(90deg,var(--violet),var(--success))"></div>
+      <div class="pipe-body">
+        <div class="pipe-name">Closed Won</div>
+        <div class="pipe-prob">100<span>% close prob.</span></div>
+        <div class="pipe-days">Terminal stage</div>
+        <div class="pipe-criteria">
+          <div class="pipe-crit">Contract fully executed</div>
+          <div class="pipe-crit">Payment or PO received</div>
+          <div class="pipe-crit">Contact: lifecyclestage = customer</div>
+        </div>
+        <div class="pipe-task">
+          <div class="pipe-task-label">Auto on Close</div>
+          <div>→ Fire: CS handoff workflow</div>
+          <div>→ Notify: #wins (Slack)</div>
+          <div>→ Update ARR dashboard</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- REPORTING FRAMEWORK -->
+<section class="section" data-r>
+  <p class="section-label">Revenue Reporting</p>
+  <h2 class="section-title">Three reporting layers.<br>One source of truth.</h2>
+  <p class="section-desc">We build reporting from the bottom up — contact-level funnel metrics inform deal metrics, deal metrics inform revenue metrics. Each layer connects to real HubSpot reports with defined formulas and benchmarks.</p>
+  <div class="report-layers">
+
+    <div class="report-layer">
+      <div class="report-label">
+        <div class="report-tier" style="color:var(--amber)">LAYER 01</div>
+        <div class="report-title">Contact Funnel</div>
+        <div class="report-desc">How leads move through stages. Identifies where volume drops and where conversion is underperforming.</div>
+      </div>
+      <div class="report-metrics">
+        <div class="report-metric"><div class="report-metric-name">LEAD → MQL RATE</div><div class="report-metric-formula">MQLs created ÷ Total leads</div><div class="report-metric-bench">Benchmark: 15 – 25%</div></div>
+        <div class="report-metric"><div class="report-metric-name">MQL → SQL RATE</div><div class="report-metric-formula">SQLs created ÷ MQLs created</div><div class="report-metric-bench">Benchmark: 30 – 50%</div></div>
+        <div class="report-metric"><div class="report-metric-name">TIME TO MQL</div><div class="report-metric-formula">Avg days: lead created → MQL date</div><div class="report-metric-bench">Target: &lt; 14 days</div></div>
+        <div class="report-metric"><div class="report-metric-name">LEAD SOURCE QUALITY</div><div class="report-metric-formula">MQL rate by hs_analytics_source</div><div class="report-metric-bench">Top 3 sources by MQL volume</div></div>
+        <div class="report-metric"><div class="report-metric-name">SCORE DISTRIBUTION</div><div class="report-metric-formula">Contacts by score bucket (0-40, 40-70, 70+)</div><div class="report-metric-bench">Monthly trend view</div></div>
+        <div class="report-metric"><div class="report-metric-name">RECYCLED MQL RATE</div><div class="report-metric-formula">MQLs reverted to lead ÷ total MQLs</div><div class="report-metric-bench">Target: &lt; 20%</div></div>
+      </div>
+    </div>
+
+    <div class="report-layer">
+      <div class="report-label">
+        <div class="report-tier" style="color:var(--sky)">LAYER 02</div>
+        <div class="report-title">Pipeline & Velocity</div>
+        <div class="report-desc">How deals flow through the pipeline — speed, size, and stage conversion. The operating heartbeat of the sales org.</div>
+      </div>
+      <div class="report-metrics">
+        <div class="report-metric"><div class="report-metric-name">PIPELINE COVERAGE</div><div class="report-metric-formula">Total pipeline value ÷ Revenue target</div><div class="report-metric-bench">Target: 3× – 4× coverage</div></div>
+        <div class="report-metric"><div class="report-metric-name">DEAL VELOCITY</div><div class="report-metric-formula"># Opps × Win rate × ACV ÷ Sales cycle</div><div class="report-metric-bench">Revenue per day measure</div></div>
+        <div class="report-metric"><div class="report-metric-name">STAGE CONVERSION</div><div class="report-metric-formula">Deals advancing ÷ Deals entering each stage</div><div class="report-metric-bench">By stage, by AE, by segment</div></div>
+        <div class="report-metric"><div class="report-metric-name">AVERAGE SALES CYCLE</div><div class="report-metric-formula">Avg days: SQL created → Close date</div><div class="report-metric-bench">By deal size bucket</div></div>
+        <div class="report-metric"><div class="report-metric-name">WIN RATE</div><div class="report-metric-formula">Closed-won ÷ (Won + Lost)</div><div class="report-metric-bench">Benchmark: 20 – 30% for outbound</div></div>
+        <div class="report-metric"><div class="report-metric-name">STALE DEAL RATE</div><div class="report-metric-formula">Deals with no activity &gt; 14 days</div><div class="report-metric-bench">Triggers CS alert workflow</div></div>
+      </div>
+    </div>
+
+    <div class="report-layer">
+      <div class="report-label">
+        <div class="report-tier" style="color:var(--success)">LAYER 03</div>
+        <div class="report-title">Revenue & Retention</div>
+        <div class="report-desc">The board-level view — ARR, expansion, churn, and NRR. Built to be accurate, attributable, and auditable.</div>
+      </div>
+      <div class="report-metrics">
+        <div class="report-metric"><div class="report-metric-name">NEW ARR</div><div class="report-metric-formula">Sum of ACV from new logos (period)</div><div class="report-metric-bench">vs. quota by rep & team</div></div>
+        <div class="report-metric"><div class="report-metric-name">EXPANSION ARR</div><div class="report-metric-formula">Upsell + cross-sell on existing accounts</div><div class="report-metric-bench">Target: &gt;20% of new ARR</div></div>
+        <div class="report-metric"><div class="report-metric-name">CHURNED ARR</div><div class="report-metric-formula">ARR from customers lost (period)</div><div class="report-metric-bench">Target: &lt; 5% gross churn/year</div></div>
+        <div class="report-metric"><div class="report-metric-name">NET REVENUE RETENTION</div><div class="report-metric-formula">(ARR start + expansion - churn) ÷ ARR start</div><div class="report-metric-bench">Best-in-class: &gt; 120%</div></div>
+        <div class="report-metric"><div class="report-metric-name">REVENUE ATTRIBUTION</div><div class="report-metric-formula">First touch, last touch, U-shaped, W-shaped</div><div class="report-metric-bench">Multi-touch per deal</div></div>
+        <div class="report-metric"><div class="report-metric-name">FORECAST ACCURACY</div><div class="report-metric-formula">Actual closed ÷ Forecast at period start</div><div class="report-metric-bench">Target: ±10% variance</div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- IMPLEMENTATION TIMELINE -->
+<section class="section" data-r>
+  <p class="section-label">Implementation Sequence</p>
+  <h2 class="section-title">Ten weeks.<br>Fully operational.</h2>
+  <p class="section-desc">Every engagement follows this phased approach — CRM configuration before automation, automation before reporting, reporting before enablement. Each phase has defined deliverables and a sign-off gate before the next begins.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px 64px">
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot done"></div>
+        <div class="tl-week">Week 1 – 2</div>
+        <div class="tl-title">CRM Architecture & Data Model</div>
+        <div class="tl-items">
+          <div class="tl-task">Audit existing HubSpot setup + data quality</div>
+          <div class="tl-task">Define all custom contact, company, deal properties</div>
+          <div class="tl-task">Map lifecycle stages to business motion</div>
+          <div class="tl-task">Configure lead scoring criteria & weighting</div>
+          <div class="tl-task">Set up sales territories and team structure</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot done"></div>
+        <div class="tl-week">Week 3 – 4</div>
+        <div class="tl-title">Data Migration & Deduplication</div>
+        <div class="tl-items">
+          <div class="tl-task">Export & clean data from legacy CRM</div>
+          <div class="tl-task">De-duplicate contacts (email + domain match)</div>
+          <div class="tl-task">Map old fields → new HubSpot properties</div>
+          <div class="tl-task">Validate import with 100-record sample</div>
+          <div class="tl-task">Full import with rollback plan</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot active"></div>
+        <div class="tl-week">Week 5 – 6</div>
+        <div class="tl-title">Automation Workflows</div>
+        <div class="tl-items">
+          <div class="tl-task">Build MQL qualification + routing workflow</div>
+          <div class="tl-task">Build deal progression automation</div>
+          <div class="tl-task">Build CS handoff + onboarding sequence</div>
+          <div class="tl-task">Build at-risk customer detection workflow</div>
+          <div class="tl-task">QA each workflow with test contacts</div>
+        </div>
+      </div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-week">Week 7 – 8</div>
+        <div class="tl-title">Reporting & Dashboards</div>
+        <div class="tl-items">
+          <div class="tl-task">Build contact funnel conversion report</div>
+          <div class="tl-task">Build pipeline velocity dashboard</div>
+          <div class="tl-task">Build ARR & NRR revenue report</div>
+          <div class="tl-task">Attribution modeling configuration</div>
+          <div class="tl-task">Forecast report by rep and segment</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-week">Week 9</div>
+        <div class="tl-title">Integrations & Enrichment</div>
+        <div class="tl-items">
+          <div class="tl-task">Connect enrichment (Clearbit / Apollo)</div>
+          <div class="tl-task">Slack integration for alerts</div>
+          <div class="tl-task">Calendar + email sync (Google / Outlook)</div>
+          <div class="tl-task">Outreach / Salesloft sequence sync</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-week">Week 10</div>
+        <div class="tl-title">Enablement & Handoff</div>
+        <div class="tl-items">
+          <div class="tl-task">Team training: SDRs, AEs, CSMs, Marketing</div>
+          <div class="tl-task">Admin documentation (workflow inventory)</div>
+          <div class="tl-task">30-day post-launch monitoring plan</div>
+          <div class="tl-task">Live: full system sign-off by RevOps lead</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="divider"></div>
+<div class="cta-section">
+  <div>
+    <div class="cta-h">Want this built<br>for your team?</div>
+    <div class="cta-sub">We scope, build, and launch HubSpot RevOps systems like this in 10 weeks — fully operational, fully documented.</div>
+  </div>
+  <div class="cta-btns">
+    <a href="https://revosys.pro" class="btn btn-primary">Work with Revo-Sys</a>
+    <a href="/gtm-stack/" class="btn btn-secondary">View GTM Stack →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-brand">REVO-SYS — Architecture Brief 001 — HubSpot RevOps Blueprint</div>
+  <div class="footer-links">
+    <a href="https://revosys.pro">revosys.pro</a>
+    <a href="https://revosys.pro/blog">Blog</a>
+    <a href="/gtm-stack/">GTM Stack</a>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('vis'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('[data-r]').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

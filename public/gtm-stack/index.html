@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTM Intelligence Stack — Revo-Sys Architecture</title>
+  <meta name="description" content="A complete GTM system architecture for B2B companies: acquisition, CRM hub, AI automation, and revenue intelligence — layered, connected, and data-driven.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#0B0B0B;--ink-2:#0E0E0E;--ink-3:#141414;--ink-4:#1A1A1A;--ink-5:#222;
+      --cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#6A6560;
+      --amber:#C4A265;--amber-dim:rgba(196,162,101,0.12);--amber-glow:rgba(196,162,101,0.05);
+      --sky:#5B8FA8;--sky-dim:rgba(91,143,168,0.12);--sky-glow:rgba(91,143,168,0.05);
+      --violet:#7C6FA0;--violet-dim:rgba(124,111,160,0.12);--violet-glow:rgba(124,111,160,0.05);
+      --success:#6B9E6F;--success-dim:rgba(107,158,111,0.12);--success-glow:rgba(107,158,111,0.05);
+      --border:rgba(232,224,212,0.07);--border-h:rgba(232,224,212,0.13);
+      --serif:'Instrument Serif',Georgia,serif;
+      --sans:'Outfit',system-ui,sans-serif;
+      --mono:'IBM Plex Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+    body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.7;overflow-x:hidden}
+    a{color:var(--amber);text-decoration:none}
+
+    /* NAV */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 64px;display:flex;justify-content:space-between;align-items:center;background:rgba(11,11,11,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .brand{display:flex;align-items:baseline;gap:3px;text-decoration:none}
+    .brand-r{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--cream)}
+    .brand-s{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.14em}
+    .nav-links{display:flex;gap:24px;align-items:center}
+    .nav-link{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:color .2s}
+    .nav-link:hover{color:var(--cream)}
+    .nav-badge{font-family:var(--mono);font-size:9px;color:var(--violet);letter-spacing:.12em;background:var(--violet-glow);border:1px solid rgba(124,111,160,0.25);padding:4px 10px;border-radius:3px}
+
+    /* HERO */
+    .hero{padding:160px 64px 80px;max-width:1360px;margin:0 auto;position:relative}
+    .hero-label{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.22em;text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:12px}
+    .hero-label::before{content:'';display:block;width:32px;height:1px;background:var(--violet);opacity:0.5}
+    .hero h1{font-family:var(--serif);font-size:clamp(48px,6vw,80px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.06;margin-bottom:24px}
+    .hero h1 em{color:var(--violet);font-style:italic}
+    .hero-sub{font-size:17px;color:var(--cream-mute);max-width:580px;line-height:1.85;font-weight:300;margin-bottom:48px}
+    .hero-meta{display:flex;gap:32px;flex-wrap:wrap}
+    .hero-layer{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em}
+    .hero-layer-dot{width:10px;height:10px;border-radius:2px}
+
+    /* STACK DIAGRAM */
+    .stack-diagram{max-width:1360px;margin:0 auto;padding:0 64px 40px;position:relative}
+    .stack-diagram-inner{position:relative}
+
+    .layer{border:1px solid;padding:0;overflow:hidden;margin-bottom:1px;cursor:pointer;transition:all .3s;position:relative}
+    .layer:hover{filter:brightness(1.05)}
+    .layer-inner{display:grid;grid-template-columns:200px 1fr;min-height:100px}
+    .layer-label{padding:24px 20px;border-right:1px solid;display:flex;flex-direction:column;justify-content:center;gap:4px}
+    .layer-num{font-family:var(--mono);font-size:8px;letter-spacing:.15em;text-transform:uppercase;opacity:0.6}
+    .layer-name{font-family:var(--serif);font-size:20px;font-style:italic}
+    .layer-desc{font-family:var(--mono);font-size:9px;opacity:0.55;letter-spacing:.04em;line-height:1.5;margin-top:3px}
+    .layer-content{padding:20px 24px;display:flex;flex-wrap:wrap;gap:8px;align-content:center}
+    .tool-chip{font-family:var(--mono);font-size:9px;letter-spacing:.06em;padding:5px 10px;border-radius:2px;border:1px solid;transition:all .2s;white-space:nowrap}
+    .tool-chip:hover{transform:translateY(-1px)}
+    .layer-expand{padding:0 24px 20px;border-top:1px solid;display:none}
+    .layer.expanded .layer-expand{display:block}
+    .layer-expand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding-top:20px}
+    .expand-block{padding:16px}
+    .expand-block-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+    .expand-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+    .expand-list li{font-size:12px;color:var(--cream-dim);line-height:1.4;display:flex;gap:8px}
+    .expand-list li::before{content:'→';opacity:0.5;flex-shrink:0}
+
+    /* LAYER COLORS */
+    .layer-1{border-color:rgba(196,162,101,0.2);background:rgba(196,162,101,0.025)}
+    .layer-1 .layer-label{border-color:rgba(196,162,101,0.15)}
+    .layer-1 .layer-name{color:var(--amber)}
+    .layer-1 .layer-expand{border-color:rgba(196,162,101,0.1);background:rgba(196,162,101,0.02)}
+    .layer-1 .expand-block-title{color:var(--amber)}
+    .layer-1 .tool-chip{color:var(--amber);background:var(--amber-dim);border-color:rgba(196,162,101,0.2)}
+    .layer-1 .tool-chip:hover{background:rgba(196,162,101,0.2)}
+
+    .layer-2{border-color:rgba(91,143,168,0.2);background:rgba(91,143,168,0.025)}
+    .layer-2 .layer-label{border-color:rgba(91,143,168,0.15)}
+    .layer-2 .layer-name{color:var(--sky)}
+    .layer-2 .layer-expand{border-color:rgba(91,143,168,0.1);background:rgba(91,143,168,0.02)}
+    .layer-2 .expand-block-title{color:var(--sky)}
+    .layer-2 .tool-chip{color:var(--sky);background:var(--sky-dim);border-color:rgba(91,143,168,0.2)}
+    .layer-2 .tool-chip:hover{background:rgba(91,143,168,0.2)}
+
+    .layer-3{border-color:rgba(124,111,160,0.2);background:rgba(124,111,160,0.025)}
+    .layer-3 .layer-label{border-color:rgba(124,111,160,0.15)}
+    .layer-3 .layer-name{color:var(--violet)}
+    .layer-3 .layer-expand{border-color:rgba(124,111,160,0.1);background:rgba(124,111,160,0.02)}
+    .layer-3 .expand-block-title{color:var(--violet)}
+    .layer-3 .tool-chip{color:var(--violet);background:var(--violet-dim);border-color:rgba(124,111,160,0.2)}
+    .layer-3 .tool-chip:hover{background:rgba(124,111,160,0.2)}
+
+    .layer-4{border-color:rgba(107,158,111,0.2);background:rgba(107,158,111,0.025)}
+    .layer-4 .layer-label{border-color:rgba(107,158,111,0.15)}
+    .layer-4 .layer-name{color:var(--success)}
+    .layer-4 .layer-expand{border-color:rgba(107,158,111,0.1);background:rgba(107,158,111,0.02)}
+    .layer-4 .expand-block-title{color:var(--success)}
+    .layer-4 .tool-chip{color:var(--success);background:var(--success-dim);border-color:rgba(107,158,111,0.2)}
+    .layer-4 .tool-chip:hover{background:rgba(107,158,111,0.2)}
+
+    /* BETWEEN-LAYER CONNECTORS */
+    .layer-connector{height:28px;display:flex;align-items:center;justify-content:center;gap:32px;padding:0 64px;position:relative}
+    .connector-line{flex:1;height:1px;background:var(--border);position:relative;overflow:hidden}
+    .connector-line::after{content:'';position:absolute;top:0;left:-100%;height:100%;width:60%;background:linear-gradient(90deg,transparent,var(--c,var(--amber)),transparent);animation:sweep 2.5s ease-in-out infinite}
+    @keyframes sweep{0%{left:-60%}100%{left:100%}}
+    .connector-label{font-family:var(--mono);font-size:8px;color:var(--cream-mute);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px}
+    .connector-arrow{color:var(--cream-mute);font-size:10px}
+
+    /* SECTION */
+    .section{max-width:1360px;margin:0 auto;padding:80px 64px}
+    .section-label{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.18em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+    .section-title{font-family:var(--serif);font-size:clamp(32px,4vw,52px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.1;margin-bottom:16px}
+    .section-desc{font-size:15px;color:var(--cream-mute);max-width:620px;line-height:1.8;font-weight:300;margin-bottom:56px}
+    .divider{height:1px;background:var(--border);max-width:1360px;margin:0 auto}
+
+    /* DATA FLOW JOURNEY */
+    .journey{display:grid;gap:0;border:1px solid var(--border)}
+    .journey-step{display:grid;grid-template-columns:56px 1fr 280px;border-bottom:1px solid var(--border);transition:background .2s;cursor:default}
+    .journey-step:last-child{border-bottom:none}
+    .journey-step:hover{background:var(--ink-3)}
+    .journey-step-num{display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:28px;font-style:italic;color:var(--ink-5);border-right:1px solid var(--border)}
+    .journey-body{padding:20px 24px;border-right:1px solid var(--border)}
+    .journey-event{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+    .journey-title{font-size:15px;font-weight:500;color:var(--cream);margin-bottom:6px}
+    .journey-detail{font-size:12px;color:var(--cream-mute);line-height:1.6}
+    .journey-side{padding:16px 20px;display:flex;flex-direction:column;gap:6px;justify-content:center}
+    .journey-trigger{font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:2px;border:1px solid;display:inline-block;width:fit-content}
+    .journey-system{font-family:var(--mono);font-size:9px;color:var(--cream-mute);display:flex;align-items:center;gap:6px}
+    .journey-system::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0}
+
+    /* AI AUTOMATION */
+    .ai-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-top:0}
+    .ai-card{background:var(--ink-2);padding:32px;transition:background .2s}
+    .ai-card:hover{background:var(--ink-3)}
+    .ai-card-tag{font-family:var(--mono);font-size:8px;color:var(--violet);letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+    .ai-card-tag::before{content:'';width:16px;height:1px;background:var(--violet);opacity:0.5}
+    .ai-card h3{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--cream);margin-bottom:10px}
+    .ai-card p{font-size:13px;color:var(--cream-mute);line-height:1.7;margin-bottom:16px}
+    .ai-logic{padding:14px;background:var(--ink);border:1px solid var(--border);border-left:2px solid var(--violet)}
+    .ai-logic-title{font-family:var(--mono);font-size:8px;color:var(--violet);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+    .ai-logic-code{font-family:var(--mono);font-size:10px;color:var(--cream-mute);line-height:1.7;white-space:pre}
+    .ai-outputs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+    .ai-output{font-family:var(--mono);font-size:9px;color:var(--violet);background:var(--violet-dim);border:1px solid rgba(124,111,160,0.2);padding:3px 8px;border-radius:2px}
+
+    /* CASE STUDIES */
+    .cases{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}
+    .case-card{background:var(--ink-2);padding:32px;transition:background .2s;position:relative;overflow:hidden}
+    .case-card:hover{background:var(--ink-3)}
+    .case-num{position:absolute;top:20px;right:24px;font-family:var(--serif);font-size:48px;font-style:italic;color:var(--ink-5);line-height:1}
+    .case-tag{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px}
+    .case-title{font-family:var(--serif);font-size:18px;font-style:italic;color:var(--cream);margin-bottom:10px;line-height:1.3}
+    .case-challenge{font-size:12px;color:var(--cream-mute);line-height:1.6;margin-bottom:16px}
+    .case-results{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .case-result{padding:10px 12px;background:var(--ink);border:1px solid var(--border)}
+    .case-result-n{font-family:var(--serif);font-size:26px;font-style:italic;margin-bottom:2px}
+    .case-result-l{font-family:var(--mono);font-size:8px;color:var(--cream-mute);letter-spacing:.06em;line-height:1.3}
+    .case-stack{margin-top:16px;display:flex;flex-wrap:wrap;gap:4px}
+    .case-tool{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:2px;border:1px solid var(--border);color:var(--cream-mute)}
+
+    /* CTA */
+    .cta-section{border-top:1px solid var(--border);padding:80px 64px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;max-width:1360px;margin:0 auto}
+    .cta-h{font-family:var(--serif);font-size:clamp(28px,3vw,44px);font-style:italic;color:var(--cream)}
+    .cta-sub{font-size:14px;color:var(--cream-mute);margin-top:8px;font-weight:300}
+    .cta-btns{display:flex;gap:12px;flex-shrink:0}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:0;font-size:13px;font-family:var(--sans);font-weight:500;text-decoration:none;transition:all .2s;white-space:nowrap;cursor:pointer;border:none}
+    .btn-primary{background:var(--cream);color:var(--ink)}
+    .btn-primary:hover{background:#fff}
+    .btn-secondary{background:transparent;color:var(--cream-dim);border:1px solid var(--border-h)}
+    .btn-secondary:hover{border-color:var(--cream);color:var(--cream)}
+
+    /* FOOTER */
+    .footer{border-top:1px solid var(--border);padding:28px 64px;display:flex;justify-content:space-between;align-items:center}
+    .footer-brand{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em}
+    .footer-links{display:flex;gap:20px}
+    .footer-links a{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.06em;text-decoration:none}
+    .footer-links a:hover{color:var(--cream)}
+
+    /* SCROLL REVEAL */
+    [data-r]{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+    [data-r].vis{opacity:1;transform:translateY(0)}
+
+    /* ANIMATED PARTICLE TRAIL */
+    @keyframes dataFlow{
+      0%{opacity:0;transform:translateX(-8px)}
+      20%{opacity:1}
+      80%{opacity:1}
+      100%{opacity:0;transform:translateX(8px)}
+    }
+
+    @media(max-width:900px){
+      .nav{padding:14px 24px}
+      .hero{padding:100px 24px 60px}
+      .stack-diagram{padding:0 24px 24px}
+      .section{padding:60px 24px}
+      .layer-inner{grid-template-columns:1fr}
+      .layer-label{border-right:none;border-bottom:1px solid}
+      .layer-expand-grid{grid-template-columns:1fr}
+      .journey-step{grid-template-columns:40px 1fr}
+      .journey-side{display:none}
+      .ai-grid{grid-template-columns:1fr}
+      .cases{grid-template-columns:1fr}
+      .cta-section{grid-template-columns:1fr;text-align:center}
+      .cta-btns{justify-content:center}
+      .footer{padding:24px;flex-direction:column;gap:12px}
+      .layer-connector{padding:0 24px}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="https://revosys.pro" class="brand">
+    <span class="brand-r">Revo</span><span class="brand-s">-Sys</span>
+  </a>
+  <div class="nav-links">
+    <a href="https://revosys.pro/blog" class="nav-link">Blog</a>
+    <a href="/hubspot-blueprint/" class="nav-link">HubSpot Blueprint</a>
+    <a href="https://app.revosys.pro/portal" class="nav-link">Portal</a>
+    <span class="nav-badge">ARCH BRIEF 002</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-label">GTM Intelligence Stack — Revo-Sys</p>
+  <h1>The <em>GTM Intelligence</em><br>Stack</h1>
+  <p class="hero-sub">Four layers. One revenue machine. This is the full-stack architecture we design for B2B companies — from demand acquisition to revenue intelligence — where every signal flows downward and every insight flows up. Click any layer to expand it.</p>
+  <div class="hero-meta">
+    <div class="hero-layer"><div class="hero-layer-dot" style="background:var(--amber)"></div>Acquisition</div>
+    <div class="hero-layer"><div class="hero-layer-dot" style="background:var(--sky)"></div>CRM Hub</div>
+    <div class="hero-layer"><div class="hero-layer-dot" style="background:var(--violet)"></div>AI Automation</div>
+    <div class="hero-layer"><div class="hero-layer-dot" style="background:var(--success)"></div>Revenue Intelligence</div>
+  </div>
+</section>
+
+<!-- THE STACK DIAGRAM -->
+<div class="stack-diagram">
+  <div class="stack-diagram-inner">
+
+    <!-- Layer 1: Acquisition -->
+    <div class="layer layer-1" onclick="toggleLayer(this)">
+      <div class="layer-inner">
+        <div class="layer-label">
+          <div class="layer-num">Layer 01</div>
+          <div class="layer-name">Acquisition</div>
+          <div class="layer-desc">Demand generation<br>& inbound channels</div>
+        </div>
+        <div class="layer-content">
+          <span class="tool-chip">Paid Search (Google)</span>
+          <span class="tool-chip">Paid Social (LinkedIn)</span>
+          <span class="tool-chip">SEO / Content</span>
+          <span class="tool-chip">Email Outbound</span>
+          <span class="tool-chip">LinkedIn Prospecting</span>
+          <span class="tool-chip">Webinars / Events</span>
+          <span class="tool-chip">Partner / Affiliate</span>
+          <span class="tool-chip">Product-Led Growth (PLG)</span>
+          <span class="tool-chip">Cold Calling (SDR)</span>
+          <span class="tool-chip">Review Sites (G2, Capterra)</span>
+          <span class="tool-chip">Referral Program</span>
+        </div>
+      </div>
+      <div class="layer-expand">
+        <div class="layer-expand-grid">
+          <div class="expand-block">
+            <div class="expand-block-title">Inbound Channels</div>
+            <ul class="expand-list">
+              <li>Paid Search: intent-based capture at bottom of funnel</li>
+              <li>SEO / Content: top-of-funnel awareness, sustained traffic</li>
+              <li>Paid Social: LinkedIn for B2B awareness + retargeting</li>
+              <li>Review sites: high-intent buyers comparing solutions</li>
+              <li>PLG / Freemium: self-serve motion feeding product qualified leads (PQL)</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">Outbound Channels</div>
+            <ul class="expand-list">
+              <li>Email sequences (cold): persona-targeted, 6-step cadence</li>
+              <li>LinkedIn outreach: connection + message, not cold DM spray</li>
+              <li>Phone (SDR): high-value ICP, triggered by intent signals</li>
+              <li>Events / Webinars: pipeline acceleration for mid-funnel leads</li>
+              <li>Partner / co-sell: warm introductions from ecosystem partners</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">Data Flowing Down to CRM</div>
+            <ul class="expand-list">
+              <li>UTM parameters: source, medium, campaign, content, term</li>
+              <li>First-touch attribution: which channel brought the contact</li>
+              <li>Form fill data: name, email, company, role, intent</li>
+              <li>Event attendance: webinar registrations, booth visits</li>
+              <li>Product usage signals (PQL): feature activation, time-in-app</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 1→2 -->
+    <div class="layer-connector">
+      <div class="connector-line" style="--c:var(--amber)"></div>
+      <div class="connector-label">
+        <span class="connector-arrow">↓</span>
+        CONTACTS + ATTRIBUTION DATA FLOWS INTO CRM
+        <span class="connector-arrow">↓</span>
+      </div>
+      <div class="connector-line" style="--c:var(--sky)"></div>
+    </div>
+
+    <!-- Layer 2: CRM Hub -->
+    <div class="layer layer-2" onclick="toggleLayer(this)">
+      <div class="layer-inner">
+        <div class="layer-label">
+          <div class="layer-num">Layer 02</div>
+          <div class="layer-name">CRM Hub</div>
+          <div class="layer-desc">HubSpot CRM core —<br>lifecycle, pipeline, sequences</div>
+        </div>
+        <div class="layer-content">
+          <span class="tool-chip">HubSpot CRM</span>
+          <span class="tool-chip">Lifecycle Stages (7)</span>
+          <span class="tool-chip">Lead Scoring</span>
+          <span class="tool-chip">Sales Pipeline</span>
+          <span class="tool-chip">Sequences & Templates</span>
+          <span class="tool-chip">Contact Properties (30+)</span>
+          <span class="tool-chip">Deal Properties (20+)</span>
+          <span class="tool-chip">Meeting Booking</span>
+          <span class="tool-chip">HubSpot Inbox</span>
+          <span class="tool-chip">Tasks & Activity</span>
+          <span class="tool-chip">Clearbit Enrichment</span>
+          <span class="tool-chip">Apollo / ZoomInfo</span>
+        </div>
+      </div>
+      <div class="layer-expand">
+        <div class="layer-expand-grid">
+          <div class="expand-block">
+            <div class="expand-block-title">Contact Data Model</div>
+            <ul class="expand-list">
+              <li>hs_lifecyclestage: subscriber → evangelist (7 stages)</li>
+              <li>hs_lead_status: New → Open → In Progress → Connected</li>
+              <li>hubspot_score: behavioral + demographic scoring (0–100)</li>
+              <li>Custom: persona, ICP tier, risk_level, nps_score</li>
+              <li>Enriched: job_seniority, company_revenue, funding_stage</li>
+              <li>Attribution: first_touch_source, last_touch_source</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">Deal Data Model</div>
+            <ul class="expand-list">
+              <li>dealstage: 6 stages with defined probability weighting</li>
+              <li>amount: ACV, total contract value (TCV), ARR</li>
+              <li>closedate: rolling 30-day projection + manual close date</li>
+              <li>deal_type: new_business | expansion | renewal</li>
+              <li>loss_reason: custom enumeration (price / timing / competitor / no decision)</li>
+              <li>Custom: champion_identified, economic_buyer, legal_started</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">Sales Engagement</div>
+            <ul class="expand-list">
+              <li>Sequences: 5-step SDR outreach (email + call + LinkedIn)</li>
+              <li>Templates: 20+ role-specific email templates</li>
+              <li>Meeting links: round-robin routing by territory</li>
+              <li>Activity logging: auto-log via Gmail/Outlook sync</li>
+              <li>Snippets: quick-insert value props and objection handling</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 2→3 -->
+    <div class="layer-connector">
+      <div class="connector-line" style="--c:var(--sky)"></div>
+      <div class="connector-label">
+        <span class="connector-arrow">↓</span>
+        CONTACT SIGNALS & BEHAVIOR DATA FEEDS AI LAYER
+        <span class="connector-arrow">↓</span>
+      </div>
+      <div class="connector-line" style="--c:var(--violet)"></div>
+    </div>
+
+    <!-- Layer 3: AI Automation -->
+    <div class="layer layer-3" onclick="toggleLayer(this)">
+      <div class="layer-inner">
+        <div class="layer-label">
+          <div class="layer-num">Layer 03</div>
+          <div class="layer-name">AI Automation</div>
+          <div class="layer-desc">Scoring, routing, enrichment<br>& intelligent workflow</div>
+        </div>
+        <div class="layer-content">
+          <span class="tool-chip">Lead Scoring Model</span>
+          <span class="tool-chip">Intent Signals (Bombora)</span>
+          <span class="tool-chip">Auto-Routing Logic</span>
+          <span class="tool-chip">AI Email Personalization</span>
+          <span class="tool-chip">Churn Risk Scoring</span>
+          <span class="tool-chip">Workflow Automation (HubSpot)</span>
+          <span class="tool-chip">Make / Zapier</span>
+          <span class="tool-chip">AI Outreach (Clay)</span>
+          <span class="tool-chip">Enrichment Waterfall</span>
+          <span class="tool-chip">Groq / OpenAI API</span>
+          <span class="tool-chip">Slack Alerts</span>
+          <span class="tool-chip">Webhook Orchestration</span>
+        </div>
+      </div>
+      <div class="layer-expand">
+        <div class="layer-expand-grid">
+          <div class="expand-block">
+            <div class="expand-block-title">Lead Scoring Dimensions</div>
+            <ul class="expand-list">
+              <li>Behavioral (0–50 pts): page visits, email opens, clicks, content downloads, demo requests, pricing visits</li>
+              <li>Demographic (0–30 pts): job title seniority, company size, industry match, tech stack fit</li>
+              <li>Firmographic (0–20 pts): revenue range, funding stage, growth signals, tech adoption</li>
+              <li>Intent (0–30 bonus pts): Bombora surge score, G2 profile views, competitor site visits</li>
+              <li>Decay: -2pts/week of inactivity; score resets on major lifecycle change</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">Routing & Assignment Logic</div>
+            <ul class="expand-list">
+              <li>Geographic routing: territory defined by country/state, assigned to regional SDR pod</li>
+              <li>Segment routing: SMB (&lt;200 emp.) → SMB SDR; MM (200-2K) → Mid-Market SDR; ENT → named AE</li>
+              <li>Source-based routing: inbound demo → immediate AE; cold email reply → SDR qualify first</li>
+              <li>Round-robin cap: max 50 MQLs/SDR/week; overflow to next available</li>
+              <li>Escalation: if no SDR response in 4h → notify SDR manager</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">AI-Powered Operations</div>
+            <ul class="expand-list">
+              <li>Email personalization: AI pulls CRM fields + LinkedIn bio to write first-line icebreakers at scale</li>
+              <li>Churn prediction: ML model trained on login frequency, support tickets, NPS, and feature adoption</li>
+              <li>Deal summarization: AI generates deal brief from all CRM activity for pipeline review meetings</li>
+              <li>Sequence optimization: A/B test subject lines; AI selects winner after 200 sends</li>
+              <li>Intent-triggered outreach: Bombora surge → auto-enroll target accounts in campaign within 24h</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 3→4 -->
+    <div class="layer-connector">
+      <div class="connector-line" style="--c:var(--violet)"></div>
+      <div class="connector-label">
+        <span class="connector-arrow">↓</span>
+        ENRICHED DATA + PIPELINE EVENTS FEED REVENUE INTELLIGENCE
+        <span class="connector-arrow">↓</span>
+      </div>
+      <div class="connector-line" style="--c:var(--success)"></div>
+    </div>
+
+    <!-- Layer 4: Revenue Intelligence -->
+    <div class="layer layer-4" onclick="toggleLayer(this)">
+      <div class="layer-inner">
+        <div class="layer-label">
+          <div class="layer-num">Layer 04</div>
+          <div class="layer-name">Revenue Intelligence</div>
+          <div class="layer-desc">Attribution, forecasting<br>& board-level reporting</div>
+        </div>
+        <div class="layer-content">
+          <span class="tool-chip">HubSpot Dashboards</span>
+          <span class="tool-chip">Attribution Modeling</span>
+          <span class="tool-chip">Pipeline Forecasting</span>
+          <span class="tool-chip">ARR Tracking</span>
+          <span class="tool-chip">NRR / GRR</span>
+          <span class="tool-chip">Google Looker Studio</span>
+          <span class="tool-chip">Metabase / Databox</span>
+          <span class="tool-chip">Funnel Conversion Reports</span>
+          <span class="tool-chip">CAC / LTV Analysis</span>
+          <span class="tool-chip">Revenue Forecasting</span>
+          <span class="tool-chip">Churn & Expansion ARR</span>
+          <span class="tool-chip">Board Reporting Pack</span>
+        </div>
+      </div>
+      <div class="layer-expand">
+        <div class="layer-expand-grid">
+          <div class="expand-block">
+            <div class="expand-block-title">Attribution Models Used</div>
+            <ul class="expand-list">
+              <li>First-touch: credit to channel that created the contact — good for awareness investment decisions</li>
+              <li>Last-touch: credit to channel directly before conversion — useful for evaluating bottom-of-funnel</li>
+              <li>U-shaped (40/20/40): 40% first, 40% last, 20% distributed — balanced for B2B</li>
+              <li>W-shaped: MQL creation gets additional weight — best for measuring SDR contribution</li>
+              <li>Custom: configurable per campaign type in HubSpot attribution reports</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">Forecasting Methodology</div>
+            <ul class="expand-list">
+              <li>Bottom-up: sum of weighted pipeline by close date × stage probability</li>
+              <li>Historical run-rate: trailing 90-day close rate applied to current pipeline</li>
+              <li>Segment-adjusted: different close rates applied per segment (SMB vs. Enterprise)</li>
+              <li>Upside / Commit tiers: AE categorizes each deal as commit, best-case, or upside</li>
+              <li>AI overlay: regression model trained on historical close data adjusts probability in real time</li>
+            </ul>
+          </div>
+          <div class="expand-block">
+            <div class="expand-block-title">KPIs Tracked Weekly</div>
+            <ul class="expand-list">
+              <li>New ARR vs. quota (by rep, team, segment)</li>
+              <li>Net Revenue Retention (NRR) — expansion + churn</li>
+              <li>Pipeline coverage ratio (target: 3×–4× quota)</li>
+              <li>MQL→SQL rate, SQL→Opp rate, win rate</li>
+              <li>CAC by channel, blended CAC, CAC payback period</li>
+              <li>LTV:CAC ratio (target: &gt;3×)</li>
+              <li>Average sales cycle length (trending by quarter)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upward feedback -->
+    <div class="layer-connector">
+      <div class="connector-line" style="--c:var(--success)"></div>
+      <div class="connector-label">
+        <span class="connector-arrow">↑</span>
+        INSIGHTS FLOW BACK UP — OPTIMIZING ACQUISITION SPEND & ICP TARGETING
+        <span class="connector-arrow">↑</span>
+      </div>
+      <div class="connector-line" style="--c:var(--amber)"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- DATA FLOW JOURNEY -->
+<section class="section" data-r>
+  <p class="section-label">Data Flow Narrative</p>
+  <h2 class="section-title">One lead.<br>Every system, triggered.</h2>
+  <p class="section-desc">This is what actually happens when a high-intent prospect visits your pricing page — from the first click to closed-won — and how each layer of the stack responds in real time.</p>
+  <div class="journey">
+
+    <div class="journey-step">
+      <div class="journey-step-num">01</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--amber)">ACQUISITION LAYER</div>
+        <div class="journey-title">Prospect clicks a LinkedIn ad and lands on the pricing page</div>
+        <div class="journey-detail">UTM parameters captured: utm_source=linkedin, utm_campaign=q2-revops-decision, utm_content=cta-v3. GA4 fires a page_view event. The visit is their 3rd to the pricing page this month.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--amber);background:var(--amber-dim);border-color:rgba(196,162,101,0.2)">3rd pricing page visit</div>
+        <div class="journey-system" style="--before-bg:var(--amber)"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;display:inline-block;flex-shrink:0"></span>Google Analytics 4</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;display:inline-block;flex-shrink:0"></span>HubSpot tracking script</div>
+      </div>
+    </div>
+
+    <div class="journey-step">
+      <div class="journey-step-num">02</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--sky)">CRM HUB</div>
+        <div class="journey-title">HubSpot creates (or updates) the contact record and fires behavioral scoring</div>
+        <div class="journey-detail">HubSpot identifies the contact via cookie or email (if previously submitted a form). The page visit triggers +10 to hs_score. Contact properties updated: last_page_view = pricing, page_view_count = 3, last_seen = today. Lead status: New.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--sky);background:var(--sky-dim);border-color:rgba(91,143,168,0.2)">Score +10 pts → 45 total</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--sky);border-radius:50%;display:inline-block;flex-shrink:0"></span>HubSpot CRM</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--sky);border-radius:50%;display:inline-block;flex-shrink:0"></span>Behavioral score engine</div>
+      </div>
+    </div>
+
+    <div class="journey-step">
+      <div class="journey-step-num">03</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--violet)">AI AUTOMATION LAYER</div>
+        <div class="journey-title">Score threshold crossed → MQL workflow fires. Clearbit enriches the record.</div>
+        <div class="journey-detail">Score ≥ 40 triggers the MQL Qualification Workflow. Clearbit enrichment runs: company_size = 350 employees, industry = SaaS, role_seniority = director, funding_stage = Series B. ICP filter: all conditions met. Workflow continues.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--violet);background:var(--violet-dim);border-color:rgba(124,111,160,0.2)">ICP match confirmed</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;display:inline-block;flex-shrink:0"></span>HubSpot Workflows</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;display:inline-block;flex-shrink:0"></span>Clearbit Enrichment</div>
+      </div>
+    </div>
+
+    <div class="journey-step">
+      <div class="journey-step-num">04</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--violet)">AI AUTOMATION LAYER</div>
+        <div class="journey-title">Contact auto-routed to SDR. AI generates personalized first-line for outreach.</div>
+        <div class="journey-detail">Company = 350 employees in SaaS → Mid-Market SDR pod. Round-robin assigns to James Chen (3 of 50 MQL capacity). HubSpot task created: "Call MQL — due within 24h." AI drafts personalized email opening using company news + LinkedIn headline. Slack → #mql-alerts fires with contact name, company, and score.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--violet);background:var(--violet-dim);border-color:rgba(124,111,160,0.2)">SDR assigned in 0 min</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;display:inline-block;flex-shrink:0"></span>Routing workflow</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;display:inline-block;flex-shrink:0"></span>AI personalization (Groq)</div>
+      </div>
+    </div>
+
+    <div class="journey-step">
+      <div class="journey-step-num">05</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--sky)">CRM HUB</div>
+        <div class="journey-title">SDR qualifies. Deal created. AE assigned. Pipeline stage = Discovery.</div>
+        <div class="journey-detail">BANT collected over 2 calls: Budget confirmed ($40K range), Authority = VP RevOps, Need = replacing manual reporting, Timeline = Q3. lifecyclestage → salesqualifiedlead. Deal created: $38K ACV, close date = Aug 30. Assigned to AE Sarah Kim. Pipeline stage = Discovery Call.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--sky);background:var(--sky-dim);border-color:rgba(91,143,168,0.2)">Deal: $38K ACV created</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--sky);border-radius:50%;display:inline-block;flex-shrink:0"></span>HubSpot Deals</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--sky);border-radius:50%;display:inline-block;flex-shrink:0"></span>Pipeline automation</div>
+      </div>
+    </div>
+
+    <div class="journey-step">
+      <div class="journey-step-num">06</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--success)">REVENUE INTELLIGENCE</div>
+        <div class="journey-title">Deal contributes to pipeline coverage, forecast, and channel attribution.</div>
+        <div class="journey-detail">$38K added to Q3 pipeline. Pipeline coverage ratio updates: now at 3.2× quota. Attribution: LinkedIn Paid (first touch), Pricing Page (last touch). Forecast model adjusts: 40% probability × $38K = $15.2K weighted. CAC for this lead = $420 (LinkedIn ad spend + SDR time). LTV:CAC = 4.8× at projected ACV.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--success);background:var(--success-dim);border-color:rgba(107,158,111,0.2)">Pipeline coverage: 3.2×</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--success);border-radius:50%;display:inline-block;flex-shrink:0"></span>HubSpot Reporting</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--success);border-radius:50%;display:inline-block;flex-shrink:0"></span>Forecast dashboard</div>
+      </div>
+    </div>
+
+    <div class="journey-step">
+      <div class="journey-step-num">07</div>
+      <div class="journey-body">
+        <div class="journey-event" style="color:var(--amber)">FEEDBACK LOOP → ACQUISITION LAYER</div>
+        <div class="journey-title">Win data flows back. LinkedIn campaign budget is increased for this ICP.</div>
+        <div class="journey-detail">Deal closes 54 days later. The attribution data confirms: LinkedIn → Pricing Page → SDR outreach sequence = most efficient path for Series B SaaS, 201–500 employees, VP title. Marketing increases LinkedIn budget by 30% for this audience segment. Lookalike audience built from closed-won contacts in this segment. The loop is closed.</div>
+      </div>
+      <div class="journey-side">
+        <div class="journey-trigger" style="color:var(--amber);background:var(--amber-dim);border-color:rgba(196,162,101,0.2)">Closed-won: 54 days</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;display:inline-block;flex-shrink:0"></span>Attribution reporting</div>
+        <div class="journey-system"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;display:inline-block;flex-shrink:0"></span>LinkedIn Ads optimization</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- AI AUTOMATION DEEP DIVE -->
+<section class="section" data-r>
+  <p class="section-label">AI Automation Layer</p>
+  <h2 class="section-title">Where intelligence<br>meets execution.</h2>
+  <p class="section-desc">The AI layer is not a bolt-on — it's the connective tissue between data signals and GTM actions. Here are four of the core AI systems we design and build for clients.</p>
+  <div class="ai-grid">
+
+    <div class="ai-card">
+      <div class="ai-card-tag">System 01</div>
+      <h3>Predictive Lead Scoring</h3>
+      <p>A multi-dimensional scoring model that combines behavioral signals, firmographic fit, intent data, and engagement recency into a single score that predicts conversion probability — not just activity volume.</p>
+      <div class="ai-logic">
+        <div class="ai-logic-title">Scoring Formula</div>
+        <div class="ai-logic-code">score = (behavioral × 0.40)
+       + (firmographic × 0.25)
+       + (demographic × 0.20)
+       + (intent_signal × 0.15)
+
+decay: score × 0.95 per 7 days inactive
+cap: max 100 pts, min 0 pts
+threshold: MQL at ≥ 40, high-priority at ≥ 70</div>
+      </div>
+      <div class="ai-outputs">
+        <span class="ai-output">MQL trigger</span>
+        <span class="ai-output">SDR priority queue</span>
+        <span class="ai-output">Sequence selection</span>
+        <span class="ai-output">Personalization tier</span>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-tag">System 02</div>
+      <h3>Intent-Based Auto-Routing</h3>
+      <p>When Bombora detects a company surging on topics like "CRM migration" or "revenue operations," the system automatically triggers a targeted outreach campaign within 24 hours — before the prospect even reaches out.</p>
+      <div class="ai-logic">
+        <div class="ai-logic-title">Routing Decision Tree</div>
+        <div class="ai-logic-code">if intent_surge AND company in ICP:
+  → enroll_in: intent_outreach_sequence
+  → assign: territory_SDR (priority)
+  → set: contact.intent_triggered = true
+  → notify: "#intent-alerts" Slack
+
+if intent_surge AND no CRM record:
+  → create: contact via enrichment API
+  → route: as above</div>
+      </div>
+      <div class="ai-outputs">
+        <span class="ai-output">24h outreach trigger</span>
+        <span class="ai-output">Territory assignment</span>
+        <span class="ai-output">Slack alert</span>
+        <span class="ai-output">Contact creation</span>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-tag">System 03</div>
+      <h3>Churn Risk Detection</h3>
+      <p>A continuous monitoring system that cross-references product usage, support history, NPS, email engagement, and billing signals to produce a real-time health score for every customer account — with automated CS intervention.</p>
+      <div class="ai-logic">
+        <div class="ai-logic-title">Risk Score Composition</div>
+        <div class="ai-logic-code">health_score = 100
+  − (days_since_login × 1.5)    // max −30
+  − (open_tickets × 5)           // max −25
+  − (nps_detractor × 20)        // if NPS ≤ 6
+  + (feature_depth × 2)         // breadth of use
+  + (expansion_activity × 10)   // upsell signals
+
+critical: &lt; 30 → immediate CS task
+at_risk:  30–60 → check-in within 7 days
+healthy:  &gt; 60 → standard QBR cadence</div>
+      </div>
+      <div class="ai-outputs">
+        <span class="ai-output">Risk classification</span>
+        <span class="ai-output">CS task auto-create</span>
+        <span class="ai-output">Win-back sequence</span>
+        <span class="ai-output">Leadership alert</span>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-tag">System 04</div>
+      <h3>AI-Powered Email Personalization</h3>
+      <p>At scale, personalization dies because humans can't write 200 individual emails. We use LLMs (Groq / GPT-4) to pull live CRM data, recent company news, and the contact's LinkedIn headline to auto-generate personalized email openings for every sequence touchpoint.</p>
+      <div class="ai-logic">
+        <div class="ai-logic-title">Personalization Prompt Template</div>
+        <div class="ai-logic-code">Given:
+  contact.name = "{{first_name}}"
+  contact.company = "{{company_name}}"
+  contact.title = "{{jobtitle}}"
+  enrichment.news = "{{recent_company_news}}"
+  sequence.goal = "book discovery call"
+
+Write a 1-sentence email opener that:
+1. References something specific about them
+2. Does NOT start with "I" or "Congrats"
+3. Feels human, not templated
+4. Is under 20 words</div>
+      </div>
+      <div class="ai-outputs">
+        <span class="ai-output">Personalized opener</span>
+        <span class="ai-output">Sequence inject</span>
+        <span class="ai-output">A/B variant</span>
+        <span class="ai-output">Send via HubSpot</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CASE STUDIES -->
+<section class="section" data-r>
+  <p class="section-label">Outcomes</p>
+  <h2 class="section-title">Three builds.<br>Real results.</h2>
+  <p class="section-desc">Each of these is an anonymized implementation of this exact stack architecture, delivered for B2B SaaS companies at different stages of growth.</p>
+  <div class="cases">
+
+    <div class="case-card">
+      <div class="case-num">01</div>
+      <div class="case-tag" style="color:var(--amber)">CRM MIGRATION + REVOPS BUILD</div>
+      <div class="case-title">Zero to Revenue Engine — Series B SaaS</div>
+      <div class="case-challenge">Inherited a Salesforce install with no consistent lifecycle stages, broken automation, and zero pipeline visibility. Migrated to HubSpot, rebuilt the full GTM stack from scratch in 10 weeks.</div>
+      <div class="case-results">
+        <div class="case-result"><div class="case-result-n" style="color:var(--amber)">62%</div><div class="case-result-l">Increase in MQL → SQL conversion rate (3 months post-launch)</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--amber)">4.1×</div><div class="case-result-l">Pipeline coverage at end of Q1 after launch</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--amber)">14d</div><div class="case-result-l">Reduction in average sales cycle from 48d to 34d</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--amber)">0</div><div class="case-result-l">Manual lead routing tasks. Fully automated within 2 weeks.</div></div>
+      </div>
+      <div class="case-stack">
+        <span class="case-tool">HubSpot CRM</span><span class="case-tool">Clearbit</span><span class="case-tool">Apollo</span><span class="case-tool">Slack</span><span class="case-tool">Google Analytics</span><span class="case-tool">Looker Studio</span>
+      </div>
+    </div>
+
+    <div class="case-card">
+      <div class="case-num">02</div>
+      <div class="case-tag" style="color:var(--violet)">AI AUTOMATION + LEAD SCORING</div>
+      <div class="case-title">Intent-Triggered Pipeline — Fintech Scale-Up</div>
+      <div class="case-challenge">Sales team burning time on unqualified leads. No scoring model, no routing logic, and manual outreach that took 3 days to respond to high-intent signals. Built AI scoring + Bombora integration in 6 weeks.</div>
+      <div class="case-results">
+        <div class="case-result"><div class="case-result-n" style="color:var(--violet)">2.3h</div><div class="case-result-l">Avg time from lead creation to SDR outreach (was 3 days)</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--violet)">38%</div><div class="case-result-l">Increase in meetings booked per SDR per week</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--violet)">91%</div><div class="case-result-l">Score accuracy — leads scoring 70+ converted at 4× baseline</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--violet)">18%</div><div class="case-result-l">Win rate improvement from intent-triggered vs. cold outreach</div></div>
+      </div>
+      <div class="case-stack">
+        <span class="case-tool">HubSpot</span><span class="case-tool">Bombora</span><span class="case-tool">Clay</span><span class="case-tool">Groq AI</span><span class="case-tool">Make</span><span class="case-tool">Salesloft</span>
+      </div>
+    </div>
+
+    <div class="case-card">
+      <div class="case-num">03</div>
+      <div class="case-tag" style="color:var(--success)">REVENUE INTELLIGENCE + RETENTION</div>
+      <div class="case-title">NRR Recovery — B2B SaaS at $8M ARR</div>
+      <div class="case-challenge">Company had 18% annual churn with no early warning system. CSMs were firefighting. Built churn prediction model, automated health scoring, and CS workflow in 8 weeks. Reporting rebuilt from zero.</div>
+      <div class="case-results">
+        <div class="case-result"><div class="case-result-n" style="color:var(--success)">18→9%</div><div class="case-result-l">Annual gross churn rate reduced in 6 months</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--success)">112%</div><div class="case-result-l">Net Revenue Retention at end of year (was 89%)</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--success)">23d</div><div class="case-result-l">Avg early warning lead time before churn event (was 0)</div></div>
+        <div class="case-result"><div class="case-result-n" style="color:var(--success)">$1.4M</div><div class="case-result-l">ARR retained that would have churned without intervention</div></div>
+      </div>
+      <div class="case-stack">
+        <span class="case-tool">HubSpot</span><span class="case-tool">Databox</span><span class="case-tool">Pendo</span><span class="case-tool">Zapier</span><span class="case-tool">Groq AI</span><span class="case-tool">Metabase</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="divider"></div>
+<div class="cta-section">
+  <div>
+    <div class="cta-h">Ready to build your<br>GTM intelligence stack?</div>
+    <div class="cta-sub">We design, implement, and launch systems like this for B2B companies in 8–12 weeks. Fully operational. Fully documented. Yours to own.</div>
+  </div>
+  <div class="cta-btns">
+    <a href="https://revosys.pro" class="btn btn-primary">Work with Revo-Sys</a>
+    <a href="/hubspot-blueprint/" class="btn btn-secondary">HubSpot Blueprint →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-brand">REVO-SYS — Architecture Brief 002 — GTM Intelligence Stack</div>
+  <div class="footer-links">
+    <a href="https://revosys.pro">revosys.pro</a>
+    <a href="https://revosys.pro/blog">Blog</a>
+    <a href="/hubspot-blueprint/">HubSpot Blueprint</a>
+  </div>
+</footer>
+
+<script>
+  function toggleLayer(el) {
+    el.classList.toggle('expanded');
+  }
+  // Scroll reveal
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('vis'); obs.unobserve(e.target); } });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('[data-r]').forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>
