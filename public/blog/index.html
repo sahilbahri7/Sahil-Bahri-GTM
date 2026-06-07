@@ -73,7 +73,19 @@
     .footer-links{display:flex;gap:20px}
     .footer-links a{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em;text-decoration:none}
     .footer-links a:hover{color:var(--cream)}
-    @media(max-width:768px){.nav{padding:16px 24px}.hero{padding:80px 24px 48px}.content{padding:0 24px 60px}.footer{padding:24px;flex-direction:column;gap:16px;text-align:center}}
+    /* Mobile nav: hide architecture links at tablet, collapse further at phone */
+    @media(max-width:900px){
+      .nav{padding:14px 24px}
+      .nav-links{gap:16px}
+      .nav-link-arch{display:none}
+    }
+    @media(max-width:600px){
+      .nav-links{gap:10px}
+      .nav-link[href="/"],
+      .nav-link[href="/#contact"]{display:none}
+      .nav-portal{padding:6px 12px;font-size:10px}
+    }
+    @media(max-width:768px){.hero{padding:80px 24px 48px}.content{padding:0 24px 60px}.footer{padding:24px;flex-direction:column;gap:16px;text-align:center}}
 
     /* ── Architecture Showcase section ── */
     .arch-section{margin-bottom:80px}
@@ -105,8 +117,8 @@
   <div class="nav-links">
     <a href="/" class="nav-link">Home</a>
     <a href="/blog" class="nav-link active">Blog</a>
-    <a href="/hubspot-blueprint/" class="nav-link">HubSpot Blueprint</a>
-    <a href="/gtm-stack/" class="nav-link">GTM Stack</a>
+    <a href="/hubspot-blueprint/" class="nav-link nav-link-arch">HubSpot Blueprint</a>
+    <a href="/gtm-stack/" class="nav-link nav-link-arch">GTM Stack</a>
     <a href="/#contact" class="nav-link">Contact</a>
     <a href="/portal" class="nav-portal">Client Portal</a>
   </div>
