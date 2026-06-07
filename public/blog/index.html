@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — GTM, RevOps & HubSpot Insights | Revo-Sys</title>
+  <meta name="description" content="Practical guides on go-to-market strategy, revenue operations, HubSpot, Salesforce, lead scoring, CRM implementation, and AI automation for B2B companies.">
+  <link rel="canonical" href="https://revosys.pro/blog">
+  <meta property="og:title" content="Blog — GTM, RevOps & HubSpot Insights | Revo-Sys">
+  <meta property="og:description" content="Practical guides on GTM strategy, RevOps, HubSpot, CRM implementation, and AI automation.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://revosys.pro/blog">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "Revo-Sys — GTM & RevOps Blog",
+    "description": "Practical guides on go-to-market strategy, revenue operations, and CRM implementation for B2B companies.",
+    "url": "https://revosys.pro/blog",
+    "author": { "@type": "Organization", "name": "Revo-Sys", "url": "https://revosys.pro" }
+  }
+  </script>
+  <style>
+    :root{--ink:#0B0B0B;--ink-2:#111111;--ink-3:#1A1A1A;--ink-4:#222;--cream:#E8E0D4;--cream-dim:#B8B0A4;--cream-mute:#7A756D;--amber:#C4A265;--sky:#5B8FA8;--violet:#7C6FA0;--success:#6B9E6F;--danger:#A85B5B;--border:rgba(232,224,212,0.08);--border-h:rgba(232,224,212,0.15);--serif:'Instrument Serif',Georgia,serif;--sans:'Outfit',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-font-smoothing:antialiased}
+    body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.7}
+    a{color:var(--amber);text-decoration:none}a:hover{text-decoration:underline}
+    /* NAV */
+    .nav{position:fixed;top:0;left:0;right:0;width:100%;z-index:100;padding:20px 64px;display:flex;justify-content:space-between;align-items:center;background:rgba(11,11,11,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+    .nav-brand{display:flex;align-items:baseline;gap:0;text-decoration:none}
+    .nav-revo{font-family:var(--serif);font-size:22px;font-style:italic;color:var(--cream)}
+    .nav-sys{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.15em;text-transform:uppercase;margin-left:3px}
+    .nav-links{display:flex;gap:28px;align-items:center}
+    .nav-link{background:none;border:none;color:var(--cream-mute);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:color .2s}
+    .nav-link:hover,.nav-link.active{color:var(--cream)}
+    .nav-portal{padding:8px 20px;background:transparent;border:1px solid var(--border-h);border-radius:6px;color:var(--cream-dim);font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:all .2s}
+    .nav-portal:hover{border-color:var(--cream);color:var(--cream)}
+    /* HERO */
+    .hero{padding:120px 64px 80px;max-width:1400px;margin:0 auto}
+    .hero-label{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.2em;text-transform:uppercase;margin-bottom:24px}
+    .hero h1{font-family:var(--serif);font-size:clamp(42px,6vw,72px);font-weight:400;font-style:italic;color:var(--cream);line-height:1.08;margin-bottom:20px}
+    .hero-sub{font-size:16px;color:var(--cream-mute);max-width:520px;line-height:1.8;font-weight:300}
+    /* GRID */
+    .content{max-width:1400px;margin:0 auto;padding:0 64px 100px}
+    .section-label{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.14em;text-transform:uppercase;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+    .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:80px}
+    .post-card{background:var(--ink);padding:28px 30px;display:flex;flex-direction:column;gap:12px;text-decoration:none;transition:background .2s}
+    .post-card:hover{background:var(--ink-2)}
+    .post-tag{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:2px}
+    .tag-revops{background:rgba(196,162,101,0.08);color:var(--amber);border:1px solid rgba(196,162,101,0.2)}
+    .tag-crm{background:rgba(91,143,168,0.08);color:var(--sky);border:1px solid rgba(91,143,168,0.2)}
+    .tag-gtm{background:rgba(107,158,111,0.08);color:var(--success);border:1px solid rgba(107,158,111,0.2)}
+    .tag-hubspot{background:rgba(124,111,160,0.08);color:var(--violet);border:1px solid rgba(124,111,160,0.2)}
+    .tag-ai{background:rgba(196,162,101,0.06);color:var(--cream-dim);border:1px solid var(--border-h)}
+    .tag-sales{background:rgba(107,158,111,0.08);color:var(--success);border:1px solid rgba(107,158,111,0.2)}
+    .post-title{font-family:var(--serif);font-size:20px;font-weight:400;font-style:italic;color:var(--cream);line-height:1.3}
+    .post-desc{font-size:13px;color:var(--cream-mute);flex:1;line-height:1.7}
+    .post-meta{font-family:var(--mono);font-size:9px;color:var(--cream-mute);display:flex;gap:12px;align-items:center;margin-top:4px}
+    .read-more{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.05em;margin-top:4px}
+    /* CTA */
+    .cta-block{padding:60px;border:1px solid var(--border-h);background:var(--ink-2);text-align:center}
+    .cta-block h2{font-family:var(--serif);font-size:36px;font-weight:400;font-style:italic;color:var(--cream);margin-bottom:16px}
+    .cta-block p{font-size:15px;color:var(--cream-mute);margin-bottom:28px;font-weight:300}
+    .cta-btn{display:inline-block;padding:14px 36px;background:var(--cream);color:var(--ink);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    /* FOOTER */
+    .footer{border-top:1px solid var(--border);padding:32px 64px;display:flex;justify-content:space-between;align-items:center}
+    .footer-brand{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.08em}
+    .footer-links{display:flex;gap:20px}
+    .footer-links a{font-family:var(--mono);font-size:10px;color:var(--cream-mute);letter-spacing:.06em;text-decoration:none}
+    .footer-links a:hover{color:var(--cream)}
+    /* Mobile nav: hide architecture links at tablet, collapse further at phone */
+    @media(max-width:900px){
+      .nav{padding:14px 24px}
+      .nav-links{gap:16px}
+      .nav-link-arch{display:none}
+    }
+    @media(max-width:600px){
+      .nav-links{gap:10px}
+      .nav-link[href="/"],
+      .nav-link[href="/#contact"]{display:none}
+      .nav-portal{padding:6px 12px;font-size:10px}
+    }
+    @media(max-width:768px){.hero{padding:80px 24px 48px}.content{padding:0 24px 60px}.footer{padding:24px;flex-direction:column;gap:16px;text-align:center}}
+
+    /* ── Architecture Showcase section ── */
+    .arch-section{margin-bottom:80px}
+    .arch-section-label{font-family:var(--mono);font-size:9px;color:var(--cream-mute);letter-spacing:.14em;text-transform:uppercase;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .arch-section-label span{color:var(--amber)}
+    .arch-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border)}
+    .arch-card{background:var(--ink);padding:0;text-decoration:none;display:block;transition:background .2s;position:relative;overflow:hidden}
+    .arch-card:hover{background:var(--ink-2);text-decoration:none}
+    .arch-card-top{height:3px}
+    .arch-card-body{padding:32px 30px 28px}
+    .arch-card-tag{font-family:var(--mono);font-size:8px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+    .arch-card-tag::before{content:'';width:20px;height:1px}
+    .arch-card-num{position:absolute;top:20px;right:22px;font-family:var(--serif);font-size:56px;font-style:italic;color:var(--ink-3);line-height:1}
+    .arch-card h3{font-family:var(--serif);font-size:24px;font-weight:400;font-style:italic;color:var(--cream);line-height:1.2;margin-bottom:10px}
+    .arch-card p{font-size:13px;color:var(--cream-mute);line-height:1.75;margin-bottom:20px}
+    .arch-card-features{display:flex;flex-direction:column;gap:5px;margin-bottom:20px}
+    .arch-card-feature{font-family:var(--mono);font-size:9px;color:var(--cream-mute);display:flex;align-items:center;gap:8px;letter-spacing:.03em}
+    .arch-card-feature::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0}
+    .arch-card-cta{font-family:var(--mono);font-size:10px;letter-spacing:.08em;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:1px solid;border-radius:2px;transition:all .2s;text-decoration:none}
+    .arch-card:hover .arch-card-cta{transform:translateX(3px)}
+    @media(max-width:768px){.arch-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="/">
+    <span class="nav-revo">Revo</span><span class="nav-sys">-Sys</span>
+  </a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/blog" class="nav-link active">Blog</a>
+    <a href="/hubspot-blueprint/" class="nav-link nav-link-arch">HubSpot Blueprint</a>
+    <a href="/gtm-stack/" class="nav-link nav-link-arch">GTM Stack</a>
+    <a href="/#contact" class="nav-link">Contact</a>
+    <a href="/portal" class="nav-portal">Client Portal</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-label">GTM &amp; RevOps Intelligence</div>
+  <h1>Insights for<br>revenue operators.</h1>
+  <p class="hero-sub">Practical guides on go-to-market strategy, revenue operations, CRM implementation, and AI automation — built for B2B teams who want to grow without the fluff.</p>
+</header>
+
+<main class="content">
+
+  <!-- Architecture Showcase — top of page -->
+  <div class="arch-section">
+    <div class="arch-section-label">
+      Architecture Briefs — Production systems we design &amp; build
+      <span>REVO-SYS ORIGINALS</span>
+    </div>
+    <div class="arch-grid">
+
+      <a href="/hubspot-blueprint/" class="arch-card">
+        <div class="arch-card-top" style="background:linear-gradient(90deg,#C4A265,#a88a52)"></div>
+        <div class="arch-card-body">
+          <div class="arch-card-num">01</div>
+          <div class="arch-card-tag" style="color:var(--amber)"><span style="background:var(--amber)"></span>HubSpot RevOps Blueprint</div>
+          <h3>The complete HubSpot<br>RevOps architecture</h3>
+          <p>7 lifecycle stages with exact HubSpot property values. 3 automation workflows (MQL routing, deal progression, churn detection). 6-stage pipeline with probability weighting. 40+ revenue KPIs with formulas and benchmarks. 10-week implementation timeline — every deliverable named.</p>
+          <div class="arch-card-features">
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;flex-shrink:0"></span>hs_lifecyclestage, hs_lead_status, hs_score — all mapped</div>
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;flex-shrink:0"></span>MQL qualification, deal progression &amp; churn prevention workflows</div>
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;flex-shrink:0"></span>Pipeline: probabilities, time-in-stage targets &amp; auto-tasks</div>
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--amber);border-radius:50%;flex-shrink:0"></span>3-layer reporting: funnel → pipeline velocity → ARR &amp; NRR</div>
+          </div>
+          <span class="arch-card-cta" style="color:var(--amber);border-color:rgba(196,162,101,0.25)">View Architecture Brief →</span>
+        </div>
+      </a>
+
+      <a href="/gtm-stack/" class="arch-card">
+        <div class="arch-card-top" style="background:linear-gradient(90deg,#7C6FA0,#5B8FA8)"></div>
+        <div class="arch-card-body">
+          <div class="arch-card-num">02</div>
+          <div class="arch-card-tag" style="color:var(--violet)"><span style="background:var(--violet)"></span>GTM Intelligence Stack</div>
+          <h3>Four-layer GTM system<br>built for scale</h3>
+          <p>Acquisition → CRM Hub → AI Automation → Revenue Intelligence. Each layer expandable with tools, data model, and logic. Includes a 7-step animated walkthrough of a lead's journey from LinkedIn click to closed-won, AI system formulas, and 3 anonymized case studies — 62% MQL lift, 2.3h response time, churn from 18% to 9%.</p>
+          <div class="arch-card-features">
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;flex-shrink:0"></span>Lead scoring formula, intent routing logic &amp; churn risk model</div>
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;flex-shrink:0"></span>AI personalization prompt templates — real code shown</div>
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;flex-shrink:0"></span>7-step data flow: first click → closed-won → attribution loop</div>
+            <div class="arch-card-feature"><span style="width:4px;height:4px;background:var(--violet);border-radius:50%;flex-shrink:0"></span>3 case studies with real outcomes and tech stacks</div>
+          </div>
+          <span class="arch-card-cta" style="color:var(--violet);border-color:rgba(124,111,160,0.25)">View Architecture Brief →</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="section-label">All posts — 12 articles</div>
+  <div class="posts-grid">
+
+    <a href="/blog/what-is-revenue-operations" class="post-card">
+      <span class="post-tag tag-revops">Revenue Operations</span>
+      <div class="post-title">What Is Revenue Operations (RevOps)? The Complete 2025 Guide</div>
+      <div class="post-desc">RevOps aligns sales, marketing, and customer success under one operating model to drive predictable, scalable revenue growth.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>8 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/hubspot-vs-salesforce-crm" class="post-card">
+      <span class="post-tag tag-crm">CRM Comparison</span>
+      <div class="post-title">HubSpot vs Salesforce: Which CRM Wins in 2025?</div>
+      <div class="post-desc">A head-to-head comparison across pricing, ease of use, features, and scalability. Find out which CRM fits your company stage.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>9 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/go-to-market-strategy-guide" class="post-card">
+      <span class="post-tag tag-gtm">Go-to-Market</span>
+      <div class="post-title">Go-to-Market Strategy: The Complete GTM Playbook for 2025</div>
+      <div class="post-desc">Build a winning GTM from scratch — ICP definition, positioning, pricing, channel selection, and launch execution.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>11 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/what-is-gtm-consultant" class="post-card">
+      <span class="post-tag tag-gtm">GTM Consulting</span>
+      <div class="post-title">What Does a GTM Consultant Do? Roles, Skills &amp; When to Hire One</div>
+      <div class="post-desc">A GTM consultant bridges strategy and execution — ICP, CRM setup, sales process design. Here's what to look for.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>7 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/crm-implementation-guide" class="post-card">
+      <span class="post-tag tag-crm">CRM Implementation</span>
+      <div class="post-title">CRM Implementation Guide: How to Set Up Your CRM the Right Way</div>
+      <div class="post-desc">The 7-phase framework covering data migration, pipeline config, integrations, training, and adoption — without the common mistakes.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>10 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/ai-automation-revenue-operations" class="post-card">
+      <span class="post-tag tag-ai">AI &amp; Automation</span>
+      <div class="post-title">AI Automation in Revenue Operations: The 2025 Playbook</div>
+      <div class="post-desc">How AI is transforming RevOps — conversation intelligence, predictive scoring, enrichment, and pipeline forecasting.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>9 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/lead-scoring-guide" class="post-card">
+      <span class="post-tag tag-sales">Lead Management</span>
+      <div class="post-title">Lead Scoring: The Complete B2B Guide to Prioritizing Your Best Leads</div>
+      <div class="post-desc">Build a lead scoring model using demographic fit and behavioral signals — with real point values and an AI-powered upgrade path.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>8 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/marketing-automation-hubspot" class="post-card">
+      <span class="post-tag tag-hubspot">HubSpot</span>
+      <div class="post-title">HubSpot Marketing Automation: The Ultimate Setup Guide for 2025</div>
+      <div class="post-desc">The 7 HubSpot workflows every B2B company needs — lead nurture, MQL handoff, re-engagement, onboarding, and more.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>10 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/what-is-sales-funnel" class="post-card">
+      <span class="post-tag tag-sales">Sales Strategy</span>
+      <div class="post-title">What Is a Sales Funnel? B2B Stages, Metrics &amp; Optimization</div>
+      <div class="post-desc">TOFU, MOFU, BOFU, Close, and Post-Sale explained — with benchmark metrics and practical optimization tactics for each.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>8 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/crm-data-hygiene" class="post-card">
+      <span class="post-tag tag-revops">Data Operations</span>
+      <div class="post-title">CRM Data Hygiene: How to Clean &amp; Maintain Your CRM Data</div>
+      <div class="post-desc">CRM data degrades at 30% per year. Here's the audit process, deduplication steps, and prevention workflows to fix it permanently.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>8 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/b2b-cold-email-sequences" class="post-card">
+      <span class="post-tag tag-sales">Sales Outreach</span>
+      <div class="post-title">B2B Cold Email Sequences That Actually Book Meetings</div>
+      <div class="post-desc">The 6-touch sequence architecture, 8 subject line formulas, and personalization-at-scale playbook that converts cold contacts into booked meetings.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>9 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+    <a href="/blog/revops-kpis-metrics" class="post-card">
+      <span class="post-tag tag-revops">Revenue Operations</span>
+      <div class="post-title">The 15 RevOps KPIs Every Revenue Team Must Track in 2025</div>
+      <div class="post-desc">Pipeline velocity, win rate, NRR, CAC payback, magic number — the 15 metrics that reveal exactly where revenue is being created and where it's leaking.</div>
+      <div class="post-meta"><span>April 2025</span><span>·</span><span>10 min</span></div>
+      <div class="read-more">Read article →</div>
+    </a>
+
+  </div>
+
+  <div class="cta-block">
+    <h2>Work with a GTM &amp; RevOps expert.</h2>
+    <p>If these articles resonate, the work we do goes deeper. Let's talk about your go-to-market challenges.</p>
+    <a class="cta-btn" href="/#contact">Start a conversation →</a>
+  </div>
+</main>
+
+<footer class="footer">
+  <span class="footer-brand">© 2025 REVO-SYS · GTM PLATFORM</span>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/#contact">Contact</a>
+    <a href="/portal">Client Portal</a>
+  </div>
+</footer>
+</body>
+</html>

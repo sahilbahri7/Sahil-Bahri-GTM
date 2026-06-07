@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import crypto from "crypto";
 
 const SECRET = process.env.MAGIC_SECRET || "dev-fallback-change-in-prod";
-const APP_URL = process.env.APP_URL || "https://revosys.pro";
+const APP_URL = process.env.APP_URL || "https://app.revosys.pro";
 const FROM = "Revo-Sys <sahil@revosys.pro>";
 
 function generateToken(email) {
