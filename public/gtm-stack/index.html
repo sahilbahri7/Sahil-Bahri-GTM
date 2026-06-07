@@ -195,6 +195,8 @@
 
     @media(max-width:900px){
       .nav{padding:14px 24px}
+      .nav-links{gap:14px}
+      .nav-badge{display:none}
       .hero{padding:100px 24px 60px}
       .stack-diagram{padding:0 24px 24px}
       .section{padding:60px 24px}
@@ -209,6 +211,12 @@
       .cta-btns{justify-content:center}
       .footer{padding:24px;flex-direction:column;gap:12px}
       .layer-connector{padding:0 24px}
+    }
+    @media(max-width:600px){
+      .nav-links{gap:8px}
+      .nav-link:not([href*="portal"]){font-size:9px;letter-spacing:.04em}
+      .hero-meta{flex-wrap:wrap;gap:12px}
+      .connector-label{font-size:7px;letter-spacing:.06em}
     }
   </style>
 </head>
