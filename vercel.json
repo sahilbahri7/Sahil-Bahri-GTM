@@ -21,7 +21,6 @@
     { "source": "/hubspot-blueprint",  "destination": "/hubspot-blueprint/index.html" },
     { "source": "/hubspot-blueprint/", "destination": "/hubspot-blueprint/index.html" },
     { "source": "/gtm-stack",          "destination": "/gtm-stack/index.html" },
-    { "source": "/gtm-stack/",         "destination": "/gtm-stack/index.html" },
-    { "source": "/(.*)",               "destination": "/index.html" }
+    { "source": "/gtm-stack/",         "destination": "/gtm-stack/index.html" }
   ]
 }
